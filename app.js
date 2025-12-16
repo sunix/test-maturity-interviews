@@ -651,7 +651,10 @@ async function performAutoSave() {
     try {
         if (Object.keys(currentAssessment.answers).length === 0) {
             // No answers yet, nothing to save
-            updateAutoSaveStatus('saved');
+            if (autoSaveStatus) {
+                autoSaveStatus.textContent = '';
+                autoSaveStatus.classList.remove('saving', 'saved', 'error');
+            }
             return;
         }
 
@@ -681,6 +684,16 @@ function startPeriodicRefresh() {
     refreshInterval = setInterval(() => {
         refreshFromStorage();
     }, 10000);
+    
+    // Clean up interval when page unloads
+    window.addEventListener('beforeunload', () => {
+        if (refreshInterval) {
+            clearInterval(refreshInterval);
+        }
+        if (autoSaveTimeout) {
+            clearTimeout(autoSaveTimeout);
+        }
+    });
 }
 
 // Refresh assessments from localStorage (for multi-tab/window sync)
@@ -690,8 +703,25 @@ function refreshFromStorage() {
         try {
             const loadedAssessments = JSON.parse(saved);
             
-            // Check if there are any changes
-            if (JSON.stringify(assessments) !== JSON.stringify(loadedAssessments)) {
+            // Simple length check first for efficiency
+            if (assessments.length !== loadedAssessments.length) {
+                assessments = loadedAssessments;
+                updateSavedAssessmentsList();
+                updateResultsSelect();
+                console.log('Refreshed assessments from storage');
+                return;
+            }
+            
+            // Check for updates by comparing dates
+            let hasChanges = false;
+            for (let i = 0; i < loadedAssessments.length; i++) {
+                if (!assessments[i] || assessments[i].date !== loadedAssessments[i].date) {
+                    hasChanges = true;
+                    break;
+                }
+            }
+            
+            if (hasChanges) {
                 assessments = loadedAssessments;
                 updateSavedAssessmentsList();
                 updateResultsSelect();
