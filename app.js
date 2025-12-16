@@ -146,12 +146,14 @@ document.addEventListener('DOMContentLoaded', async () => {
     loadAssessments();
     updateSavedAssessmentsList();
     setupEventListeners();
-    await loadSyncSettings(); // Wait for sync settings to load
     checkFileSystemAccessSupport();
     initAutoSave();
     startPeriodicRefresh();
     updateHeaderSyncStatus(); // Initialize header sync status
     updateTabVisibility(); // Initialize tab visibility
+    
+    // Load sync settings asynchronously (doesn't block other initialization)
+    await loadSyncSettings();
 });
 
 // Event Listeners
