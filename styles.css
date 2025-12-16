@@ -11,7 +11,7 @@
     --text-secondary: #64748b;
     --shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px -1px rgba(0, 0, 0, 0.1);
     --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1);
-    --header-height: 200px;
+    --header-height: 210px;
     --header-height-mobile: 280px;
 }
 
@@ -38,6 +38,10 @@ body {
     background-color: var(--card-bg);
     box-shadow: var(--shadow-lg);
     z-index: 1000;
+}
+
+.sticky-header .container {
+    padding-bottom: 0;
 }
 
 .container {
