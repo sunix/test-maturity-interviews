@@ -6,6 +6,19 @@
     <title>Test Maturity Assessment</title>
     <link rel="stylesheet" href="styles.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <script>
+        // Fallback if Chart.js fails to load
+        window.addEventListener('load', function() {
+            if (typeof Chart === 'undefined') {
+                console.warn('Chart.js failed to load from CDN. Radar chart will not be available.');
+                // Hide chart container if Chart.js is not available
+                const chartContainer = document.querySelector('.chart-container');
+                if (chartContainer) {
+                    chartContainer.innerHTML = '<p class="alert alert-warning">Chart visualization unavailable. Chart.js library could not be loaded.</p>';
+                }
+            }
+        });
+    </script>
 </head>
 <body>
     <div class="container">
