@@ -58,8 +58,9 @@ async function openDB() {
 }
 
 async function saveFolderHandleToIndexedDB(handle) {
+    let db;
     try {
-        const db = await openDB();
+        db = await openDB();
         const transaction = db.transaction([STORE_NAME], 'readwrite');
         const store = transaction.objectStore(STORE_NAME);
         await new Promise((resolve, reject) => {
@@ -67,17 +68,19 @@ async function saveFolderHandleToIndexedDB(handle) {
             request.onsuccess = () => resolve();
             request.onerror = () => reject(request.error);
         });
-        db.close();
         return true;
     } catch (error) {
         console.error('Error saving folder handle to IndexedDB:', error);
         return false;
+    } finally {
+        if (db) db.close();
     }
 }
 
 async function loadFolderHandleFromIndexedDB() {
+    let db;
     try {
-        const db = await openDB();
+        db = await openDB();
         const transaction = db.transaction([STORE_NAME], 'readonly');
         const store = transaction.objectStore(STORE_NAME);
         const handle = await new Promise((resolve, reject) => {
@@ -85,17 +88,19 @@ async function loadFolderHandleFromIndexedDB() {
             request.onsuccess = () => resolve(request.result);
             request.onerror = () => reject(request.error);
         });
-        db.close();
         return handle;
     } catch (error) {
         console.error('Error loading folder handle from IndexedDB:', error);
         return null;
+    } finally {
+        if (db) db.close();
     }
 }
 
 async function removeFolderHandleFromIndexedDB() {
+    let db;
     try {
-        const db = await openDB();
+        db = await openDB();
         const transaction = db.transaction([STORE_NAME], 'readwrite');
         const store = transaction.objectStore(STORE_NAME);
         await new Promise((resolve, reject) => {
@@ -103,11 +108,12 @@ async function removeFolderHandleFromIndexedDB() {
             request.onsuccess = () => resolve();
             request.onerror = () => reject(request.error);
         });
-        db.close();
         return true;
     } catch (error) {
         console.error('Error removing folder handle from IndexedDB:', error);
         return false;
+    } finally {
+        if (db) db.close();
     }
 }
 
