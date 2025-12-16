@@ -19,6 +19,13 @@ let autoSaveTimeout = null;
 let autoSaveStatus = null;
 let refreshInterval = null;
 
+// Active editing state for smart sync
+let isActivelyEditing = false;
+let editingIdleTimeout = null;
+const EDITING_IDLE_THRESHOLD = 5000; // Consider idle after 5 seconds of no changes
+const SYNC_INTERVAL_ACTIVE = 15000; // 15 seconds during active editing
+const SYNC_INTERVAL_IDLE = 5000; // 5 seconds when idle
+
 // Constants for maturity calculation
 const MATURITY_SCALE_MIN = 1;
 const MATURITY_SCALE_MAX = 5;
@@ -204,6 +211,9 @@ function handleAnswer(button) {
 
     // Update progress
     updateProgress();
+    
+    // Mark as actively editing
+    markAsActivelyEditing();
     
     // Trigger auto-save
     triggerAutoSave();
@@ -693,6 +703,12 @@ function startPeriodicRefresh() {
         if (autoSaveTimeout) {
             clearTimeout(autoSaveTimeout);
         }
+        if (editingIdleTimeout) {
+            clearTimeout(editingIdleTimeout);
+        }
+        if (syncInterval) {
+            clearInterval(syncInterval);
+        }
     });
 }
 
@@ -731,6 +747,38 @@ function refreshFromStorage() {
             console.error('Error refreshing assessments:', e);
         }
     }
+}
+
+// Mark user as actively editing
+function markAsActivelyEditing() {
+    isActivelyEditing = true;
+    
+    // Clear existing idle timeout
+    if (editingIdleTimeout) {
+        clearTimeout(editingIdleTimeout);
+    }
+    
+    // Set new idle timeout
+    editingIdleTimeout = setTimeout(() => {
+        isActivelyEditing = false;
+        console.log('User is now idle, resuming normal sync');
+        // Adjust sync interval back to idle rate
+        if (syncEnabled && syncFolderHandle) {
+            startPeriodicSync();
+        }
+    }, EDITING_IDLE_THRESHOLD);
+    
+    // If we just started editing, adjust sync interval
+    if (syncEnabled && syncFolderHandle) {
+        startPeriodicSync();
+    }
+}
+
+// Helper function to check if user is currently editing a specific assessment
+function isCurrentlyEditingAssessment(assessmentName) {
+    return isActivelyEditing && 
+           currentAssessment && 
+           currentAssessment.name === assessmentName;
 }
 
 // Filesystem Sync Functions
@@ -883,6 +931,7 @@ async function syncFromFolder() {
         // Merge with existing assessments
         let merged = 0;
         let added = 0;
+        let skipped = 0;
         let currentAssessmentUpdated = false;
         
         importedAssessments.forEach(imported => {
@@ -891,6 +940,13 @@ async function syncFromFolder() {
                 // Check if the imported file is different
                 // Compare using file modification time or content hash
                 const existing = assessments[existingIndex];
+                
+                // IMPORTANT: Don't overwrite the currently edited assessment if user is actively editing it
+                if (isCurrentlyEditingAssessment(imported.name)) {
+                    console.log(`Skipping update for ${imported.name} - user is actively editing`);
+                    skipped++;
+                    return;
+                }
                 
                 // Check if we should update based on file modification time or content differences
                 let shouldUpdate = false;
@@ -917,8 +973,10 @@ async function syncFromFolder() {
                     assessments[existingIndex] = imported;
                     merged++;
                     
-                    // Update current assessment if it's the one being edited
-                    if (currentAssessment && currentAssessment.name === imported.name) {
+                    // Update current assessment only if it's not being actively edited
+                    if (currentAssessment && 
+                        currentAssessment.name === imported.name && 
+                        !isCurrentlyEditingAssessment(imported.name)) {
                         currentAssessment = { ...imported };
                         currentAssessmentUpdated = true;
                     }
@@ -934,7 +992,7 @@ async function syncFromFolder() {
             await saveAssessments(true);
             updateSavedAssessmentsList();
             updateResultsSelect();
-            console.log(`Synced from folder: ${added} added, ${merged} updated`);
+            console.log(`Synced from folder: ${added} added, ${merged} updated, ${skipped} skipped`);
             
             // Refresh UI if current assessment was updated
             if (currentAssessmentUpdated && filteredQuestions.length > 0) {
@@ -969,6 +1027,13 @@ async function syncToFolder() {
             const writable = await fileHandle.createWritable();
             await writable.write(JSON.stringify(dataToWrite, null, 2));
             await writable.close();
+            
+            // Update the file modification timestamp in memory for future comparison
+            const savedFile = await fileHandle.getFile();
+            const assessmentIndex = assessments.findIndex(a => a.name === assessment.name);
+            if (assessmentIndex >= 0) {
+                assessments[assessmentIndex]._fileLastModified = savedFile.lastModified;
+            }
         }
         
         console.log(`Synced ${assessments.length} assessments to folder`);
@@ -988,10 +1053,15 @@ function startPeriodicSync() {
         clearInterval(syncInterval);
     }
     
-    // Sync every 2 seconds
+    // Use smart sync intervals based on editing state
+    const interval = isActivelyEditing ? SYNC_INTERVAL_ACTIVE : SYNC_INTERVAL_IDLE;
+    
+    console.log(`Starting periodic sync with ${interval}ms interval (${isActivelyEditing ? 'active editing' : 'idle'})`);
+    
+    // Sync with smart interval
     syncInterval = setInterval(async () => {
         if (syncEnabled && syncFolderHandle) {
             await syncFromFolder();
         }
-    }, 2000);
+    }, interval);
 }
