@@ -107,11 +107,14 @@ The folder sync feature allows you to automatically sync assessments to a folder
 3. **Choose Location**: Select a folder (can be local, OneDrive, Google Drive, etc.)
 4. **Grant Permission**: Allow the app to read/write to the selected folder
 5. **Automatic Sync**: Assessments are now automatically synced!
+6. **Persistent Configuration**: Your folder selection is saved and automatically restored when you reload the app!
 
 ### How It Works
 
 - **Individual Files**: Each assessment is saved as `assessment-{name}-{date}.json`
 - **Auto-Save**: When you save an assessment, it's immediately written to the folder
+- **Persistent Folder Selection**: The sync folder is automatically remembered and restored on reload using IndexedDB
+- **Permission Verification**: On reload, the app verifies it still has access to the folder and requests permission if needed
 - **Smart Auto-Load**: Files in the folder are checked for changes with intelligent timing:
   - **Every 5 seconds** when you're not actively editing (idle state)
   - **Every 15 seconds** when you're actively editing to avoid conflicts
@@ -139,6 +142,6 @@ The folder sync feature allows you to automatically sync assessments to a folder
 
 ### Troubleshooting
 
-- **Permission Denied**: You may need to re-select the folder if browser permissions expire
+- **Permission Expired**: If browser permissions expire, the app will prompt you to re-select the folder
 - **Not Supported**: If your browser doesn't support the API, use Export/Import instead
 - **Sync Not Working**: Check browser console for errors, ensure folder permissions are granted
