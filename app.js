@@ -14,6 +14,11 @@ let syncFolderHandle = null;
 let syncEnabled = false;
 let syncInterval = null;
 
+// Auto-save state
+let autoSaveTimeout = null;
+let autoSaveStatus = null;
+let refreshInterval = null;
+
 // Constants for maturity calculation
 const MATURITY_SCALE_MIN = 1;
 const MATURITY_SCALE_MAX = 5;
@@ -29,7 +34,6 @@ const startInterviewBtn = document.getElementById('start-interview');
 const questionsContainer = document.getElementById('questions-container');
 const progressFill = document.getElementById('progress-fill');
 const progressText = document.getElementById('progress-text');
-const saveInterviewBtn = document.getElementById('save-interview');
 const viewResultsBtn = document.getElementById('view-results');
 const exportDataBtn = document.getElementById('export-data');
 const importDataBtn = document.getElementById('import-data');
@@ -48,6 +52,8 @@ document.addEventListener('DOMContentLoaded', () => {
     setupEventListeners();
     loadSyncSettings();
     checkFileSystemAccessSupport();
+    initAutoSave();
+    startPeriodicRefresh();
 });
 
 // Event Listeners
@@ -59,9 +65,6 @@ function setupEventListeners() {
 
     // Start interview
     startInterviewBtn.addEventListener('click', startInterview);
-
-    // Save interview
-    saveInterviewBtn.addEventListener('click', saveAssessment);
 
     // View results
     viewResultsBtn.addEventListener('click', () => {
@@ -201,6 +204,9 @@ function handleAnswer(button) {
 
     // Update progress
     updateProgress();
+    
+    // Trigger auto-save
+    triggerAutoSave();
 }
 
 // Update Progress
@@ -580,6 +586,153 @@ function importData(event) {
     event.target.value = '';
 }
 
+// Auto-save Functions
+
+// Initialize auto-save status element
+function initAutoSave() {
+    autoSaveStatus = document.getElementById('auto-save-status');
+    if (autoSaveStatus) {
+        updateAutoSaveStatus('saved');
+    }
+}
+
+// Update auto-save status display
+function updateAutoSaveStatus(status, message = '') {
+    if (!autoSaveStatus) return;
+    
+    // Remove all status classes
+    autoSaveStatus.classList.remove('saving', 'saved', 'error');
+    
+    // Set the appropriate status class
+    autoSaveStatus.classList.add(status);
+    
+    // Set the status message
+    let statusText = '';
+    switch(status) {
+        case 'saving':
+            statusText = 'Saving...';
+            break;
+        case 'saved':
+            statusText = 'All changes saved';
+            break;
+        case 'error':
+            statusText = message || 'Error saving';
+            break;
+        default:
+            statusText = '';
+    }
+    
+    autoSaveStatus.textContent = statusText;
+}
+
+// Trigger auto-save with debouncing
+function triggerAutoSave() {
+    if (!currentAssessment.name) {
+        // No assessment to save yet
+        return;
+    }
+    
+    // Clear existing timeout
+    if (autoSaveTimeout) {
+        clearTimeout(autoSaveTimeout);
+    }
+    
+    // Show saving status
+    updateAutoSaveStatus('saving');
+    
+    // Set new timeout for auto-save (2 seconds after last change)
+    autoSaveTimeout = setTimeout(() => {
+        performAutoSave();
+    }, 2000);
+}
+
+// Perform the actual auto-save
+async function performAutoSave() {
+    try {
+        if (Object.keys(currentAssessment.answers).length === 0) {
+            // No answers yet, nothing to save
+            if (autoSaveStatus) {
+                autoSaveStatus.textContent = '';
+                autoSaveStatus.classList.remove('saving', 'saved', 'error');
+            }
+            return;
+        }
+
+        // Check if assessment with same name exists
+        const existingIndex = assessments.findIndex(a => a.name === currentAssessment.name);
+        
+        if (existingIndex >= 0) {
+            assessments[existingIndex] = { ...currentAssessment };
+        } else {
+            assessments.push({ ...currentAssessment });
+        }
+
+        await saveAssessments();
+        updateSavedAssessmentsList();
+        updateResultsSelect();
+        
+        updateAutoSaveStatus('saved');
+    } catch (error) {
+        console.error('Auto-save error:', error);
+        updateAutoSaveStatus('error', 'Failed to save');
+    }
+}
+
+// Start periodic refresh from storage
+function startPeriodicRefresh() {
+    // Refresh every 10 seconds to pick up changes from other tabs/windows
+    refreshInterval = setInterval(() => {
+        refreshFromStorage();
+    }, 10000);
+    
+    // Clean up interval when page unloads
+    window.addEventListener('beforeunload', () => {
+        if (refreshInterval) {
+            clearInterval(refreshInterval);
+        }
+        if (autoSaveTimeout) {
+            clearTimeout(autoSaveTimeout);
+        }
+    });
+}
+
+// Refresh assessments from localStorage (for multi-tab/window sync)
+function refreshFromStorage() {
+    const saved = localStorage.getItem('testMaturityAssessments');
+    if (saved) {
+        try {
+            const loadedAssessments = JSON.parse(saved);
+            
+            // Simple length check first for efficiency
+            if (assessments.length !== loadedAssessments.length) {
+                assessments = loadedAssessments;
+                updateSavedAssessmentsList();
+                updateResultsSelect();
+                console.log('Refreshed assessments from storage');
+                return;
+            }
+            
+            // Check for updates by comparing dates
+            let hasChanges = false;
+            for (let i = 0; i < loadedAssessments.length; i++) {
+                if (!assessments[i] || assessments[i].date !== loadedAssessments[i].date) {
+                    hasChanges = true;
+                    break;
+                }
+            }
+            
+            if (hasChanges) {
+                assessments = loadedAssessments;
+                updateSavedAssessmentsList();
+                updateResultsSelect();
+                console.log('Refreshed assessments from storage');
+            }
+        } catch (e) {
+            console.error('Error refreshing assessments:', e);
+        }
+    }
+}
+
 // Filesystem Sync Functions
 
 // Check if File System Access API is supported
@@ -715,6 +868,8 @@ async function syncFromFolder() {
                         typeof data.profile === 'string' && 
                         typeof data.answers === 'object' &&
                         data.date) {
+                        // Store file metadata for comparison
+                        data._fileLastModified = file.lastModified;
                         importedAssessments.push(data);
                     } else {
                         console.warn(`File ${entry.name} is not a valid assessment, skipping`);
@@ -728,16 +883,45 @@ async function syncFromFolder() {
         // Merge with existing assessments
         let merged = 0;
         let added = 0;
+        let currentAssessmentUpdated = false;
         
         importedAssessments.forEach(imported => {
             const existingIndex = assessments.findIndex(a => a.name === imported.name);
             if (existingIndex >= 0) {
-                // Update if imported is newer
-                const existingDate = new Date(assessments[existingIndex].date);
-                const importedDate = new Date(imported.date);
-                if (importedDate > existingDate) {
+                // Check if the imported file is different
+                // Compare using file modification time or content hash
+                const existing = assessments[existingIndex];
+                
+                // Check if we should update based on file modification time or content differences
+                let shouldUpdate = false;
+                if (!existing._fileLastModified) {
+                    // No previous file timestamp, update to get the timestamp
+                    shouldUpdate = true;
+                } else if (imported._fileLastModified > existing._fileLastModified) {
+                    // File has been modified more recently
+                    shouldUpdate = true;
+                } else if (Object.keys(imported.answers).length !== Object.keys(existing.answers).length) {
+                    // Different number of answers
+                    shouldUpdate = true;
+                } else {
+                    // Check if any answers are different
+                    for (const key in imported.answers) {
+                        if (existing.answers[key] !== imported.answers[key]) {
+                            shouldUpdate = true;
+                            break;
+                        }
+                    }
+                }
+                
+                if (shouldUpdate) {
                     assessments[existingIndex] = imported;
                     merged++;
+                    
+                    // Update current assessment if it's the one being edited
+                    if (currentAssessment && currentAssessment.name === imported.name) {
+                        currentAssessment = { ...imported };
+                        currentAssessmentUpdated = true;
+                    }
                 }
             } else {
                 assessments.push(imported);
@@ -751,6 +935,13 @@ async function syncFromFolder() {
             updateSavedAssessmentsList();
             updateResultsSelect();
             console.log(`Synced from folder: ${added} added, ${merged} updated`);
+            
+            // Refresh UI if current assessment was updated
+            if (currentAssessmentUpdated && filteredQuestions.length > 0) {
+                renderQuestions();
+                updateProgress();
+                console.log('Current assessment updated from file, UI refreshed');
+            }
         }
     } catch (error) {
         console.error('Error syncing from folder:', error);
@@ -770,8 +961,13 @@ async function syncToFolder() {
             
             // Create or update the file
             const fileHandle = await syncFolderHandle.getFileHandle(filename, { create: true });
+            
+            // Create a copy without internal metadata
+            const dataToWrite = { ...assessment };
+            delete dataToWrite._fileLastModified;
+            
             const writable = await fileHandle.createWritable();
-            await writable.write(JSON.stringify(assessment, null, 2));
+            await writable.write(JSON.stringify(dataToWrite, null, 2));
             await writable.close();
         }
         
@@ -792,10 +988,10 @@ function startPeriodicSync() {
         clearInterval(syncInterval);
     }
     
-    // Sync every 30 seconds
+    // Sync every 2 seconds
     syncInterval = setInterval(async () => {
         if (syncEnabled && syncFolderHandle) {
             await syncFromFolder();
         }
-    }, 30000);
+    }, 2000);
 }
