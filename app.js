@@ -644,9 +644,14 @@ function updateSyncStatus() {
         syncStatusDiv.innerHTML = `
             <div class="alert alert-success">
                 ✅ Sync enabled to folder: <strong>${syncFolderHandle.name}</strong>
-                <button onclick="disableSync()" class="btn btn-small" style="margin-left: 1rem;">Disable Sync</button>
+                <button id="disable-sync-btn" class="btn btn-small" style="margin-left: 1rem;">Disable Sync</button>
             </div>
         `;
+        // Add event listener to the button
+        const disableSyncBtn = document.getElementById('disable-sync-btn');
+        if (disableSyncBtn) {
+            disableSyncBtn.addEventListener('click', disableSync);
+        }
     } else {
         checkFileSystemAccessSupport();
     }
@@ -700,11 +705,19 @@ async function syncFromFolder() {
                 try {
                     const file = await entry.getFile();
                     const content = await file.text();
+                    
+                    // Parse and validate JSON structure
                     const data = JSON.parse(content);
                     
-                    // Check if it's a valid assessment
-                    if (data.name && data.profile && data.answers) {
+                    // Validate it's a valid assessment with required fields
+                    if (data && 
+                        typeof data.name === 'string' && 
+                        typeof data.profile === 'string' && 
+                        typeof data.answers === 'object' &&
+                        data.date) {
                         importedAssessments.push(data);
+                    } else {
+                        console.warn(`File ${entry.name} is not a valid assessment, skipping`);
                     }
                 } catch (e) {
                     console.warn(`Error reading file ${entry.name}:`, e);
