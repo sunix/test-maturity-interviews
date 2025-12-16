@@ -291,10 +291,10 @@ function saveAssessment() {
 }
 
 // Local Storage Functions
-async function saveAssessments() {
+async function saveAssessments(skipFolderSync = false) {
     localStorage.setItem('testMaturityAssessments', JSON.stringify(assessments));
-    // Also sync to folder if enabled
-    if (syncEnabled && syncFolderHandle) {
+    // Also sync to folder if enabled (unless we're already syncing)
+    if (!skipFolderSync && syncEnabled && syncFolderHandle) {
         await syncToFolder();
     }
 }
@@ -733,7 +733,8 @@ async function syncFromFolder() {
         });
         
         if (merged > 0 || added > 0) {
-            saveAssessments();
+            // Skip folder sync to avoid infinite loop
+            await saveAssessments(true);
             updateSavedAssessmentsList();
             updateResultsSelect();
             console.log(`Synced from folder: ${added} added, ${merged} updated`);
