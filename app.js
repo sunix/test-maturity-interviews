@@ -988,10 +988,10 @@ function startPeriodicSync() {
         clearInterval(syncInterval);
     }
     
-    // Sync every 30 seconds
+    // Sync every 2 seconds
     syncInterval = setInterval(async () => {
         if (syncEnabled && syncFolderHandle) {
             await syncFromFolder();
         }
-    }, 30000);
+    }, 2000);
 }
