@@ -112,8 +112,12 @@ The folder sync feature allows you to automatically sync assessments to a folder
 
 - **Individual Files**: Each assessment is saved as `assessment-{name}-{date}.json`
 - **Auto-Save**: When you save an assessment, it's immediately written to the folder
-- **Auto-Load**: Files in the folder are checked every 30 seconds for changes
-- **Merge Logic**: If the same assessment exists in both places, the newer one wins
+- **Smart Auto-Load**: Files in the folder are checked for changes with intelligent timing:
+  - **Every 5 seconds** when you're not actively editing (idle state)
+  - **Every 15 seconds** when you're actively editing to avoid conflicts
+  - **Protected editing**: Changes you make won't be overwritten while you're actively working
+- **Conflict Prevention**: If you're editing an assessment, incoming changes are delayed until you finish
+- **Merge Logic**: For other assessments, the newer version always wins based on file modification time
 - **Cloud Sync**: If the folder is in OneDrive/Google Drive, changes sync across devices
 
 ### Example Use Cases
