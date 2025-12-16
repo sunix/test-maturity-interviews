@@ -482,6 +482,13 @@ function displayResults() {
     renderRadarChart(scores);
 }
 
+// Helper function to escape HTML to prevent XSS
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
 // Display detailed answers with comments
 function displayDetailedAnswers(assessment) {
     const themeScoresDiv = document.getElementById('theme-scores');
@@ -509,7 +516,7 @@ function displayDetailedAnswers(assessment) {
             
             let commentHtml = '';
             if (comment) {
-                commentHtml = `<div class="answer-comment"><strong>Comment:</strong> ${comment}</div>`;
+                commentHtml = `<div class="answer-comment"><strong>Comment:</strong> ${escapeHtml(comment)}</div>`;
             }
             
             answerDiv.innerHTML = `

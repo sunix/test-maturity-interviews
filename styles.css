@@ -596,7 +596,7 @@ header h1 {
 .answer-comment {
     margin-top: 0.75rem;
     padding: 0.75rem;
-    background-color: white;
+    background-color: var(--card-bg);
     border-left: 3px solid var(--primary-color);
     border-radius: 0.25rem;
     font-size: 0.9rem;
