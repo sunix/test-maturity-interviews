@@ -258,9 +258,16 @@ function renderQuestions() {
             commentTextarea.value = currentAssessment.comments[question.id];
         }
         
-        // Restore previous answeredBy if exists
-        if (currentAssessment.answeredBy && currentAssessment.answeredBy[question.id] && profileSelect) {
-            profileSelect.value = currentAssessment.answeredBy[question.id];
+        // Pre-select the "Answered by" dropdown
+        if (profileSelect) {
+            // First priority: use existing answeredBy value
+            if (currentAssessment.answeredBy && currentAssessment.answeredBy[question.id]) {
+                profileSelect.value = currentAssessment.answeredBy[question.id];
+            } 
+            // Second priority: pre-select with current profile filter if it's applicable to this question
+            else if (profileFilter && profileFilter.value && applicableProfiles.includes(profileFilter.value)) {
+                profileSelect.value = profileFilter.value;
+            }
         }
 
         questionsContainer.appendChild(questionDiv);
@@ -292,10 +299,23 @@ function handleAnswer(button) {
     
     // Store answeredBy if profile selector exists
     const profileSelect = questionDiv.querySelector('.profile-select-input');
-    if (profileSelect && profileSelect.value) {
-        // Multi-profile question with selection made
-        currentAssessment.answeredBy[questionId] = profileSelect.value;
-    } else if (!profileSelect) {
+    if (profileSelect) {
+        // Multi-profile question
+        if (profileSelect.value) {
+            // Use the selected value from dropdown
+            currentAssessment.answeredBy[questionId] = profileSelect.value;
+        } else if (profileFilter && profileFilter.value) {
+            // No dropdown selection, but profile filter is set - use filter value and update dropdown
+            const question = QUESTIONS_CATALOG.questions.find(q => q.id === questionId);
+            if (question) {
+                const applicableProfiles = question.profiles.filter(p => p !== 'all');
+                if (applicableProfiles.includes(profileFilter.value)) {
+                    currentAssessment.answeredBy[questionId] = profileFilter.value;
+                    profileSelect.value = profileFilter.value; // Update the dropdown
+                }
+            }
+        }
+    } else {
         // Single-profile question - infer from question's profiles array
         const question = QUESTIONS_CATALOG.questions.find(q => q.id === questionId);
         if (question) {
