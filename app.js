@@ -868,6 +868,8 @@ async function syncFromFolder() {
                         typeof data.profile === 'string' && 
                         typeof data.answers === 'object' &&
                         data.date) {
+                        // Store file metadata for comparison
+                        data._fileLastModified = file.lastModified;
                         importedAssessments.push(data);
                     } else {
                         console.warn(`File ${entry.name} is not a valid assessment, skipping`);
@@ -881,16 +883,27 @@ async function syncFromFolder() {
         // Merge with existing assessments
         let merged = 0;
         let added = 0;
+        let currentAssessmentUpdated = false;
         
         importedAssessments.forEach(imported => {
             const existingIndex = assessments.findIndex(a => a.name === imported.name);
             if (existingIndex >= 0) {
-                // Update if imported is newer
-                const existingDate = new Date(assessments[existingIndex].date);
-                const importedDate = new Date(imported.date);
-                if (importedDate > existingDate) {
+                // Check if the imported file is different
+                // Compare using file modification time or content hash
+                const existing = assessments[existingIndex];
+                const shouldUpdate = !existing._fileLastModified || 
+                                    imported._fileLastModified > existing._fileLastModified ||
+                                    JSON.stringify(existing.answers) !== JSON.stringify(imported.answers);
+                
+                if (shouldUpdate) {
                     assessments[existingIndex] = imported;
                     merged++;
+                    
+                    // Update current assessment if it's the one being edited
+                    if (currentAssessment.name === imported.name) {
+                        currentAssessment = { ...imported };
+                        currentAssessmentUpdated = true;
+                    }
                 }
             } else {
                 assessments.push(imported);
@@ -904,6 +917,13 @@ async function syncFromFolder() {
             updateSavedAssessmentsList();
             updateResultsSelect();
             console.log(`Synced from folder: ${added} added, ${merged} updated`);
+            
+            // Refresh UI if current assessment was updated
+            if (currentAssessmentUpdated && filteredQuestions.length > 0) {
+                renderQuestions();
+                updateProgress();
+                console.log('Current assessment updated from file, UI refreshed');
+            }
         }
     } catch (error) {
         console.error('Error syncing from folder:', error);
@@ -923,8 +943,13 @@ async function syncToFolder() {
             
             // Create or update the file
             const fileHandle = await syncFolderHandle.getFileHandle(filename, { create: true });
+            
+            // Create a copy without internal metadata
+            const dataToWrite = { ...assessment };
+            delete dataToWrite._fileLastModified;
+            
             const writable = await fileHandle.createWritable();
-            await writable.write(JSON.stringify(assessment, null, 2));
+            await writable.write(JSON.stringify(dataToWrite, null, 2));
             await writable.close();
         }
         
