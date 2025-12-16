@@ -9,6 +9,12 @@ let currentAssessment = {
 let assessments = [];
 let filteredQuestions = [];
 
+// Constants for maturity calculation
+const MATURITY_SCALE_MIN = 1;
+const MATURITY_SCALE_MAX = 5;
+const PERCENTAGE_TO_SCALE_DIVISOR = 20; // Maps 0-100% to 0-5 range
+const SCALE_OFFSET = 0.5; // Ensures proper rounding to maturity levels
+
 // DOM Elements
 const tabs = document.querySelectorAll('.tab-button');
 const tabContents = document.querySelectorAll('.tab-content');
@@ -228,9 +234,15 @@ function calculateMaturityScores(assessment) {
         if (data.totalWeight > 0) {
             const percentage = (data.earnedWeight / data.totalWeight) * 100;
             // Map 0-100% to 1-5 scale
-            scores[theme] = Math.max(1, Math.min(5, Math.round((percentage / 20) + 0.5)));
+            scores[theme] = Math.max(
+                MATURITY_SCALE_MIN, 
+                Math.min(
+                    MATURITY_SCALE_MAX, 
+                    Math.round((percentage / PERCENTAGE_TO_SCALE_DIVISOR) + SCALE_OFFSET)
+                )
+            );
         } else {
-            scores[theme] = 1; // Default minimum score
+            scores[theme] = MATURITY_SCALE_MIN; // Default minimum score
         }
     });
 
