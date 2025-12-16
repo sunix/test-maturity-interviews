@@ -34,6 +34,83 @@ const MATURITY_SCALE_MAX = 5;
 const PERCENTAGE_TO_SCALE_DIVISOR = 20; // Maps 0-100% to 0-5 range
 const SCALE_OFFSET = 0.5; // Ensures proper rounding to maturity levels
 
+// IndexedDB for persisting folder handle
+const DB_NAME = 'TestMaturityDB';
+const DB_VERSION = 1;
+const STORE_NAME = 'settings';
+const FOLDER_HANDLE_KEY = 'syncFolderHandle';
+
+// IndexedDB Helper Functions
+async function openDB() {
+    return new Promise((resolve, reject) => {
+        const request = indexedDB.open(DB_NAME, DB_VERSION);
+        
+        request.onerror = () => reject(request.error);
+        request.onsuccess = () => resolve(request.result);
+        
+        request.onupgradeneeded = (event) => {
+            const db = event.target.result;
+            if (!db.objectStoreNames.contains(STORE_NAME)) {
+                db.createObjectStore(STORE_NAME);
+            }
+        };
+    });
+}
+
+async function saveFolderHandleToIndexedDB(handle) {
+    try {
+        const db = await openDB();
+        const transaction = db.transaction([STORE_NAME], 'readwrite');
+        const store = transaction.objectStore(STORE_NAME);
+        await new Promise((resolve, reject) => {
+            const request = store.put(handle, FOLDER_HANDLE_KEY);
+            request.onsuccess = () => resolve();
+            request.onerror = () => reject(request.error);
+        });
+        db.close();
+        return true;
+    } catch (error) {
+        console.error('Error saving folder handle to IndexedDB:', error);
+        return false;
+    }
+}
+
+async function loadFolderHandleFromIndexedDB() {
+    try {
+        const db = await openDB();
+        const transaction = db.transaction([STORE_NAME], 'readonly');
+        const store = transaction.objectStore(STORE_NAME);
+        const handle = await new Promise((resolve, reject) => {
+            const request = store.get(FOLDER_HANDLE_KEY);
+            request.onsuccess = () => resolve(request.result);
+            request.onerror = () => reject(request.error);
+        });
+        db.close();
+        return handle;
+    } catch (error) {
+        console.error('Error loading folder handle from IndexedDB:', error);
+        return null;
+    }
+}
+
+async function removeFolderHandleFromIndexedDB() {
+    try {
+        const db = await openDB();
+        const transaction = db.transaction([STORE_NAME], 'readwrite');
+        const store = transaction.objectStore(STORE_NAME);
+        await new Promise((resolve, reject) => {
+            const request = store.delete(FOLDER_HANDLE_KEY);
+            request.onsuccess = () => resolve();
+            request.onerror = () => reject(request.error);
+        });
+        db.close();
+        return true;
+    } catch (error) {
+        console.error('Error removing folder handle from IndexedDB:', error);
+        return false;
+    }
+}
+
 // DOM Elements
 const tabs = document.querySelectorAll('.tab-button');
 const tabContents = document.querySelectorAll('.tab-content');
@@ -59,11 +136,11 @@ const hamburgerBtn = document.getElementById('hamburger-menu');
 const tabsMobile = document.querySelector('.tabs-mobile');
 
 // Initialize
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
     loadAssessments();
     updateSavedAssessmentsList();
     setupEventListeners();
-    loadSyncSettings();
+    await loadSyncSettings(); // Wait for sync settings to load
     checkFileSystemAccessSupport();
     initAutoSave();
     startPeriodicRefresh();
@@ -1104,7 +1181,10 @@ async function selectSyncFolder() {
         syncFolderHandle = dirHandle;
         syncEnabled = true;
         
-        // Save folder handle reference (name only, can't persist handle itself)
+        // Save folder handle to IndexedDB (proper way to persist FileSystemDirectoryHandle)
+        await saveFolderHandleToIndexedDB(dirHandle);
+        
+        // Also save folder name and enabled flag to localStorage for quick checks
         localStorage.setItem('syncFolderName', dirHandle.name);
         localStorage.setItem('syncEnabled', 'true');
         
@@ -1180,9 +1260,12 @@ function updateHeaderSyncStatus(status = null) {
 }
 
 // Disable sync
-function disableSync() {
+async function disableSync() {
     syncEnabled = false;
     syncFolderHandle = null;
+    
+    // Remove from IndexedDB
+    await removeFolderHandleFromIndexedDB();
     
     localStorage.removeItem('syncFolderName');
     localStorage.removeItem('syncEnabled');
@@ -1196,21 +1279,88 @@ function disableSync() {
     alert('Folder sync disabled');
 }
 
-// Load sync settings from localStorage
-function loadSyncSettings() {
+// Load sync settings from localStorage and IndexedDB
+async function loadSyncSettings() {
     const syncEnabledStr = localStorage.getItem('syncEnabled');
     const folderName = localStorage.getItem('syncFolderName');
     
     if (syncEnabledStr === 'true' && folderName) {
-        // Note: We can't restore the actual folder handle, user needs to re-select
-        if (syncStatusDiv) {
-            syncStatusDiv.innerHTML = `
-                <div class="alert alert-info">
-                    📁 Previous sync folder: <strong>${folderName}</strong>
-                    <br>Please re-select the folder to resume sync.
-                </div>
-            `;
+        // Try to restore the folder handle from IndexedDB
+        const handle = await loadFolderHandleFromIndexedDB();
+        
+        if (handle) {
+            // Verify we still have permission to access the folder
+            const permission = await verifyFolderPermission(handle);
+            
+            if (permission) {
+                // Successfully restored folder handle with valid permissions
+                syncFolderHandle = handle;
+                syncEnabled = true;
+                
+                updateSyncStatus();
+                
+                // Initial sync from folder
+                await syncFromFolder();
+                
+                // Start periodic sync
+                startPeriodicSync();
+                
+                console.log(`Sync folder restored: ${folderName}`);
+            } else {
+                // Permission denied or expired
+                if (syncStatusDiv) {
+                    syncStatusDiv.innerHTML = `
+                        <div class="alert alert-warning">
+                            ⚠️ Sync folder permission expired: <strong>${folderName}</strong>
+                            <br>Please re-select the folder to resume sync.
+                            <button id="reselect-sync-folder-btn" class="btn btn-small" style="margin-top: 0.5rem;">Re-select Folder</button>
+                        </div>
+                    `;
+                    const reselectBtn = document.getElementById('reselect-sync-folder-btn');
+                    if (reselectBtn) {
+                        reselectBtn.addEventListener('click', selectSyncFolder);
+                    }
+                }
+            }
+        } else {
+            // No handle found in IndexedDB (legacy or first load)
+            if (syncStatusDiv) {
+                syncStatusDiv.innerHTML = `
+                    <div class="alert alert-info">
+                        📁 Previous sync folder: <strong>${folderName}</strong>
+                        <br>Please re-select the folder to resume sync.
+                        <button id="reselect-sync-folder-btn" class="btn btn-small" style="margin-top: 0.5rem;">Re-select Folder</button>
+                    </div>
+                `;
+                const reselectBtn = document.getElementById('reselect-sync-folder-btn');
+                if (reselectBtn) {
+                    reselectBtn.addEventListener('click', selectSyncFolder);
+                }
+            }
         }
+    }
+}
+
+// Verify folder permission
+async function verifyFolderPermission(handle) {
+    try {
+        // Query the permission state
+        const options = { mode: 'readwrite' };
+        
+        // Check current permission state
+        if ((await handle.queryPermission(options)) === 'granted') {
+            return true;
+        }
+        
+        // Try to request permission
+        if ((await handle.requestPermission(options)) === 'granted') {
+            return true;
+        }
+        
+        return false;
+    } catch (error) {
+        console.error('Error verifying folder permission:', error);
+        return false;
     }
 }
 
