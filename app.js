@@ -251,6 +251,9 @@ function handleComment(textarea) {
         delete currentAssessment.comments[questionId];
     }
     
+    // Mark as actively editing
+    markAsActivelyEditing();
+    
     // Trigger auto-save
     triggerAutoSave();
 }
