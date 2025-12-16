@@ -56,17 +56,6 @@
                     <label for="app-name">Application/Team Name:</label>
                     <input type="text" id="app-name" placeholder="Enter application or team name">
                 </div>
-                <div class="form-group">
-                    <label for="profile-select">Profile:</label>
-                    <select id="profile-select">
-                        <option value="">Select a profile...</option>
-                        <option value="developer">Developer</option>
-                        <option value="qa">QA Engineer</option>
-                        <option value="devops">DevOps</option>
-                        <option value="manager">Manager</option>
-                        <option value="all">All Profiles</option>
-                    </select>
-                </div>
                 <button id="start-interview" class="btn btn-primary">Start Interview</button>
             </div>
 
@@ -88,6 +77,16 @@
             <div class="card">
                 <div class="interview-header">
                     <h2 id="interview-title">Interview Questions</h2>
+                    <div class="form-group">
+                        <label for="profile-filter">Filter by Profile:</label>
+                        <select id="profile-filter">
+                            <option value="">Select a profile...</option>
+                            <option value="developer">Developer</option>
+                            <option value="qa">QA Engineer</option>
+                            <option value="devops">DevOps</option>
+                            <option value="manager">Manager</option>
+                        </select>
+                    </div>
                     <div class="progress-bar">
                         <div class="progress-fill" id="progress-fill"></div>
                         <span class="progress-text" id="progress-text">0 / 0</span>

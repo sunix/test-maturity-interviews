@@ -38,8 +38,8 @@ const SCALE_OFFSET = 0.5; // Ensures proper rounding to maturity levels
 const tabs = document.querySelectorAll('.tab-button');
 const tabContents = document.querySelectorAll('.tab-content');
 const appNameInput = document.getElementById('app-name');
-const profileSelect = document.getElementById('profile-select');
 const startInterviewBtn = document.getElementById('start-interview');
+const profileFilter = document.getElementById('profile-filter');
 const questionsContainer = document.getElementById('questions-container');
 const progressFill = document.getElementById('progress-fill');
 const progressText = document.getElementById('progress-text');
@@ -74,6 +74,11 @@ function setupEventListeners() {
 
     // Start interview
     startInterviewBtn.addEventListener('click', startInterview);
+    
+    // Profile filter change
+    if (profileFilter) {
+        profileFilter.addEventListener('change', handleProfileFilterChange);
+    }
 
     // View results
     viewResultsBtn.addEventListener('click', () => {
@@ -115,42 +120,58 @@ function switchTab(tabName) {
 // Start Interview
 function startInterview() {
     const appName = appNameInput.value.trim();
-    const profile = profileSelect.value;
 
     if (!appName) {
         alert('Please enter an application/team name');
         return;
     }
 
-    if (!profile) {
-        alert('Please select a profile');
-        return;
-    }
-
-    // Initialize current assessment
+    // Initialize current assessment without profile
     currentAssessment = {
         name: appName,
-        profile: profile,
+        profile: 'all', // Default to all, will be filtered in interview
         date: new Date().toISOString(),
         answers: {},
         comments: {},
         answeredBy: {}
     };
 
-    // Filter questions by profile
-    filteredQuestions = QUESTIONS_CATALOG.questions.filter(q => 
-        q.profiles.includes(profile) || q.profiles.includes('all')
-    );
+    // Reset profile filter
+    if (profileFilter) {
+        profileFilter.value = '';
+    }
+    
+    // Show all questions initially (no filter)
+    filteredQuestions = QUESTIONS_CATALOG.questions;
 
     // Render questions
     renderQuestions();
     updateProgress();
     
     // Update interview title
-    interviewTitle.textContent = `Interview: ${appName} (${profile})`;
+    interviewTitle.textContent = `Interview: ${appName}`;
 
     // Switch to interview tab
     switchTab('interview');
+}
+
+// Handle profile filter change
+function handleProfileFilterChange() {
+    const selectedProfile = profileFilter.value;
+    
+    if (!selectedProfile) {
+        // Show all questions
+        filteredQuestions = QUESTIONS_CATALOG.questions;
+    } else {
+        // Filter questions by selected profile
+        filteredQuestions = QUESTIONS_CATALOG.questions.filter(q => 
+            q.profiles.includes(selectedProfile)
+        );
+    }
+    
+    // Re-render questions
+    renderQuestions();
+    updateProgress();
 }
 
 // Render Questions
@@ -465,7 +486,6 @@ function updateSavedAssessmentsList() {
             <div class="assessment-info">
                 <div class="assessment-name">${assessment.name}</div>
                 <div class="assessment-meta">
-                    Profile: ${assessment.profile} | 
                     Date: ${date} | 
                     Answers: ${answeredCount}
                 </div>
@@ -489,16 +509,18 @@ function loadAssessment(index) {
     currentAssessment = { ...assessments[index] };
     
     appNameInput.value = currentAssessment.name;
-    profileSelect.value = currentAssessment.profile;
     
-    // Filter questions by profile
-    filteredQuestions = QUESTIONS_CATALOG.questions.filter(q => 
-        q.profiles.includes(currentAssessment.profile) || q.profiles.includes('all')
-    );
+    // Reset profile filter
+    if (profileFilter) {
+        profileFilter.value = '';
+    }
+    
+    // Show all questions (user can filter if needed)
+    filteredQuestions = QUESTIONS_CATALOG.questions;
     
     renderQuestions();
     updateProgress();
-    interviewTitle.textContent = `Interview: ${currentAssessment.name} (${currentAssessment.profile})`;
+    interviewTitle.textContent = `Interview: ${currentAssessment.name}`;
     
     switchTab('interview');
 }
