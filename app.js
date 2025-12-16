@@ -66,6 +66,7 @@ document.addEventListener('DOMContentLoaded', () => {
     initAutoSave();
     startPeriodicRefresh();
     updateHeaderSyncStatus(); // Initialize header sync status
+    updateTabVisibility(); // Initialize tab visibility
 });
 
 // Event Listeners
@@ -123,6 +124,30 @@ function switchTab(tabName) {
     });
 }
 
+// Update tab visibility based on application state
+function updateTabVisibility() {
+    const interviewTab = document.querySelector('[data-tab="interview"]');
+    const resultsTab = document.querySelector('[data-tab="results"]');
+    
+    // Show Interview tab only if an interview has been started (currentAssessment has a name)
+    if (interviewTab) {
+        if (currentAssessment && currentAssessment.name) {
+            interviewTab.classList.remove('hidden');
+        } else {
+            interviewTab.classList.add('hidden');
+        }
+    }
+    
+    // Show Results tab only if there are saved assessments
+    if (resultsTab) {
+        if (assessments && assessments.length > 0) {
+            resultsTab.classList.remove('hidden');
+        } else {
+            resultsTab.classList.add('hidden');
+        }
+    }
+}
+
 // Start Interview
 function startInterview() {
     const appName = appNameInput.value.trim();
@@ -156,6 +181,9 @@ function startInterview() {
     
     // Update interview title
     interviewTitle.textContent = `Interview: ${appName}`;
+
+    // Update tab visibility to show Interview tab
+    updateTabVisibility();
 
     // Switch to interview tab
     switchTab('interview');
@@ -489,6 +517,7 @@ function loadAssessments() {
         try {
             assessments = JSON.parse(saved);
             updateResultsSelect();
+            updateTabVisibility(); // Update tab visibility after loading assessments
         } catch (e) {
             console.error('Error loading assessments:', e);
             assessments = [];
@@ -500,6 +529,7 @@ function loadAssessments() {
 function updateSavedAssessmentsList() {
     if (assessments.length === 0) {
         savedAssessmentsDiv.innerHTML = '<p class="alert alert-info">No saved assessments yet.</p>';
+        updateTabVisibility(); // Update tab visibility when no assessments
         return;
     }
 
@@ -532,6 +562,8 @@ function updateSavedAssessmentsList() {
         
         savedAssessmentsDiv.appendChild(div);
     });
+    
+    updateTabVisibility(); // Update tab visibility when assessments are available
 }
 
 // Load Assessment for editing
@@ -551,6 +583,8 @@ function loadAssessment(index) {
     renderQuestions();
     updateProgress();
     interviewTitle.textContent = `Interview: ${currentAssessment.name}`;
+    
+    updateTabVisibility(); // Update tab visibility when loading an assessment
     
     switchTab('interview');
 }

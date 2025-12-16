@@ -187,6 +187,10 @@ header h1 {
     border-bottom-color: var(--primary-color);
 }
 
+.tab-button.hidden {
+    display: none;
+}
+
 /* Tab Content */
 .tab-content {
     display: none;
