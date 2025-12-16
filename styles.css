@@ -1,0 +1,367 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+    line-height: 1.6;
+    color: #333;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    min-height: 100vh;
+    padding: 20px;
+}
+
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+    overflow: hidden;
+}
+
+header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 30px;
+    text-align: center;
+}
+
+header h1 {
+    font-size: 2.5em;
+    margin-bottom: 10px;
+}
+
+.subtitle {
+    font-size: 1.2em;
+    opacity: 0.9;
+}
+
+.tabs {
+    display: flex;
+    background: #f5f5f5;
+    border-bottom: 2px solid #ddd;
+}
+
+.tab-btn {
+    flex: 1;
+    padding: 15px 20px;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    font-size: 1em;
+    font-weight: 500;
+    color: #666;
+    transition: all 0.3s;
+}
+
+.tab-btn:hover {
+    background: #e0e0e0;
+}
+
+.tab-btn.active {
+    background: white;
+    color: #667eea;
+    border-bottom: 3px solid #667eea;
+}
+
+.tab-content {
+    display: none;
+    padding: 30px;
+    min-height: 400px;
+}
+
+.tab-content.active {
+    display: block;
+}
+
+.section {
+    margin-bottom: 30px;
+}
+
+.section h2 {
+    color: #667eea;
+    margin-bottom: 20px;
+    font-size: 1.8em;
+}
+
+.section h3 {
+    color: #764ba2;
+    margin-bottom: 15px;
+    margin-top: 20px;
+    font-size: 1.3em;
+}
+
+.form-group {
+    margin-bottom: 20px;
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.form-group label {
+    font-weight: 600;
+    color: #555;
+}
+
+input[type="text"],
+input[type="file"],
+select {
+    flex: 1;
+    min-width: 200px;
+    padding: 12px;
+    border: 2px solid #ddd;
+    border-radius: 6px;
+    font-size: 1em;
+    transition: border-color 0.3s;
+}
+
+input[type="text"]:focus,
+select:focus {
+    outline: none;
+    border-color: #667eea;
+}
+
+.btn {
+    padding: 12px 24px;
+    border: none;
+    border-radius: 6px;
+    font-size: 1em;
+    cursor: pointer;
+    transition: all 0.3s;
+    font-weight: 500;
+}
+
+.btn-primary {
+    background: #667eea;
+    color: white;
+}
+
+.btn-primary:hover {
+    background: #5568d3;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+}
+
+.btn-danger {
+    background: #e74c3c;
+    color: white;
+}
+
+.btn-danger:hover {
+    background: #c0392b;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(231, 76, 60, 0.4);
+}
+
+.apps-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    gap: 15px;
+    margin-top: 20px;
+}
+
+.app-card {
+    background: #f8f9fa;
+    padding: 20px;
+    border-radius: 8px;
+    border: 2px solid #e0e0e0;
+    transition: all 0.3s;
+}
+
+.app-card:hover {
+    border-color: #667eea;
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.2);
+}
+
+.app-card h3 {
+    color: #333;
+    margin-bottom: 10px;
+    font-size: 1.2em;
+}
+
+.app-card button {
+    padding: 8px 16px;
+    font-size: 0.9em;
+    margin-top: 10px;
+}
+
+.questions-container {
+    margin-top: 20px;
+}
+
+.question-card {
+    background: #f8f9fa;
+    padding: 20px;
+    border-radius: 8px;
+    margin-bottom: 15px;
+    border-left: 4px solid #667eea;
+}
+
+.question-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 10px;
+}
+
+.question-text {
+    flex: 1;
+    font-size: 1.1em;
+    font-weight: 500;
+    color: #333;
+}
+
+.question-meta {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 15px;
+    flex-wrap: wrap;
+}
+
+.badge {
+    padding: 4px 12px;
+    border-radius: 12px;
+    font-size: 0.85em;
+    font-weight: 500;
+}
+
+.badge-theme {
+    background: #e3f2fd;
+    color: #1976d2;
+}
+
+.badge-profile {
+    background: #f3e5f5;
+    color: #7b1fa2;
+}
+
+.badge-weight {
+    background: #fff3e0;
+    color: #e65100;
+}
+
+.answer-buttons {
+    display: flex;
+    gap: 10px;
+}
+
+.answer-btn {
+    flex: 1;
+    padding: 10px 20px;
+    border: 2px solid #ddd;
+    border-radius: 6px;
+    background: white;
+    cursor: pointer;
+    font-size: 1em;
+    transition: all 0.3s;
+}
+
+.answer-btn:hover {
+    border-color: #667eea;
+}
+
+.answer-btn.selected {
+    background: #667eea;
+    color: white;
+    border-color: #667eea;
+}
+
+.answer-btn.yes.selected {
+    background: #4caf50;
+    border-color: #4caf50;
+}
+
+.answer-btn.no.selected {
+    background: #f44336;
+    border-color: #f44336;
+}
+
+.maturity-scores {
+    margin: 20px 0;
+}
+
+.score-card {
+    background: #f8f9fa;
+    padding: 15px 20px;
+    border-radius: 8px;
+    margin-bottom: 10px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-left: 4px solid #667eea;
+}
+
+.score-label {
+    font-weight: 600;
+    color: #333;
+    font-size: 1.1em;
+}
+
+.score-value {
+    font-size: 1.5em;
+    font-weight: 700;
+    color: #667eea;
+}
+
+.chart-container {
+    margin-top: 30px;
+    padding: 20px;
+    background: #f8f9fa;
+    border-radius: 8px;
+    display: flex;
+    justify-content: center;
+}
+
+#radar-chart {
+    max-width: 600px;
+    max-height: 600px;
+}
+
+.export-section,
+.import-section,
+.clear-section {
+    margin-bottom: 30px;
+}
+
+.empty-state {
+    text-align: center;
+    padding: 40px;
+    color: #999;
+    font-size: 1.1em;
+}
+
+@media (max-width: 768px) {
+    body {
+        padding: 10px;
+    }
+
+    header h1 {
+        font-size: 1.8em;
+    }
+
+    .tabs {
+        flex-wrap: wrap;
+    }
+
+    .tab-btn {
+        flex: 1 1 50%;
+    }
+
+    .apps-list {
+        grid-template-columns: 1fr;
+    }
+
+    .form-group {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    input[type="text"],
+    select {
+        min-width: 100%;
+    }
+}

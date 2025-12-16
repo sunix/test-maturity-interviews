@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Maturity Assessment</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🎯 Test Maturity Assessment</h1>
+            <p class="subtitle">Evaluate your team's testing practices</p>
+        </header>
+
+        <nav class="tabs">
+            <button class="tab-btn active" data-tab="applications">Applications</button>
+            <button class="tab-btn" data-tab="interview">Interview</button>
+            <button class="tab-btn" data-tab="results">Results</button>
+            <button class="tab-btn" data-tab="import-export">Import/Export</button>
+        </nav>
+
+        <!-- Applications Tab -->
+        <div id="applications-tab" class="tab-content active">
+            <div class="section">
+                <h2>Manage Applications/Teams</h2>
+                <div class="form-group">
+                    <input type="text" id="app-name" placeholder="Enter application/team name">
+                    <button id="add-app-btn" class="btn btn-primary">Add Application</button>
+                </div>
+                <div id="apps-list" class="apps-list"></div>
+            </div>
+        </div>
+
+        <!-- Interview Tab -->
+        <div id="interview-tab" class="tab-content">
+            <div class="section">
+                <h2>Conduct Interview</h2>
+                <div class="form-group">
+                    <label for="interview-app-select">Select Application:</label>
+                    <select id="interview-app-select">
+                        <option value="">-- Select Application --</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="profile-filter">Filter by Profile:</label>
+                    <select id="profile-filter">
+                        <option value="all">All Profiles</option>
+                    </select>
+                </div>
+                <div id="questions-container" class="questions-container"></div>
+            </div>
+        </div>
+
+        <!-- Results Tab -->
+        <div id="results-tab" class="tab-content">
+            <div class="section">
+                <h2>Maturity Results</h2>
+                <div class="form-group">
+                    <label for="results-app-select">Select Application:</label>
+                    <select id="results-app-select">
+                        <option value="">-- Select Application --</option>
+                    </select>
+                </div>
+                <div id="maturity-scores" class="maturity-scores"></div>
+                <div class="chart-container">
+                    <canvas id="radar-chart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Import/Export Tab -->
+        <div id="import-export-tab" class="tab-content">
+            <div class="section">
+                <h2>Data Management</h2>
+                <div class="export-section">
+                    <h3>Export Data</h3>
+                    <button id="export-btn" class="btn btn-primary">Export to JSON</button>
+                </div>
+                <div class="import-section">
+                    <h3>Import Data</h3>
+                    <input type="file" id="import-file" accept=".json">
+                    <button id="import-btn" class="btn btn-primary">Import from JSON</button>
+                </div>
+                <div class="clear-section">
+                    <h3>Clear Data</h3>
+                    <button id="clear-data-btn" class="btn btn-danger">Clear All Data</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="questions-catalog.js"></script>
+    <script src="storage.js"></script>
+    <script src="maturity.js"></script>
+    <script src="chart.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>
