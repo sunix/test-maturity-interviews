@@ -14,6 +14,11 @@ let syncFolderHandle = null;
 let syncEnabled = false;
 let syncInterval = null;
 
+// Auto-save state
+let autoSaveTimeout = null;
+let autoSaveStatus = null;
+let refreshInterval = null;
+
 // Constants for maturity calculation
 const MATURITY_SCALE_MIN = 1;
 const MATURITY_SCALE_MAX = 5;
@@ -29,7 +34,6 @@ const startInterviewBtn = document.getElementById('start-interview');
 const questionsContainer = document.getElementById('questions-container');
 const progressFill = document.getElementById('progress-fill');
 const progressText = document.getElementById('progress-text');
-const saveInterviewBtn = document.getElementById('save-interview');
 const viewResultsBtn = document.getElementById('view-results');
 const exportDataBtn = document.getElementById('export-data');
 const importDataBtn = document.getElementById('import-data');
@@ -48,6 +52,8 @@ document.addEventListener('DOMContentLoaded', () => {
     setupEventListeners();
     loadSyncSettings();
     checkFileSystemAccessSupport();
+    initAutoSave();
+    startPeriodicRefresh();
 });
 
 // Event Listeners
@@ -59,9 +65,6 @@ function setupEventListeners() {
 
     // Start interview
     startInterviewBtn.addEventListener('click', startInterview);
-
-    // Save interview
-    saveInterviewBtn.addEventListener('click', saveAssessment);
 
     // View results
     viewResultsBtn.addEventListener('click', () => {
@@ -201,6 +204,9 @@ function handleAnswer(button) {
 
     // Update progress
     updateProgress();
+    
+    // Trigger auto-save
+    triggerAutoSave();
 }
 
 // Update Progress
@@ -578,6 +584,123 @@ function importData(event) {
     
     // Reset file input
     event.target.value = '';
+}
+
+// Auto-save Functions
+
+// Initialize auto-save status element
+function initAutoSave() {
+    autoSaveStatus = document.getElementById('auto-save-status');
+    if (autoSaveStatus) {
+        updateAutoSaveStatus('saved');
+    }
+}
+
+// Update auto-save status display
+function updateAutoSaveStatus(status, message = '') {
+    if (!autoSaveStatus) return;
+    
+    // Remove all status classes
+    autoSaveStatus.classList.remove('saving', 'saved', 'error');
+    
+    // Set the appropriate status class
+    autoSaveStatus.classList.add(status);
+    
+    // Set the status message
+    let statusText = '';
+    switch(status) {
+        case 'saving':
+            statusText = 'Saving...';
+            break;
+        case 'saved':
+            statusText = 'All changes saved';
+            break;
+        case 'error':
+            statusText = message || 'Error saving';
+            break;
+        default:
+            statusText = '';
+    }
+    
+    autoSaveStatus.textContent = statusText;
+}
+
+// Trigger auto-save with debouncing
+function triggerAutoSave() {
+    if (!currentAssessment.name) {
+        // No assessment to save yet
+        return;
+    }
+    
+    // Clear existing timeout
+    if (autoSaveTimeout) {
+        clearTimeout(autoSaveTimeout);
+    }
+    
+    // Show saving status
+    updateAutoSaveStatus('saving');
+    
+    // Set new timeout for auto-save (2 seconds after last change)
+    autoSaveTimeout = setTimeout(() => {
+        performAutoSave();
+    }, 2000);
+}
+
+// Perform the actual auto-save
+async function performAutoSave() {
+    try {
+        if (Object.keys(currentAssessment.answers).length === 0) {
+            // No answers yet, nothing to save
+            updateAutoSaveStatus('saved');
+            return;
+        }
+
+        // Check if assessment with same name exists
+        const existingIndex = assessments.findIndex(a => a.name === currentAssessment.name);
+        
+        if (existingIndex >= 0) {
+            assessments[existingIndex] = { ...currentAssessment };
+        } else {
+            assessments.push({ ...currentAssessment });
+        }
+
+        await saveAssessments();
+        updateSavedAssessmentsList();
+        updateResultsSelect();
+        
+        updateAutoSaveStatus('saved');
+    } catch (error) {
+        console.error('Auto-save error:', error);
+        updateAutoSaveStatus('error', 'Failed to save');
+    }
+}
+
+// Start periodic refresh from storage
+function startPeriodicRefresh() {
+    // Refresh every 10 seconds to pick up changes from other tabs/windows
+    refreshInterval = setInterval(() => {
+        refreshFromStorage();
+    }, 10000);
+}
+
+// Refresh assessments from localStorage (for multi-tab/window sync)
+function refreshFromStorage() {
+    const saved = localStorage.getItem('testMaturityAssessments');
+    if (saved) {
+        try {
+            const loadedAssessments = JSON.parse(saved);
+            
+            // Check if there are any changes
+            if (JSON.stringify(assessments) !== JSON.stringify(loadedAssessments)) {
+                assessments = loadedAssessments;
+                updateSavedAssessmentsList();
+                updateResultsSelect();
+                console.log('Refreshed assessments from storage');
+            }
+        } catch (e) {
+            console.error('Error refreshing assessments:', e);
+        }
+    }
 }
 
 // Filesystem Sync Functions

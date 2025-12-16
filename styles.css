@@ -457,3 +457,51 @@ header h1 {
         padding-top: 80px !important;
     }
 }
+
+/* Auto-save status */
+.auto-save-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    background-color: var(--bg-color);
+    border-radius: 0.25rem;
+    transition: all 0.3s ease;
+}
+
+.auto-save-status.saving {
+    color: var(--warning-color);
+}
+
+.auto-save-status.saved {
+    color: var(--success-color);
+}
+
+.auto-save-status.error {
+    color: var(--danger-color);
+}
+
+.auto-save-status::before {
+    content: '●';
+    font-size: 1.2rem;
+    animation: pulse 2s infinite;
+}
+
+.auto-save-status.saving::before {
+    animation: pulse 1s infinite;
+}
+
+.auto-save-status.saved::before {
+    animation: none;
+}
+
+@keyframes pulse {
+    0%, 100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.5;
+    }
+}
