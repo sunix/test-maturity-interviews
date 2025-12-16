@@ -9,6 +9,7 @@ A frontend-only web application to assess and track testing maturity across team
 - 📈 **Radar Chart**: Visual representation of maturity across 8 testing themes
 - 💾 **Local Storage**: All data stored in browser's local storage
 - 📥 **Export/Import**: Save assessments to file and import them back (works with OneDrive or any file system)
+- 📁 **Folder Sync**: Automatically sync assessments to a filesystem folder (like OneDrive sync)
 - 🎯 **Multiple Profiles**: Different question sets for different roles
 
 ## Testing Themes
@@ -45,6 +46,11 @@ A frontend-only web application to assess and track testing maturity across team
 ### Data Management
 - **Export**: Download all assessments as JSON file
 - **Import**: Upload previously exported JSON file
+- **Folder Sync**: Select a folder (e.g., OneDrive, Google Drive) to automatically sync assessments
+  - Each assessment saved as individual JSON file
+  - Automatic sync every 30 seconds
+  - Works with cloud storage folders (OneDrive, Google Drive, Dropbox)
+  - Requires modern browser with File System Access API support (Chrome, Edge)
 - **Edit**: Click edit on any saved assessment to modify answers
 - **Delete**: Remove assessments you no longer need
 
@@ -60,7 +66,11 @@ A frontend-only web application to assess and track testing maturity across team
 
 - Data is stored in browser's `localStorage`
 - Export to JSON file for backup or sharing
-- Store exported files in OneDrive, Google Drive, or local filesystem
+- **NEW: Folder Sync** - Automatically sync assessments to a folder
+  - Select a folder on your filesystem (local, OneDrive, Google Drive, etc.)
+  - Assessments automatically saved as individual JSON files
+  - Changes in folder are detected and synced back to the app
+  - Perfect for team collaboration via shared cloud folders
 - Import files to restore or merge assessments
 
 ## Technical Details
@@ -68,6 +78,7 @@ A frontend-only web application to assess and track testing maturity across team
 - **Frontend Only**: No backend required
 - **Dependencies**: Chart.js (loaded via CDN)
 - **Browser Support**: Modern browsers with localStorage support
+- **Folder Sync**: Requires File System Access API (Chrome 86+, Edge 86+)
 - **File Format**: JSON for import/export
 
 ## Files
@@ -80,3 +91,50 @@ A frontend-only web application to assess and track testing maturity across team
 ## No Installation Required
 
 Simply open `index.html` in your browser to start using the tool!
+
+## Folder Sync Setup (Optional)
+
+The folder sync feature allows you to automatically sync assessments to a folder on your filesystem, making it perfect for:
+- Backing up assessments to cloud storage (OneDrive, Google Drive, Dropbox)
+- Sharing assessments with team members via shared folders
+- Version control via file timestamps
+- Offline access to assessment data
+
+### How to Enable Folder Sync
+
+1. **Browser Requirement**: Use Chrome 86+ or Edge 86+ (File System Access API required)
+2. **Select Folder**: Click "📁 Select Sync Folder" button in the Setup tab
+3. **Choose Location**: Select a folder (can be local, OneDrive, Google Drive, etc.)
+4. **Grant Permission**: Allow the app to read/write to the selected folder
+5. **Automatic Sync**: Assessments are now automatically synced!
+
+### How It Works
+
+- **Individual Files**: Each assessment is saved as `assessment-{name}-{date}.json`
+- **Auto-Save**: When you save an assessment, it's immediately written to the folder
+- **Auto-Load**: Files in the folder are checked every 30 seconds for changes
+- **Merge Logic**: If the same assessment exists in both places, the newer one wins
+- **Cloud Sync**: If the folder is in OneDrive/Google Drive, changes sync across devices
+
+### Example Use Cases
+
+1. **Team Collaboration**: 
+   - Select a shared OneDrive/Google Drive folder
+   - Multiple team members can create assessments
+   - All assessments appear in everyone's app automatically
+
+2. **Backup Strategy**:
+   - Select a folder that's backed up to cloud storage
+   - Assessments are automatically backed up
+   - Restore by selecting the same folder on a new device
+
+3. **Version Control**:
+   - Each assessment file includes a timestamp
+   - You can manually inspect or edit JSON files
+   - Changes are picked up automatically
+
+### Troubleshooting
+
+- **Permission Denied**: You may need to re-select the folder if browser permissions expire
+- **Not Supported**: If your browser doesn't support the API, use Export/Import instead
+- **Sync Not Working**: Check browser console for errors, ensure folder permissions are granted
