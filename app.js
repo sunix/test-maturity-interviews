@@ -366,16 +366,25 @@ function updateResultsSelect() {
 function displayResults() {
     const selectedIndex = resultsSelect.value;
     
+    const themeScoresDiv = document.getElementById('theme-scores');
+    const chartContainer = document.querySelector('.chart-container');
+    
     if (selectedIndex === '') {
-        resultsContainer.innerHTML = '<p class="alert alert-info">Please select an assessment to view results.</p>';
+        themeScoresDiv.innerHTML = '<p class="alert alert-info">Please select an assessment to view results.</p>';
+        if (chartContainer) {
+            chartContainer.style.display = 'none';
+        }
         return;
+    }
+    
+    if (chartContainer) {
+        chartContainer.style.display = 'block';
     }
     
     const assessment = assessments[selectedIndex];
     const scores = calculateMaturityScores(assessment);
     
     // Display theme scores
-    const themeScoresDiv = document.getElementById('theme-scores');
     themeScoresDiv.innerHTML = '<h3 style="margin-bottom: 1rem;">Theme Maturity Scores</h3>';
     
     const maturityLabels = ['', 'Initial', 'Managed', 'Defined', 'Measured', 'Optimized'];
@@ -402,7 +411,19 @@ function displayResults() {
 let radarChart = null;
 
 function renderRadarChart(scores) {
-    const ctx = document.getElementById('maturity-chart').getContext('2d');
+    // Check if Chart.js is available
+    if (typeof Chart === 'undefined') {
+        console.warn('Chart.js not available');
+        return;
+    }
+    
+    const canvas = document.getElementById('maturity-chart');
+    if (!canvas) {
+        console.warn('Canvas element not found');
+        return;
+    }
+    
+    const ctx = canvas.getContext('2d');
     
     // Destroy existing chart if it exists
     if (radarChart) {
