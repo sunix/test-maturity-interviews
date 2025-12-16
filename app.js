@@ -21,7 +21,6 @@ let refreshInterval = null;
 
 // Active editing state for smart sync
 let isActivelyEditing = false;
-let lastEditTime = null;
 let editingIdleTimeout = null;
 const EDITING_IDLE_THRESHOLD = 5000; // Consider idle after 5 seconds of no changes
 const SYNC_INTERVAL_ACTIVE = 15000; // 15 seconds during active editing
@@ -753,7 +752,6 @@ function refreshFromStorage() {
 // Mark user as actively editing
 function markAsActivelyEditing() {
     isActivelyEditing = true;
-    lastEditTime = Date.now();
     
     // Clear existing idle timeout
     if (editingIdleTimeout) {
@@ -774,6 +772,13 @@ function markAsActivelyEditing() {
     if (syncEnabled && syncFolderHandle) {
         startPeriodicSync();
     }
+}
+
+// Helper function to check if user is currently editing a specific assessment
+function isCurrentlyEditingAssessment(assessmentName) {
+    return isActivelyEditing && 
+           currentAssessment && 
+           currentAssessment.name === assessmentName;
 }
 
 // Filesystem Sync Functions
@@ -936,10 +941,8 @@ async function syncFromFolder() {
                 // Compare using file modification time or content hash
                 const existing = assessments[existingIndex];
                 
-                // IMPORTANT: Don't overwrite the currently edited assessment if user is actively editing
-                if (isActivelyEditing && 
-                    currentAssessment && 
-                    currentAssessment.name === imported.name) {
+                // IMPORTANT: Don't overwrite the currently edited assessment if user is actively editing it
+                if (isCurrentlyEditingAssessment(imported.name)) {
                     console.log(`Skipping update for ${imported.name} - user is actively editing`);
                     skipped++;
                     return;
@@ -970,10 +973,10 @@ async function syncFromFolder() {
                     assessments[existingIndex] = imported;
                     merged++;
                     
-                    // Update current assessment if it's the one being edited (but not actively)
+                    // Update current assessment only if it's not being actively edited
                     if (currentAssessment && 
                         currentAssessment.name === imported.name && 
-                        !isActivelyEditing) {
+                        !isCurrentlyEditingAssessment(imported.name)) {
                         currentAssessment = { ...imported };
                         currentAssessmentUpdated = true;
                     }

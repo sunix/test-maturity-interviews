@@ -48,7 +48,7 @@ A frontend-only web application to assess and track testing maturity across team
 - **Import**: Upload previously exported JSON file
 - **Folder Sync**: Select a folder (e.g., OneDrive, Google Drive) to automatically sync assessments
   - Each assessment saved as individual JSON file
-  - Automatic sync every 30 seconds
+  - Smart automatic sync with conflict prevention
   - Works with cloud storage folders (OneDrive, Google Drive, Dropbox)
   - Requires modern browser with File System Access API support (Chrome, Edge)
 - **Edit**: Click edit on any saved assessment to modify answers
