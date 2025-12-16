@@ -1,0 +1,13 @@
+# Screenshots directory (for testing)
+screenshots/
+
+# Node modules
+node_modules/
+
+# Build artifacts
+dist/
+build/
+
+# OS files
+.DS_Store
+Thumbs.db
