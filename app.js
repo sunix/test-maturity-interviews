@@ -4,7 +4,8 @@ let currentAssessment = {
     profile: '',
     date: '',
     answers: {},
-    comments: {}
+    comments: {},
+    answeredBy: {} // Track which profile answered each question
 };
 
 let assessments = [];
@@ -132,7 +133,8 @@ function startInterview() {
         profile: profile,
         date: new Date().toISOString(),
         answers: {},
-        comments: {}
+        comments: {},
+        answeredBy: {}
     };
 
     // Filter questions by profile
@@ -158,12 +160,39 @@ function renderQuestions() {
     filteredQuestions.forEach(question => {
         const questionDiv = document.createElement('div');
         questionDiv.className = 'question-item';
+        
+        // Generate profile badges for questions
+        const profileBadges = question.profiles
+            .filter(p => p !== 'all')
+            .map(p => `<span class="profile-badge profile-${p}">${p}</span>`)
+            .join(' ');
+        
+        // Generate profile selector dropdown for questions with multiple applicable profiles
+        const applicableProfiles = question.profiles.filter(p => p !== 'all');
+        let profileSelector = '';
+        if (applicableProfiles.length > 1) {
+            const options = applicableProfiles.map(p => 
+                `<option value="${p}">${p.charAt(0).toUpperCase() + p.slice(1)}</option>`
+            ).join('');
+            profileSelector = `
+                <div class="profile-selector">
+                    <label for="profile-${question.id}" class="profile-selector-label">Answered by:</label>
+                    <select id="profile-${question.id}" class="profile-select-input" data-question-id="${question.id}">
+                        <option value="">Select profile...</option>
+                        ${options}
+                    </select>
+                </div>
+            `;
+        }
+        
         questionDiv.innerHTML = `
             <div class="question-header">
                 <span class="question-theme">${question.theme}</span>
                 <span class="question-weight">Weight: ${question.weight}</span>
             </div>
             <div class="question-text">${question.question}</div>
+            ${profileBadges ? `<div class="question-profiles">Can be answered by: ${profileBadges}</div>` : ''}
+            ${profileSelector}
             <div class="answer-buttons">
                 <button class="answer-btn" data-question-id="${question.id}" data-answer="yes">
                     ✓ Yes
@@ -187,6 +216,12 @@ function renderQuestions() {
         // Add change handler for comment textarea
         const commentTextarea = questionDiv.querySelector('.comment-input');
         commentTextarea.addEventListener('input', () => handleComment(commentTextarea));
+        
+        // Add change handler for profile selector
+        const profileSelect = questionDiv.querySelector('.profile-select-input');
+        if (profileSelect) {
+            profileSelect.addEventListener('change', () => handleProfileSelection(profileSelect));
+        }
 
         // Restore previous answer if exists
         if (currentAssessment.answers[question.id]) {
@@ -200,6 +235,11 @@ function renderQuestions() {
         // Restore previous comment if exists
         if (currentAssessment.comments && currentAssessment.comments[question.id]) {
             commentTextarea.value = currentAssessment.comments[question.id];
+        }
+        
+        // Restore previous answeredBy if exists
+        if (currentAssessment.answeredBy && currentAssessment.answeredBy[question.id] && profileSelect) {
+            profileSelect.value = currentAssessment.answeredBy[question.id];
         }
 
         questionsContainer.appendChild(questionDiv);
@@ -223,9 +263,48 @@ function handleAnswer(button) {
 
     // Store answer
     currentAssessment.answers[questionId] = answer;
+    
+    // Store answeredBy if profile selector exists
+    const profileSelect = questionDiv.querySelector('.profile-select-input');
+    if (profileSelect && profileSelect.value) {
+        if (!currentAssessment.answeredBy) {
+            currentAssessment.answeredBy = {};
+        }
+        currentAssessment.answeredBy[questionId] = profileSelect.value;
+    } else if (currentAssessment.profile && currentAssessment.profile !== 'all') {
+        // If no selector (single profile question) or no selection, use current assessment profile
+        if (!currentAssessment.answeredBy) {
+            currentAssessment.answeredBy = {};
+        }
+        currentAssessment.answeredBy[questionId] = currentAssessment.profile;
+    }
 
     // Update progress
     updateProgress();
+    
+    // Mark as actively editing
+    markAsActivelyEditing();
+    
+    // Trigger auto-save
+    triggerAutoSave();
+}
+
+// Handle Profile Selection
+function handleProfileSelection(select) {
+    const questionId = parseInt(select.dataset.questionId);
+    const profile = select.value;
+
+    // Initialize answeredBy object if it doesn't exist
+    if (!currentAssessment.answeredBy) {
+        currentAssessment.answeredBy = {};
+    }
+
+    // Store or remove profile selection
+    if (profile) {
+        currentAssessment.answeredBy[questionId] = profile;
+    } else {
+        delete currentAssessment.answeredBy[questionId];
+    }
     
     // Mark as actively editing
     markAsActivelyEditing();
@@ -519,6 +598,7 @@ function displayDetailedAnswers(assessment) {
     assessmentQuestions.forEach(question => {
         const answer = assessment.answers[question.id];
         const comment = assessment.comments ? assessment.comments[question.id] : null;
+        const answeredBy = assessment.answeredBy ? assessment.answeredBy[question.id] : null;
         
         if (answer) {
             const answerDiv = document.createElement('div');
@@ -532,10 +612,18 @@ function displayDetailedAnswers(assessment) {
                 commentHtml = `<div class="answer-comment"><strong>Comment:</strong> ${escapeHtml(comment)}</div>`;
             }
             
+            let answeredByHtml = '';
+            if (answeredBy) {
+                answeredByHtml = `<span class="answered-by-badge profile-${answeredBy}">Answered by: ${answeredBy}</span>`;
+            }
+            
             answerDiv.innerHTML = `
                 <div class="answer-detail-header">
                     <span class="answer-theme-tag">${question.theme}</span>
-                    <span class="answer-indicator ${answerClass}">${answerIcon} ${answer.toUpperCase()}</span>
+                    <div>
+                        ${answeredByHtml}
+                        <span class="answer-indicator ${answerClass}">${answerIcon} ${answer.toUpperCase()}</span>
+                    </div>
                 </div>
                 <div class="answer-question">${question.question}</div>
                 ${commentHtml}
