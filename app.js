@@ -4,7 +4,8 @@ let currentAssessment = {
     profile: '',
     date: '',
     answers: {},
-    comments: {}
+    comments: {},
+    answeredBy: {} // Track which profile answered each question
 };
 
 let assessments = [];
@@ -37,8 +38,8 @@ const SCALE_OFFSET = 0.5; // Ensures proper rounding to maturity levels
 const tabs = document.querySelectorAll('.tab-button');
 const tabContents = document.querySelectorAll('.tab-content');
 const appNameInput = document.getElementById('app-name');
-const profileSelect = document.getElementById('profile-select');
 const startInterviewBtn = document.getElementById('start-interview');
+const profileFilter = document.getElementById('profile-filter');
 const questionsContainer = document.getElementById('questions-container');
 const progressFill = document.getElementById('progress-fill');
 const progressText = document.getElementById('progress-text');
@@ -73,6 +74,11 @@ function setupEventListeners() {
 
     // Start interview
     startInterviewBtn.addEventListener('click', startInterview);
+    
+    // Profile filter change
+    if (profileFilter) {
+        profileFilter.addEventListener('change', handleProfileFilterChange);
+    }
 
     // View results
     viewResultsBtn.addEventListener('click', () => {
@@ -114,41 +120,58 @@ function switchTab(tabName) {
 // Start Interview
 function startInterview() {
     const appName = appNameInput.value.trim();
-    const profile = profileSelect.value;
 
     if (!appName) {
         alert('Please enter an application/team name');
         return;
     }
 
-    if (!profile) {
-        alert('Please select a profile');
-        return;
-    }
-
-    // Initialize current assessment
+    // Initialize current assessment without profile
     currentAssessment = {
         name: appName,
-        profile: profile,
+        profile: 'all', // Default to all, will be filtered in interview
         date: new Date().toISOString(),
         answers: {},
-        comments: {}
+        comments: {},
+        answeredBy: {}
     };
 
-    // Filter questions by profile
-    filteredQuestions = QUESTIONS_CATALOG.questions.filter(q => 
-        q.profiles.includes(profile) || q.profiles.includes('all')
-    );
+    // Reset profile filter
+    if (profileFilter) {
+        profileFilter.value = '';
+    }
+    
+    // Show all questions initially (no filter)
+    filteredQuestions = QUESTIONS_CATALOG.questions;
 
     // Render questions
     renderQuestions();
     updateProgress();
     
     // Update interview title
-    interviewTitle.textContent = `Interview: ${appName} (${profile})`;
+    interviewTitle.textContent = `Interview: ${appName}`;
 
     // Switch to interview tab
     switchTab('interview');
+}
+
+// Handle profile filter change
+function handleProfileFilterChange() {
+    const selectedProfile = profileFilter.value;
+    
+    if (!selectedProfile) {
+        // Show all questions
+        filteredQuestions = QUESTIONS_CATALOG.questions;
+    } else {
+        // Filter questions by selected profile
+        filteredQuestions = QUESTIONS_CATALOG.questions.filter(q => 
+            q.profiles.includes(selectedProfile)
+        );
+    }
+    
+    // Re-render questions
+    renderQuestions();
+    updateProgress();
 }
 
 // Render Questions
@@ -158,12 +181,39 @@ function renderQuestions() {
     filteredQuestions.forEach(question => {
         const questionDiv = document.createElement('div');
         questionDiv.className = 'question-item';
+        
+        // Generate profile badges for questions
+        const profileBadges = question.profiles
+            .filter(p => p !== 'all')
+            .map(p => `<span class="profile-badge profile-${p}">${p}</span>`)
+            .join(' ');
+        
+        // Generate profile selector dropdown for questions with multiple applicable profiles
+        const applicableProfiles = question.profiles.filter(p => p !== 'all');
+        let profileSelector = '';
+        if (applicableProfiles.length > 1) {
+            const options = applicableProfiles.map(p => 
+                `<option value="${p}">${p.charAt(0).toUpperCase() + p.slice(1)}</option>`
+            ).join('');
+            profileSelector = `
+                <div class="profile-selector">
+                    <label for="profile-${question.id}" class="profile-selector-label">Answered by:</label>
+                    <select id="profile-${question.id}" class="profile-select-input" data-question-id="${question.id}">
+                        <option value="">Select profile...</option>
+                        ${options}
+                    </select>
+                </div>
+            `;
+        }
+        
         questionDiv.innerHTML = `
             <div class="question-header">
                 <span class="question-theme">${question.theme}</span>
                 <span class="question-weight">Weight: ${question.weight}</span>
             </div>
             <div class="question-text">${question.question}</div>
+            ${profileBadges ? `<div class="question-profiles">Can be answered by: ${profileBadges}</div>` : ''}
+            ${profileSelector}
             <div class="answer-buttons">
                 <button class="answer-btn" data-question-id="${question.id}" data-answer="yes">
                     ✓ Yes
@@ -187,6 +237,12 @@ function renderQuestions() {
         // Add change handler for comment textarea
         const commentTextarea = questionDiv.querySelector('.comment-input');
         commentTextarea.addEventListener('input', () => handleComment(commentTextarea));
+        
+        // Add change handler for profile selector
+        const profileSelect = questionDiv.querySelector('.profile-select-input');
+        if (profileSelect) {
+            profileSelect.addEventListener('change', () => handleProfileSelection(profileSelect));
+        }
 
         // Restore previous answer if exists
         if (currentAssessment.answers[question.id]) {
@@ -200,6 +256,18 @@ function renderQuestions() {
         // Restore previous comment if exists
         if (currentAssessment.comments && currentAssessment.comments[question.id]) {
             commentTextarea.value = currentAssessment.comments[question.id];
+        }
+        
+        // Pre-select the "Answered by" dropdown
+        if (profileSelect) {
+            // First priority: use existing answeredBy value
+            if (currentAssessment.answeredBy && currentAssessment.answeredBy[question.id]) {
+                profileSelect.value = currentAssessment.answeredBy[question.id];
+            } 
+            // Second priority: pre-select with current profile filter if it's applicable to this question
+            else if (profileFilter && profileFilter.value && applicableProfiles.includes(profileFilter.value)) {
+                profileSelect.value = profileFilter.value;
+            }
         }
 
         questionsContainer.appendChild(questionDiv);
@@ -223,9 +291,68 @@ function handleAnswer(button) {
 
     // Store answer
     currentAssessment.answers[questionId] = answer;
+    
+    // Initialize answeredBy if needed
+    if (!currentAssessment.answeredBy) {
+        currentAssessment.answeredBy = {};
+    }
+    
+    // Store answeredBy if profile selector exists
+    const profileSelect = questionDiv.querySelector('.profile-select-input');
+    if (profileSelect) {
+        // Multi-profile question
+        if (profileSelect.value) {
+            // Use the selected value from dropdown
+            currentAssessment.answeredBy[questionId] = profileSelect.value;
+        } else if (profileFilter && profileFilter.value) {
+            // No dropdown selection, but profile filter is set - use filter value and update dropdown
+            const question = QUESTIONS_CATALOG.questions.find(q => q.id === questionId);
+            if (question) {
+                const applicableProfiles = question.profiles.filter(p => p !== 'all');
+                if (applicableProfiles.includes(profileFilter.value)) {
+                    currentAssessment.answeredBy[questionId] = profileFilter.value;
+                    profileSelect.value = profileFilter.value; // Update the dropdown
+                }
+            }
+        }
+    } else {
+        // Single-profile question - infer from question's profiles array
+        const question = QUESTIONS_CATALOG.questions.find(q => q.id === questionId);
+        if (question) {
+            const applicableProfiles = question.profiles.filter(p => p !== 'all');
+            if (applicableProfiles.length === 1) {
+                // Only one profile can answer this question
+                currentAssessment.answeredBy[questionId] = applicableProfiles[0];
+            }
+        }
+    }
 
     // Update progress
     updateProgress();
+    
+    // Mark as actively editing
+    markAsActivelyEditing();
+    
+    // Trigger auto-save
+    triggerAutoSave();
+}
+
+// Handle Profile Selection
+function handleProfileSelection(select) {
+    const questionId = parseInt(select.dataset.questionId);
+    const profile = select.value;
+
+    // Initialize answeredBy object if it doesn't exist
+    if (!currentAssessment.answeredBy) {
+        currentAssessment.answeredBy = {};
+    }
+
+    // Store or remove profile selection
+    if (profile) {
+        currentAssessment.answeredBy[questionId] = profile;
+    } else {
+        delete currentAssessment.answeredBy[questionId];
+    }
     
     // Mark as actively editing
     markAsActivelyEditing();
@@ -281,13 +408,9 @@ function calculateMaturityScores(assessment) {
         };
     });
 
-    // Get filtered questions for this assessment
-    const assessmentQuestions = QUESTIONS_CATALOG.questions.filter(q => 
-        q.profiles.includes(assessment.profile) || q.profiles.includes('all')
-    );
-
-    // Calculate scores
-    assessmentQuestions.forEach(question => {
+    // Calculate scores based on ALL answered questions
+    // (not filtered by profile, since one assessment can have answers from multiple profiles)
+    QUESTIONS_CATALOG.questions.forEach(question => {
         const answer = assessment.answers[question.id];
         if (answer) {
             themeData[question.theme].totalWeight += question.weight;
@@ -387,7 +510,6 @@ function updateSavedAssessmentsList() {
             <div class="assessment-info">
                 <div class="assessment-name">${assessment.name}</div>
                 <div class="assessment-meta">
-                    Profile: ${assessment.profile} | 
                     Date: ${date} | 
                     Answers: ${answeredCount}
                 </div>
@@ -411,16 +533,18 @@ function loadAssessment(index) {
     currentAssessment = { ...assessments[index] };
     
     appNameInput.value = currentAssessment.name;
-    profileSelect.value = currentAssessment.profile;
     
-    // Filter questions by profile
-    filteredQuestions = QUESTIONS_CATALOG.questions.filter(q => 
-        q.profiles.includes(currentAssessment.profile) || q.profiles.includes('all')
-    );
+    // Reset profile filter
+    if (profileFilter) {
+        profileFilter.value = '';
+    }
+    
+    // Show all questions (user can filter if needed)
+    filteredQuestions = QUESTIONS_CATALOG.questions;
     
     renderQuestions();
     updateProgress();
-    interviewTitle.textContent = `Interview: ${currentAssessment.name} (${currentAssessment.profile})`;
+    interviewTitle.textContent = `Interview: ${currentAssessment.name}`;
     
     switchTab('interview');
 }
@@ -506,9 +630,11 @@ function escapeHtml(text) {
 function displayDetailedAnswers(assessment) {
     const themeScoresDiv = document.getElementById('theme-scores');
     
-    // Get questions for this assessment's profile
+    // Show only questions that were actually answered (not filtered by profile)
+    // Since one assessment can have answers from multiple profiles
+    const answeredQuestionIds = Object.keys(assessment.answers).map(id => parseInt(id));
     const assessmentQuestions = QUESTIONS_CATALOG.questions.filter(q => 
-        q.profiles.includes(assessment.profile) || q.profiles.includes('all')
+        answeredQuestionIds.includes(q.id)
     );
     
     // Add detailed answers section
@@ -519,6 +645,7 @@ function displayDetailedAnswers(assessment) {
     assessmentQuestions.forEach(question => {
         const answer = assessment.answers[question.id];
         const comment = assessment.comments ? assessment.comments[question.id] : null;
+        const answeredBy = assessment.answeredBy ? assessment.answeredBy[question.id] : null;
         
         if (answer) {
             const answerDiv = document.createElement('div');
@@ -532,10 +659,18 @@ function displayDetailedAnswers(assessment) {
                 commentHtml = `<div class="answer-comment"><strong>Comment:</strong> ${escapeHtml(comment)}</div>`;
             }
             
+            let answeredByHtml = '';
+            if (answeredBy) {
+                answeredByHtml = `<span class="answered-by-badge profile-${answeredBy}">Answered by: ${answeredBy}</span>`;
+            }
+            
             answerDiv.innerHTML = `
                 <div class="answer-detail-header">
                     <span class="answer-theme-tag">${question.theme}</span>
-                    <span class="answer-indicator ${answerClass}">${answerIcon} ${answer.toUpperCase()}</span>
+                    <div>
+                        ${answeredByHtml}
+                        <span class="answer-indicator ${answerClass}">${answerIcon} ${answer.toUpperCase()}</span>
+                    </div>
                 </div>
                 <div class="answer-question">${question.question}</div>
                 ${commentHtml}
