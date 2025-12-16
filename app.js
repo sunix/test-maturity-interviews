@@ -1274,7 +1274,7 @@ async function syncFromFolder() {
         updateHeaderSyncStatus();
     } catch (error) {
         console.error('Error syncing from folder:', error);
-        // Update status back to synced or error state
+        // Update status back to default state
         updateHeaderSyncStatus();
     }
 }
@@ -1318,7 +1318,7 @@ async function syncToFolder() {
         updateHeaderSyncStatus();
     } catch (error) {
         console.error('Error syncing to folder:', error);
-        // Update status back to synced or error state
+        // Update status back to default state
         updateHeaderSyncStatus();
         
         // If permission denied, user might need to re-select folder
