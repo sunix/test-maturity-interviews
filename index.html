@@ -36,17 +36,36 @@
       </div>
     </div>
     
-    <div class="container">
-        <header>
-            <h1>🎯 Test Maturity Assessment</h1>
-            <p class="subtitle">Evaluate and track testing maturity across teams and applications</p>
-        </header>
+    <div class="sticky-header">
+        <div class="container">
+            <header>
+                <div class="header-content">
+                    <div class="header-title">
+                        <h1>🎯 Test Maturity Assessment</h1>
+                        <p class="subtitle">Evaluate and track testing maturity across teams and applications</p>
+                    </div>
+                    <div class="header-sync-status">
+                        <div id="header-sync-indicator" class="sync-indicator sync-no-folder">
+                            <span class="sync-status-dot"></span>
+                            <div class="sync-info">
+                                <span class="sync-folder-name">No sync folder</span>
+                                <span class="sync-status-text">Not syncing</span>
+                            </div>
+                        </div>
+                        <button id="header-select-sync-folder" class="btn btn-sync">📁 Select Folder</button>
+                    </div>
+                </div>
+            </header>
 
-        <nav class="tabs">
-            <button class="tab-button active" data-tab="setup">Setup</button>
-            <button class="tab-button" data-tab="interview">Interview</button>
-            <button class="tab-button" data-tab="results">Results</button>
-        </nav>
+            <nav class="tabs">
+                <button class="tab-button active" data-tab="setup">Setup</button>
+                <button class="tab-button" data-tab="interview">Interview</button>
+                <button class="tab-button" data-tab="results">Results</button>
+            </nav>
+        </div>
+    </div>
+
+    <div class="container">
 
         <!-- Setup Tab -->
         <div id="setup" class="tab-content active">
