@@ -1345,8 +1345,17 @@ async function verifyFolderPermission(handle) {
     try {
         // Check if permission methods are available (they may not be in all browsers)
         if (!handle.queryPermission || !handle.requestPermission) {
-            console.warn('Permission API not available, assuming granted');
-            return true;
+            console.warn('Permission API not available, attempting to verify access with test operation');
+            // Try to verify access by attempting to read the directory
+            try {
+                // Attempt to iterate directory entries (this will fail if no permission)
+                const entries = handle.values();
+                await entries.next(); // Try to get first entry
+                return true; // If we got here, we have access
+            } catch (testError) {
+                console.error('Test operation failed, no access to folder:', testError);
+                return false;
+            }
         }
         
         // Query the permission state
