@@ -9,6 +9,11 @@ let currentAssessment = {
 let assessments = [];
 let filteredQuestions = [];
 
+// Filesystem sync state
+let syncFolderHandle = null;
+let syncEnabled = false;
+let syncInterval = null;
+
 // Constants for maturity calculation
 const MATURITY_SCALE_MIN = 1;
 const MATURITY_SCALE_MAX = 5;
@@ -33,12 +38,16 @@ const savedAssessmentsDiv = document.getElementById('saved-assessments');
 const resultsSelect = document.getElementById('results-select');
 const resultsContainer = document.getElementById('results-container');
 const interviewTitle = document.getElementById('interview-title');
+const selectSyncFolderBtn = document.getElementById('select-sync-folder');
+const syncStatusDiv = document.getElementById('sync-status');
 
 // Initialize
 document.addEventListener('DOMContentLoaded', () => {
     loadAssessments();
     updateSavedAssessmentsList();
     setupEventListeners();
+    loadSyncSettings();
+    checkFileSystemAccessSupport();
 });
 
 // Event Listeners
@@ -67,6 +76,11 @@ function setupEventListeners() {
 
     // Results select
     resultsSelect.addEventListener('change', displayResults);
+
+    // Sync folder
+    if (selectSyncFolderBtn) {
+        selectSyncFolderBtn.addEventListener('click', selectSyncFolder);
+    }
 }
 
 // Tab switching
@@ -277,8 +291,12 @@ function saveAssessment() {
 }
 
 // Local Storage Functions
-function saveAssessments() {
+async function saveAssessments(skipFolderSync = false) {
     localStorage.setItem('testMaturityAssessments', JSON.stringify(assessments));
+    // Also sync to folder if enabled (unless we're already syncing)
+    if (!skipFolderSync && syncEnabled && syncFolderHandle) {
+        await syncToFolder();
+    }
 }
 
 function loadAssessments() {
@@ -560,4 +578,224 @@ function importData(event) {
     
     // Reset file input
     event.target.value = '';
+}
+
+// Filesystem Sync Functions
+
+// Check if File System Access API is supported
+function checkFileSystemAccessSupport() {
+    if ('showDirectoryPicker' in window) {
+        if (syncStatusDiv) {
+            syncStatusDiv.innerHTML = '<p class="alert alert-info">📁 Filesystem sync available. Select a folder to enable automatic sync.</p>';
+        }
+        if (selectSyncFolderBtn) {
+            selectSyncFolderBtn.style.display = 'inline-block';
+        }
+    } else {
+        if (syncStatusDiv) {
+            syncStatusDiv.innerHTML = '<p class="alert alert-warning">⚠️ Filesystem sync not supported in this browser. Use Export/Import instead.</p>';
+        }
+        if (selectSyncFolderBtn) {
+            selectSyncFolderBtn.style.display = 'none';
+        }
+    }
+}
+
+// Select sync folder
+async function selectSyncFolder() {
+    try {
+        // Request directory access
+        const dirHandle = await window.showDirectoryPicker({
+            mode: 'readwrite',
+            startIn: 'documents'
+        });
+        
+        syncFolderHandle = dirHandle;
+        syncEnabled = true;
+        
+        // Save folder handle reference (name only, can't persist handle itself)
+        localStorage.setItem('syncFolderName', dirHandle.name);
+        localStorage.setItem('syncEnabled', 'true');
+        
+        updateSyncStatus();
+        
+        // Initial sync from folder
+        await syncFromFolder();
+        
+        // Start periodic sync
+        startPeriodicSync();
+        
+        alert(`Sync folder set to: ${dirHandle.name}\n\nAssessments will be automatically synced to this folder.`);
+    } catch (error) {
+        if (error.name === 'AbortError') {
+            // User cancelled
+            return;
+        }
+        console.error('Error selecting folder:', error);
+        alert('Error selecting folder: ' + error.message);
+    }
+}
+
+// Update sync status display
+function updateSyncStatus() {
+    if (!syncStatusDiv) return;
+    
+    if (syncEnabled && syncFolderHandle) {
+        syncStatusDiv.innerHTML = `
+            <div class="alert alert-success">
+                ✅ Sync enabled to folder: <strong>${syncFolderHandle.name}</strong>
+                <button id="disable-sync-btn" class="btn btn-small" style="margin-left: 1rem;">Disable Sync</button>
+            </div>
+        `;
+        // Add event listener to the button
+        const disableSyncBtn = document.getElementById('disable-sync-btn');
+        if (disableSyncBtn) {
+            disableSyncBtn.addEventListener('click', disableSync);
+        }
+    } else {
+        checkFileSystemAccessSupport();
+    }
+}
+
+// Disable sync
+function disableSync() {
+    syncEnabled = false;
+    syncFolderHandle = null;
+    
+    localStorage.removeItem('syncFolderName');
+    localStorage.removeItem('syncEnabled');
+    
+    if (syncInterval) {
+        clearInterval(syncInterval);
+        syncInterval = null;
+    }
+    
+    updateSyncStatus();
+    alert('Folder sync disabled');
+}
+
+// Load sync settings from localStorage
+function loadSyncSettings() {
+    const syncEnabledStr = localStorage.getItem('syncEnabled');
+    const folderName = localStorage.getItem('syncFolderName');
+    
+    if (syncEnabledStr === 'true' && folderName) {
+        // Note: We can't restore the actual folder handle, user needs to re-select
+        if (syncStatusDiv) {
+            syncStatusDiv.innerHTML = `
+                <div class="alert alert-info">
+                    📁 Previous sync folder: <strong>${folderName}</strong>
+                    <br>Please re-select the folder to resume sync.
+                </div>
+            `;
+        }
+    }
+}
+
+// Sync from folder (import all JSON files)
+async function syncFromFolder() {
+    if (!syncFolderHandle) return;
+    
+    try {
+        const importedAssessments = [];
+        
+        // Iterate through files in the directory
+        for await (const entry of syncFolderHandle.values()) {
+            if (entry.kind === 'file' && entry.name.endsWith('.json')) {
+                try {
+                    const file = await entry.getFile();
+                    const content = await file.text();
+                    
+                    // Parse and validate JSON structure
+                    const data = JSON.parse(content);
+                    
+                    // Validate it's a valid assessment with required fields
+                    if (data && 
+                        typeof data.name === 'string' && 
+                        typeof data.profile === 'string' && 
+                        typeof data.answers === 'object' &&
+                        data.date) {
+                        importedAssessments.push(data);
+                    } else {
+                        console.warn(`File ${entry.name} is not a valid assessment, skipping`);
+                    }
+                } catch (e) {
+                    console.warn(`Error reading file ${entry.name}:`, e);
+                }
+            }
+        }
+        
+        // Merge with existing assessments
+        let merged = 0;
+        let added = 0;
+        
+        importedAssessments.forEach(imported => {
+            const existingIndex = assessments.findIndex(a => a.name === imported.name);
+            if (existingIndex >= 0) {
+                // Update if imported is newer
+                const existingDate = new Date(assessments[existingIndex].date);
+                const importedDate = new Date(imported.date);
+                if (importedDate > existingDate) {
+                    assessments[existingIndex] = imported;
+                    merged++;
+                }
+            } else {
+                assessments.push(imported);
+                added++;
+            }
+        });
+        
+        if (merged > 0 || added > 0) {
+            // Skip folder sync to avoid infinite loop
+            await saveAssessments(true);
+            updateSavedAssessmentsList();
+            updateResultsSelect();
+            console.log(`Synced from folder: ${added} added, ${merged} updated`);
+        }
+    } catch (error) {
+        console.error('Error syncing from folder:', error);
+    }
+}
+
+// Sync to folder (export all assessments as individual JSON files)
+async function syncToFolder() {
+    if (!syncFolderHandle || !syncEnabled) return;
+    
+    try {
+        for (const assessment of assessments) {
+            // Create a safe filename
+            const safeName = assessment.name.replace(/[^a-z0-9_-]/gi, '_');
+            const dateStr = new Date(assessment.date).toISOString().split('T')[0];
+            const filename = `assessment-${safeName}-${dateStr}.json`;
+            
+            // Create or update the file
+            const fileHandle = await syncFolderHandle.getFileHandle(filename, { create: true });
+            const writable = await fileHandle.createWritable();
+            await writable.write(JSON.stringify(assessment, null, 2));
+            await writable.close();
+        }
+        
+        console.log(`Synced ${assessments.length} assessments to folder`);
+    } catch (error) {
+        console.error('Error syncing to folder:', error);
+        // If permission denied, user might need to re-select folder
+        if (error.name === 'NotAllowedError') {
+            alert('Permission denied. Please re-select the sync folder.');
+            disableSync();
+        }
+    }
+}
+
+// Start periodic sync
+function startPeriodicSync() {
+    if (syncInterval) {
+        clearInterval(syncInterval);
+    }
+    
+    // Sync every 30 seconds
+    syncInterval = setInterval(async () => {
+        if (syncEnabled && syncFolderHandle) {
+            await syncFromFolder();
+        }
+    }, 30000);
 }
