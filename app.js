@@ -132,18 +132,18 @@ function updateTabVisibility() {
     // Show Interview tab only if an interview has been started (currentAssessment has a name)
     if (interviewTab) {
         if (currentAssessment && currentAssessment.name) {
-            interviewTab.style.display = 'inline-block';
+            interviewTab.classList.remove('hidden');
         } else {
-            interviewTab.style.display = 'none';
+            interviewTab.classList.add('hidden');
         }
     }
     
     // Show Results tab only if there are saved assessments
     if (resultsTab) {
         if (assessments && assessments.length > 0) {
-            resultsTab.style.display = 'inline-block';
+            resultsTab.classList.remove('hidden');
         } else {
-            resultsTab.style.display = 'none';
+            resultsTab.classList.add('hidden');
         }
     }
 }
