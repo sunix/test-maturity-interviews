@@ -264,18 +264,17 @@ function handleAnswer(button) {
     // Store answer
     currentAssessment.answers[questionId] = answer;
     
+    // Initialize answeredBy if needed
+    if (!currentAssessment.answeredBy) {
+        currentAssessment.answeredBy = {};
+    }
+    
     // Store answeredBy if profile selector exists
     const profileSelect = questionDiv.querySelector('.profile-select-input');
     if (profileSelect && profileSelect.value) {
-        if (!currentAssessment.answeredBy) {
-            currentAssessment.answeredBy = {};
-        }
         currentAssessment.answeredBy[questionId] = profileSelect.value;
     } else if (currentAssessment.profile && currentAssessment.profile !== 'all') {
         // If no selector (single profile question) or no selection, use current assessment profile
-        if (!currentAssessment.answeredBy) {
-            currentAssessment.answeredBy = {};
-        }
         currentAssessment.answeredBy[questionId] = currentAssessment.profile;
     }
 
