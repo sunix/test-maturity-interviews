@@ -11,6 +11,8 @@
     --text-secondary: #64748b;
     --shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px -1px rgba(0, 0, 0, 0.1);
     --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1);
+    --header-height: 200px;
+    --header-height-mobile: 280px;
 }
 
 * {
@@ -24,7 +26,7 @@ body {
     background-color: var(--bg-color);
     color: var(--text-primary);
     line-height: 1.6;
-    padding-top: 200px; /* Space for sticky header */
+    padding-top: var(--header-height); /* Space for sticky header */
 }
 
 /* Sticky Header */
@@ -507,7 +509,7 @@ header h1 {
 /* Responsive */
 @media (max-width: 768px) {
     body {
-        padding-top: 280px; /* More space for taller sticky header on mobile */
+        padding-top: var(--header-height-mobile); /* More space for taller sticky header on mobile */
     }
 
     .header-content {

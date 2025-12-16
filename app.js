@@ -1271,7 +1271,7 @@ async function syncFromFolder() {
         }
         
         // Update status to synced
-        updateHeaderSyncStatus('synced');
+        updateHeaderSyncStatus();
     } catch (error) {
         console.error('Error syncing from folder:', error);
         // Update status back to synced or error state
@@ -1315,7 +1315,7 @@ async function syncToFolder() {
         console.log(`Synced ${assessments.length} assessments to folder`);
         
         // Update status to synced
-        updateHeaderSyncStatus('synced');
+        updateHeaderSyncStatus();
     } catch (error) {
         console.error('Error syncing to folder:', error);
         // Update status back to synced or error state
