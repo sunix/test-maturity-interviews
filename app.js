@@ -53,6 +53,8 @@ const resultsContainer = document.getElementById('results-container');
 const interviewTitle = document.getElementById('interview-title');
 const selectSyncFolderBtn = document.getElementById('select-sync-folder');
 const syncStatusDiv = document.getElementById('sync-status');
+const headerSyncIndicator = document.getElementById('header-sync-indicator');
+const headerSelectSyncFolderBtn = document.getElementById('header-select-sync-folder');
 
 // Initialize
 document.addEventListener('DOMContentLoaded', () => {
@@ -63,6 +65,7 @@ document.addEventListener('DOMContentLoaded', () => {
     checkFileSystemAccessSupport();
     initAutoSave();
     startPeriodicRefresh();
+    updateHeaderSyncStatus(); // Initialize header sync status
 });
 
 // Event Listeners
@@ -97,6 +100,9 @@ function setupEventListeners() {
     // Sync folder
     if (selectSyncFolderBtn) {
         selectSyncFolderBtn.addEventListener('click', selectSyncFolder);
+    }
+    if (headerSelectSyncFolderBtn) {
+        headerSelectSyncFolderBtn.addEventListener('click', selectSyncFolder);
     }
 }
 
@@ -1084,6 +1090,37 @@ function updateSyncStatus() {
     } else {
         checkFileSystemAccessSupport();
     }
+    
+    // Update header sync indicator
+    updateHeaderSyncStatus();
+}
+
+// Update header sync status indicator
+function updateHeaderSyncStatus(status = null) {
+    if (!headerSyncIndicator) return;
+    
+    const folderNameElement = headerSyncIndicator.querySelector('.sync-folder-name');
+    const statusTextElement = headerSyncIndicator.querySelector('.sync-status-text');
+    
+    // Remove all status classes
+    headerSyncIndicator.classList.remove('sync-synced', 'sync-saving', 'sync-no-folder');
+    
+    if (syncEnabled && syncFolderHandle) {
+        // Determine status
+        if (status === 'saving' || status === 'refreshing') {
+            headerSyncIndicator.classList.add('sync-saving');
+            folderNameElement.textContent = syncFolderHandle.name;
+            statusTextElement.textContent = status === 'saving' ? 'Saving...' : 'Refreshing...';
+        } else {
+            headerSyncIndicator.classList.add('sync-synced');
+            folderNameElement.textContent = syncFolderHandle.name;
+            statusTextElement.textContent = 'Synced';
+        }
+    } else {
+        headerSyncIndicator.classList.add('sync-no-folder');
+        folderNameElement.textContent = 'No sync folder';
+        statusTextElement.textContent = 'Not syncing';
+    }
 }
 
 // Disable sync
@@ -1126,6 +1163,9 @@ async function syncFromFolder() {
     if (!syncFolderHandle) return;
     
     try {
+        // Update status to refreshing
+        updateHeaderSyncStatus('refreshing');
+        
         const importedAssessments = [];
         
         // Iterate through files in the directory
@@ -1229,8 +1269,13 @@ async function syncFromFolder() {
                 console.log('Current assessment updated from file, UI refreshed');
             }
         }
+        
+        // Update status to synced
+        updateHeaderSyncStatus('synced');
     } catch (error) {
         console.error('Error syncing from folder:', error);
+        // Update status back to synced or error state
+        updateHeaderSyncStatus();
     }
 }
 
@@ -1239,6 +1284,9 @@ async function syncToFolder() {
     if (!syncFolderHandle || !syncEnabled) return;
     
     try {
+        // Update status to saving
+        updateHeaderSyncStatus('saving');
+        
         for (const assessment of assessments) {
             // Create a safe filename
             const safeName = assessment.name.replace(/[^a-z0-9_-]/gi, '_');
@@ -1265,8 +1313,14 @@ async function syncToFolder() {
         }
         
         console.log(`Synced ${assessments.length} assessments to folder`);
+        
+        // Update status to synced
+        updateHeaderSyncStatus('synced');
     } catch (error) {
         console.error('Error syncing to folder:', error);
+        // Update status back to synced or error state
+        updateHeaderSyncStatus();
+        
         // If permission denied, user might need to re-select folder
         if (error.name === 'NotAllowedError') {
             alert('Permission denied. Please re-select the sync folder.');
