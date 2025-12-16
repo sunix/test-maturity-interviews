@@ -3,7 +3,8 @@ let currentAssessment = {
     name: '',
     profile: '',
     date: '',
-    answers: {}
+    answers: {},
+    comments: {}
 };
 
 let assessments = [];
@@ -123,7 +124,8 @@ function startInterview() {
         name: appName,
         profile: profile,
         date: new Date().toISOString(),
-        answers: {}
+        answers: {},
+        comments: {}
     };
 
     // Filter questions by profile
@@ -163,6 +165,10 @@ function renderQuestions() {
                     ✗ No
                 </button>
             </div>
+            <div class="comment-section">
+                <label for="comment-${question.id}" class="comment-label">Comment (optional):</label>
+                <textarea id="comment-${question.id}" class="comment-input" data-question-id="${question.id}" placeholder="Add any notes or context for this question..." rows="2"></textarea>
+            </div>
         `;
 
         // Add click handlers for answer buttons
@@ -171,6 +177,10 @@ function renderQuestions() {
             btn.addEventListener('click', () => handleAnswer(btn));
         });
 
+        // Add change handler for comment textarea
+        const commentTextarea = questionDiv.querySelector('.comment-input');
+        commentTextarea.addEventListener('input', () => handleComment(commentTextarea));
+
         // Restore previous answer if exists
         if (currentAssessment.answers[question.id]) {
             const answer = currentAssessment.answers[question.id];
@@ -178,6 +188,11 @@ function renderQuestions() {
             if (selectedBtn) {
                 selectedBtn.classList.add(answer);
             }
+        }
+
+        // Restore previous comment if exists
+        if (currentAssessment.comments && currentAssessment.comments[question.id]) {
+            commentTextarea.value = currentAssessment.comments[question.id];
         }
 
         questionsContainer.appendChild(questionDiv);
@@ -204,6 +219,27 @@ function handleAnswer(button) {
 
     // Update progress
     updateProgress();
+    
+    // Trigger auto-save
+    triggerAutoSave();
+}
+
+// Handle Comment
+function handleComment(textarea) {
+    const questionId = parseInt(textarea.dataset.questionId);
+    const comment = textarea.value.trim();
+
+    // Initialize comments object if it doesn't exist
+    if (!currentAssessment.comments) {
+        currentAssessment.comments = {};
+    }
+
+    // Store or remove comment
+    if (comment) {
+        currentAssessment.comments[questionId] = comment;
+    } else {
+        delete currentAssessment.comments[questionId];
+    }
     
     // Trigger auto-save
     triggerAutoSave();
@@ -439,8 +475,55 @@ function displayResults() {
         themeScoresDiv.appendChild(div);
     });
     
+    // Display detailed answers with comments
+    displayDetailedAnswers(assessment);
+    
     // Render radar chart
     renderRadarChart(scores);
+}
+
+// Display detailed answers with comments
+function displayDetailedAnswers(assessment) {
+    const themeScoresDiv = document.getElementById('theme-scores');
+    
+    // Get questions for this assessment's profile
+    const assessmentQuestions = QUESTIONS_CATALOG.questions.filter(q => 
+        q.profiles.includes(assessment.profile) || q.profiles.includes('all')
+    );
+    
+    // Add detailed answers section
+    const detailsDiv = document.createElement('div');
+    detailsDiv.innerHTML = '<h3 style="margin: 2rem 0 1rem 0;">Detailed Answers</h3>';
+    themeScoresDiv.appendChild(detailsDiv);
+    
+    assessmentQuestions.forEach(question => {
+        const answer = assessment.answers[question.id];
+        const comment = assessment.comments ? assessment.comments[question.id] : null;
+        
+        if (answer) {
+            const answerDiv = document.createElement('div');
+            answerDiv.className = 'answer-detail';
+            
+            const answerIcon = answer === 'yes' ? '✓' : '✗';
+            const answerClass = answer === 'yes' ? 'answer-yes' : 'answer-no';
+            
+            let commentHtml = '';
+            if (comment) {
+                commentHtml = `<div class="answer-comment"><strong>Comment:</strong> ${comment}</div>`;
+            }
+            
+            answerDiv.innerHTML = `
+                <div class="answer-detail-header">
+                    <span class="answer-theme-tag">${question.theme}</span>
+                    <span class="answer-indicator ${answerClass}">${answerIcon} ${answer.toUpperCase()}</span>
+                </div>
+                <div class="answer-question">${question.question}</div>
+                ${commentHtml}
+            `;
+            
+            themeScoresDiv.appendChild(answerDiv);
+        }
+    });
 }
 
 // Render Radar Chart
