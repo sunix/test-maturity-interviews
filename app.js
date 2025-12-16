@@ -891,16 +891,34 @@ async function syncFromFolder() {
                 // Check if the imported file is different
                 // Compare using file modification time or content hash
                 const existing = assessments[existingIndex];
-                const shouldUpdate = !existing._fileLastModified || 
-                                    imported._fileLastModified > existing._fileLastModified ||
-                                    JSON.stringify(existing.answers) !== JSON.stringify(imported.answers);
+                
+                // Check if we should update based on file modification time or content differences
+                let shouldUpdate = false;
+                if (!existing._fileLastModified) {
+                    // No previous file timestamp, update to get the timestamp
+                    shouldUpdate = true;
+                } else if (imported._fileLastModified > existing._fileLastModified) {
+                    // File has been modified more recently
+                    shouldUpdate = true;
+                } else if (Object.keys(imported.answers).length !== Object.keys(existing.answers).length) {
+                    // Different number of answers
+                    shouldUpdate = true;
+                } else {
+                    // Check if any answers are different
+                    for (const key in imported.answers) {
+                        if (existing.answers[key] !== imported.answers[key]) {
+                            shouldUpdate = true;
+                            break;
+                        }
+                    }
+                }
                 
                 if (shouldUpdate) {
                     assessments[existingIndex] = imported;
                     merged++;
                     
                     // Update current assessment if it's the one being edited
-                    if (currentAssessment.name === imported.name) {
+                    if (currentAssessment && currentAssessment.name === imported.name) {
                         currentAssessment = { ...imported };
                         currentAssessmentUpdated = true;
                     }
