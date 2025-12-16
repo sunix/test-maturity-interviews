@@ -786,32 +786,3 @@ function startPeriodicSync() {
         }
     }, 30000);
 }
-
-// Sync to folder (export all assessments as individual JSON files)
-async function syncToFolder() {
-    if (!syncFolderHandle || !syncEnabled) return;
-    
-    try {
-        for (const assessment of assessments) {
-            // Create a safe filename
-            const safeName = assessment.name.replace(/[^a-z0-9_-]/gi, '_');
-            const dateStr = new Date(assessment.date).toISOString().split('T')[0];
-            const filename = `assessment-${safeName}-${dateStr}.json`;
-            
-            // Create or update the file
-            const fileHandle = await syncFolderHandle.getFileHandle(filename, { create: true });
-            const writable = await fileHandle.createWritable();
-            await writable.write(JSON.stringify(assessment, null, 2));
-            await writable.close();
-        }
-        
-        console.log(`Synced ${assessments.length} assessments to folder`);
-    } catch (error) {
-        console.error('Error syncing to folder:', error);
-        // If permission denied, user might need to re-select folder
-        if (error.name === 'NotAllowedError') {
-            alert('Permission denied. Please re-select the sync folder.');
-            disableSync();
-        }
-    }
-}
