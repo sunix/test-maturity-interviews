@@ -241,7 +241,8 @@ header h1 {
 }
 
 .hamburger-btn:hover span {
-    background-color: #1d4ed8;
+    background-color: var(--primary-color);
+    opacity: 0.8;
 }
 
 .hamburger-btn.active span:nth-child(1) {

@@ -78,10 +78,7 @@ function setupEventListeners() {
         tab.addEventListener('click', () => {
             switchTab(tab.dataset.tab);
             // Close mobile menu after selecting a tab
-            if (hamburgerBtn && tabsMobile) {
-                hamburgerBtn.classList.remove('active');
-                tabsMobile.classList.remove('show');
-            }
+            closeMobileMenu();
         });
     });
 
@@ -121,6 +118,14 @@ function setupEventListeners() {
     }
     if (headerSelectSyncFolderBtn) {
         headerSelectSyncFolderBtn.addEventListener('click', selectSyncFolder);
+    }
+}
+
+// Close mobile menu
+function closeMobileMenu() {
+    if (hamburgerBtn && tabsMobile) {
+        hamburgerBtn.classList.remove('active');
+        tabsMobile.classList.remove('show');
     }
 }
 
