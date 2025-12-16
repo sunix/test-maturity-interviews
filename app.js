@@ -55,6 +55,8 @@ const selectSyncFolderBtn = document.getElementById('select-sync-folder');
 const syncStatusDiv = document.getElementById('sync-status');
 const headerSyncIndicator = document.getElementById('header-sync-indicator');
 const headerSelectSyncFolderBtn = document.getElementById('header-select-sync-folder');
+const hamburgerBtn = document.getElementById('hamburger-menu');
+const tabsMobile = document.querySelector('.tabs-mobile');
 
 // Initialize
 document.addEventListener('DOMContentLoaded', () => {
@@ -73,8 +75,20 @@ document.addEventListener('DOMContentLoaded', () => {
 function setupEventListeners() {
     // Tab navigation
     tabs.forEach(tab => {
-        tab.addEventListener('click', () => switchTab(tab.dataset.tab));
+        tab.addEventListener('click', () => {
+            switchTab(tab.dataset.tab);
+            // Close mobile menu after selecting a tab
+            closeMobileMenu();
+        });
     });
+
+    // Hamburger menu
+    if (hamburgerBtn && tabsMobile) {
+        hamburgerBtn.addEventListener('click', () => {
+            hamburgerBtn.classList.toggle('active');
+            tabsMobile.classList.toggle('show');
+        });
+    }
 
     // Start interview
     startInterviewBtn.addEventListener('click', startInterview);
@@ -104,6 +118,14 @@ function setupEventListeners() {
     }
     if (headerSelectSyncFolderBtn) {
         headerSelectSyncFolderBtn.addEventListener('click', selectSyncFolder);
+    }
+}
+
+// Close mobile menu
+function closeMobileMenu() {
+    if (hamburgerBtn && tabsMobile) {
+        hamburgerBtn.classList.remove('active');
+        tabsMobile.classList.remove('show');
     }
 }
 
