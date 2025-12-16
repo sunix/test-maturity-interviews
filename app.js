@@ -293,10 +293,18 @@ function handleAnswer(button) {
     // Store answeredBy if profile selector exists
     const profileSelect = questionDiv.querySelector('.profile-select-input');
     if (profileSelect && profileSelect.value) {
+        // Multi-profile question with selection made
         currentAssessment.answeredBy[questionId] = profileSelect.value;
-    } else if (currentAssessment.profile && currentAssessment.profile !== 'all') {
-        // If no selector (single profile question) or no selection, use current assessment profile
-        currentAssessment.answeredBy[questionId] = currentAssessment.profile;
+    } else if (!profileSelect) {
+        // Single-profile question - infer from question's profiles array
+        const question = QUESTIONS_CATALOG.questions.find(q => q.id === questionId);
+        if (question) {
+            const applicableProfiles = question.profiles.filter(p => p !== 'all');
+            if (applicableProfiles.length === 1) {
+                // Only one profile can answer this question
+                currentAssessment.answeredBy[questionId] = applicableProfiles[0];
+            }
+        }
     }
 
     // Update progress
@@ -380,13 +388,9 @@ function calculateMaturityScores(assessment) {
         };
     });
 
-    // Get filtered questions for this assessment
-    const assessmentQuestions = QUESTIONS_CATALOG.questions.filter(q => 
-        q.profiles.includes(assessment.profile) || q.profiles.includes('all')
-    );
-
-    // Calculate scores
-    assessmentQuestions.forEach(question => {
+    // Calculate scores based on ALL answered questions
+    // (not filtered by profile, since one assessment can have answers from multiple profiles)
+    QUESTIONS_CATALOG.questions.forEach(question => {
         const answer = assessment.answers[question.id];
         if (answer) {
             themeData[question.theme].totalWeight += question.weight;
@@ -606,9 +610,11 @@ function escapeHtml(text) {
 function displayDetailedAnswers(assessment) {
     const themeScoresDiv = document.getElementById('theme-scores');
     
-    // Get questions for this assessment's profile
+    // Show only questions that were actually answered (not filtered by profile)
+    // Since one assessment can have answers from multiple profiles
+    const answeredQuestionIds = Object.keys(assessment.answers).map(id => parseInt(id));
     const assessmentQuestions = QUESTIONS_CATALOG.questions.filter(q => 
-        q.profiles.includes(assessment.profile) || q.profiles.includes('all')
+        answeredQuestionIds.includes(q.id)
     );
     
     // Add detailed answers section
