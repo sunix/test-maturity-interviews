@@ -40,24 +40,38 @@
         <div class="container">
             <header>
                 <div class="header-content">
-                    <div class="header-title">
-                        <h1>🎯 Test Maturity Assessment</h1>
-                        <p class="subtitle">Evaluate and track testing maturity across teams and applications</p>
-                    </div>
-                    <div class="header-sync-status">
-                        <div id="header-sync-indicator" class="sync-indicator sync-no-folder">
-                            <span class="sync-status-dot"></span>
-                            <div class="sync-info">
-                                <span class="sync-folder-name">No sync folder</span>
-                                <span class="sync-status-text">Not syncing</span>
-                            </div>
+                    <div class="header-left">
+                        <div class="header-title">
+                            <h1>🎯 Test Maturity Assessment</h1>
+                            <p class="subtitle">Evaluate and track testing maturity across teams and applications</p>
                         </div>
-                        <button id="header-select-sync-folder" class="btn btn-sync">📁 Select Folder</button>
+                        <nav class="tabs tabs-desktop">
+                            <button class="tab-button active" data-tab="setup">Setup</button>
+                            <button class="tab-button" data-tab="interview">Interview</button>
+                            <button class="tab-button" data-tab="results">Results</button>
+                        </nav>
+                    </div>
+                    <div class="header-right">
+                        <button id="hamburger-menu" class="hamburger-btn" aria-label="Menu">
+                            <span></span>
+                            <span></span>
+                            <span></span>
+                        </button>
+                        <div class="header-sync-status">
+                            <div id="header-sync-indicator" class="sync-indicator sync-no-folder">
+                                <span class="sync-status-dot"></span>
+                                <div class="sync-info">
+                                    <span class="sync-folder-name">No sync folder</span>
+                                    <span class="sync-status-text">Not syncing</span>
+                                </div>
+                            </div>
+                            <button id="header-select-sync-folder" class="btn btn-sync">📁 Select Folder</button>
+                        </div>
                     </div>
                 </div>
             </header>
 
-            <nav class="tabs">
+            <nav class="tabs tabs-mobile">
                 <button class="tab-button active" data-tab="setup">Setup</button>
                 <button class="tab-button" data-tab="interview">Interview</button>
                 <button class="tab-button" data-tab="results">Results</button>
