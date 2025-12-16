@@ -1314,35 +1314,28 @@ async function loadSyncSettings() {
                 console.log(`Sync folder restored: ${folderName}`);
             } else {
                 // Permission denied or expired
-                if (syncStatusDiv) {
-                    syncStatusDiv.innerHTML = `
-                        <div class="alert alert-warning">
-                            ⚠️ Sync folder permission expired: <strong>${folderName}</strong>
-                            <br>Please re-select the folder to resume sync.
-                            <button id="reselect-sync-folder-btn" class="btn btn-small" style="margin-top: 0.5rem;">Re-select Folder</button>
-                        </div>
-                    `;
-                    const reselectBtn = document.getElementById('reselect-sync-folder-btn');
-                    if (reselectBtn) {
-                        reselectBtn.addEventListener('click', selectSyncFolder);
-                    }
-                }
+                showReselectFolderMessage(folderName, 'warning', '⚠️ Sync folder permission expired');
             }
         } else {
             // No handle found in IndexedDB (legacy or first load)
-            if (syncStatusDiv) {
-                syncStatusDiv.innerHTML = `
-                    <div class="alert alert-info">
-                        📁 Previous sync folder: <strong>${folderName}</strong>
-                        <br>Please re-select the folder to resume sync.
-                        <button id="reselect-sync-folder-btn" class="btn btn-small" style="margin-top: 0.5rem;">Re-select Folder</button>
-                    </div>
-                `;
-                const reselectBtn = document.getElementById('reselect-sync-folder-btn');
-                if (reselectBtn) {
-                    reselectBtn.addEventListener('click', selectSyncFolder);
-                }
-            }
+            showReselectFolderMessage(folderName, 'info', '📁 Previous sync folder');
+        }
+    }
+}
+
+// Helper function to show re-select folder message
+function showReselectFolderMessage(folderName, alertType, message) {
+    if (syncStatusDiv) {
+        syncStatusDiv.innerHTML = `
+            <div class="alert alert-${alertType}">
+                ${message}: <strong>${folderName}</strong>
+                <br>Please re-select the folder to resume sync.
+                <button id="reselect-sync-folder-btn" class="btn btn-small" style="margin-top: 0.5rem;">Re-select Folder</button>
+            </div>
+        `;
+        const reselectBtn = document.getElementById('reselect-sync-folder-btn');
+        if (reselectBtn) {
+            reselectBtn.addEventListener('click', selectSyncFolder);
         }
     }
 }
@@ -1350,6 +1343,12 @@ async function loadSyncSettings() {
 // Verify folder permission
 async function verifyFolderPermission(handle) {
     try {
+        // Check if permission methods are available (they may not be in all browsers)
+        if (!handle.queryPermission || !handle.requestPermission) {
+            console.warn('Permission API not available, assuming granted');
+            return true;
+        }
+        
         // Query the permission state
         const options = { mode: 'readwrite' };
         
@@ -1366,6 +1365,7 @@ async function verifyFolderPermission(handle) {
         return false;
     } catch (error) {
         console.error('Error verifying folder permission:', error);
+        // If permission check fails, assume we need to re-select
         return false;
     }
 }
