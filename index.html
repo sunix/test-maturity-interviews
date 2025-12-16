@@ -145,7 +145,7 @@
           var prNumber = prMatch[1];
           // Validate PR number contains only digits (additional safety check)
           if (/^\d+$/.test(prNumber)) {
-            prLink.href = 'https://github.com/sunix/test-maturity-interviews/pull/' + prNumber;
+            prLink.href = 'https://github.com/sunix/test-maturity-interviews/pull/' + encodeURIComponent(prNumber);
             prLink.style.display = 'inline-flex';
           }
         }
@@ -157,15 +157,15 @@
               document.body.style.paddingTop = '0';
             }
           });
+          
+          // Add hover effect to close button
+          closeBtn.addEventListener('mouseenter', function() {
+            this.style.background = 'rgba(255,255,255,0.35)';
+          });
+          closeBtn.addEventListener('mouseleave', function() {
+            this.style.background = 'rgba(255,255,255,0.2)';
+          });
         }
-        
-        // Add hover effect to close button and link
-        closeBtn.addEventListener('mouseenter', function() {
-          this.style.background = 'rgba(255,255,255,0.35)';
-        });
-        closeBtn.addEventListener('mouseleave', function() {
-          this.style.background = 'rgba(255,255,255,0.2)';
-        });
         
         if (prLink) {
           prLink.addEventListener('mouseenter', function() {
