@@ -1734,10 +1734,20 @@ async function loadQuestionsFromFolder() {
         const content = await file.text();
         const data = JSON.parse(content);
         
-        // Validate it's an array of questions
+        // Validate it's an array of questions with required properties
         if (Array.isArray(data) && data.length > 0) {
-            console.log(`Loaded ${data.length} custom questions from sync folder`);
-            return data;
+            // Validate each question has required fields
+            const isValid = data.every(q => 
+                q.id && q.theme && Array.isArray(q.profiles) && q.question && typeof q.weight === 'number'
+            );
+            
+            if (isValid) {
+                console.log(`Loaded ${data.length} custom questions from sync folder`);
+                return data;
+            } else {
+                console.error('Invalid question data in custom questions file');
+                return null;
+            }
         }
     } catch (e) {
         // File doesn't exist or error reading it
@@ -1785,10 +1795,13 @@ function updateQuestionsStatus() {
     
     if (customQuestions) {
         statusDiv.className = 'alert alert-success';
-        statusDiv.innerHTML = `✅ Using custom question set (${customQuestions.length} questions). Changes are saved ${syncEnabled ? 'to sync folder and ' : ''}locally.`;
+        const statusText = document.createElement('span');
+        statusText.textContent = ` Using custom question set (${customQuestions.length} questions). Changes are saved ${syncEnabled ? 'to sync folder and ' : ''}locally.`;
+        statusDiv.innerHTML = '✅';
+        statusDiv.appendChild(statusText);
     } else {
         statusDiv.className = 'alert alert-info';
-        statusDiv.innerHTML = 'Using default questions. Click "Add Question" or edit existing questions to create a custom question set.';
+        statusDiv.textContent = 'Using default questions. Click "Add Question" or edit existing questions to create a custom question set.';
     }
 }
 
@@ -2019,6 +2032,12 @@ function saveQuestion() {
         weight: parseInt(weightInput.value)
     };
     
+    // Validate weight
+    if (isNaN(questionData.weight) || questionData.weight < 1 || questionData.weight > 5) {
+        alert('Weight must be a number between 1 and 5');
+        return;
+    }
+    
     // Create custom questions array if it doesn't exist
     if (!customQuestions) {
         // Clone default questions to create custom set
@@ -2094,7 +2113,8 @@ async function resetToDefaultQuestions() {
     // Remove from sync folder if enabled
     if (syncEnabled && syncFolderHandle) {
         try {
-            await syncFolderHandle.removeEntry(QUESTIONS_FILENAME);
+            const fileHandle = await syncFolderHandle.getFileHandle(QUESTIONS_FILENAME);
+            await fileHandle.remove();
             console.log('Custom questions file removed from sync folder');
         } catch (e) {
             // File might not exist, that's okay
