@@ -1315,6 +1315,10 @@ header h1 {
     gap: 0.5rem;
 }
 
+.checkbox-group-left {
+    align-items: flex-start;
+}
+
 .checkbox-group label {
     display: flex;
     align-items: center;
@@ -1325,6 +1329,11 @@ header h1 {
 
 .checkbox-group input[type="checkbox"] {
     cursor: pointer;
+}
+
+#question-text {
+    width: 100%;
+    box-sizing: border-box;
 }
 
 .error-message {

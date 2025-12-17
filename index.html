@@ -258,8 +258,8 @@
                     </div>
                     <div class="form-group">
                         <label for="question-profiles">Profiles: *</label>
-                        <div id="question-profiles" class="checkbox-group">
-                            <label><input type="checkbox" value="all"> All</label>
+                        <div id="question-profiles" class="checkbox-group checkbox-group-left">
+                            <label><input type="checkbox" value="all" id="profile-all"> All</label>
                             <label><input type="checkbox" value="developer"> Developer</label>
                             <label><input type="checkbox" value="qa"> QA Engineer</label>
                             <label><input type="checkbox" value="devops"> DevOps</label>
@@ -272,7 +272,29 @@
                     </div>
                     <div class="form-group">
                         <label for="question-category">Category:</label>
-                        <input type="text" id="question-category" placeholder="e.g., Test automation">
+                        <input type="text" id="question-category" list="category-suggestions" placeholder="e.g., Test automation">
+                        <datalist id="category-suggestions">
+                            <option value="CI/CD">
+                            <option value="Communication">
+                            <option value="Communication & reporting">
+                            <option value="Compliance">
+                            <option value="Continuous improvement">
+                            <option value="Defect management">
+                            <option value="Estimating and planning">
+                            <option value="Methodology practice">
+                            <option value="Metrics">
+                            <option value="Stakeholder commitment">
+                            <option value="Test automation">
+                            <option value="Test case design">
+                            <option value="Test data">
+                            <option value="Test environment">
+                            <option value="Test organization">
+                            <option value="Test process management">
+                            <option value="Test strategy">
+                            <option value="Test tools">
+                            <option value="Testware management">
+                            <option value="Training">
+                        </datalist>
                     </div>
                     <div class="form-group">
                         <label for="question-weight">Weight: *</label>

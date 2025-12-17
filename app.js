@@ -1964,6 +1964,12 @@ function openQuestionModal(questionId = null) {
         // Add mode
         modalTitle.textContent = 'Add Question';
         idInput.disabled = false;
+        
+        // Check "All" by default for new questions
+        const allCheckbox = document.getElementById('profile-all');
+        if (allCheckbox) {
+            allCheckbox.checked = true;
+        }
     }
     
     modal.style.display = 'flex';
