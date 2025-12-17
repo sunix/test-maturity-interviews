@@ -233,19 +233,11 @@ function switchTab(tabName) {
     // Show/hide interview controls based on active tab
     const interviewControls = document.getElementById('interview-controls');
     if (interviewControls) {
-        if (tabName === 'interview') {
-            interviewControls.classList.remove('hidden');
-        } else {
-            interviewControls.classList.add('hidden');
-        }
+        interviewControls.classList.toggle('hidden', tabName !== 'interview');
     }
     
     // Update body class for padding adjustment
-    if (tabName === 'interview') {
-        document.body.classList.add('interview-active');
-    } else {
-        document.body.classList.remove('interview-active');
-    }
+    document.body.classList.toggle('interview-active', tabName === 'interview');
 }
 
 // Update tab visibility based on application state
