@@ -1313,6 +1313,7 @@ header h1 {
     display: flex;
     flex-direction: column;
     gap: 0.5rem;
+    width: 100%;
 }
 
 .checkbox-group-left {
@@ -1325,10 +1326,12 @@ header h1 {
     gap: 0.5rem;
     font-weight: normal;
     cursor: pointer;
+    white-space: nowrap;
 }
 
 .checkbox-group input[type="checkbox"] {
     cursor: pointer;
+    flex-shrink: 0;
 }
 
 #question-text {
