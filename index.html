@@ -76,6 +76,26 @@
                 <button class="tab-button" data-tab="interview">Interview</button>
                 <button class="tab-button" data-tab="results">Results</button>
             </nav>
+
+            <!-- Interview Controls (shown only on interview tab) -->
+            <div id="interview-controls" class="interview-controls" style="display: none;">
+                <div class="interview-controls-content">
+                    <div class="form-group">
+                        <label for="profile-filter">Filter by Profile:</label>
+                        <select id="profile-filter">
+                            <option value="">All profiles</option>
+                            <option value="developer">Developer</option>
+                            <option value="qa">QA Engineer</option>
+                            <option value="devops">DevOps</option>
+                            <option value="manager">Manager</option>
+                        </select>
+                    </div>
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="progress-fill"></div>
+                        <span class="progress-text" id="progress-text">0 / 0</span>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -108,23 +128,7 @@
         <!-- Interview Tab -->
         <div id="interview" class="tab-content">
             <div class="card">
-                <div class="interview-header">
-                    <h2 id="interview-title">Interview Questions</h2>
-                    <div class="form-group">
-                        <label for="profile-filter">Filter by Profile:</label>
-                        <select id="profile-filter">
-                            <option value="">Select a profile...</option>
-                            <option value="developer">Developer</option>
-                            <option value="qa">QA Engineer</option>
-                            <option value="devops">DevOps</option>
-                            <option value="manager">Manager</option>
-                        </select>
-                    </div>
-                    <div class="progress-bar">
-                        <div class="progress-fill" id="progress-fill"></div>
-                        <span class="progress-text" id="progress-text">0 / 0</span>
-                    </div>
-                </div>
+                <h2 id="interview-title">Interview Questions</h2>
                 
                 <div id="questions-container"></div>
                 

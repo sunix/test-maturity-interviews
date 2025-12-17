@@ -229,6 +229,19 @@ function switchTab(tabName) {
             content.classList.add('active');
         }
     });
+    
+    // Show/hide interview controls based on active tab
+    const interviewControls = document.getElementById('interview-controls');
+    if (interviewControls) {
+        interviewControls.style.display = tabName === 'interview' ? 'block' : 'none';
+    }
+    
+    // Update body class for padding adjustment
+    if (tabName === 'interview') {
+        document.body.classList.add('interview-active');
+    } else {
+        document.body.classList.remove('interview-active');
+    }
 }
 
 // Update tab visibility based on application state
@@ -349,7 +362,10 @@ function renderQuestions() {
         
         questionDiv.innerHTML = `
             <div class="question-header">
-                <span class="question-theme">${question.theme}</span>
+                <div class="question-header-left">
+                    <span class="question-id">${question.id}</span>
+                    <span class="question-theme">${question.theme}</span>
+                </div>
                 <span class="question-weight">Weight: ${question.weight}</span>
             </div>
             <div class="question-text">${question.question}</div>
