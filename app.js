@@ -229,6 +229,15 @@ function switchTab(tabName) {
             content.classList.add('active');
         }
     });
+    
+    // Show/hide interview controls based on active tab
+    const interviewControls = document.getElementById('interview-controls');
+    if (interviewControls) {
+        interviewControls.classList.toggle('hidden', tabName !== 'interview');
+    }
+    
+    // Update body class for padding adjustment
+    document.body.classList.toggle('interview-active', tabName === 'interview');
 }
 
 // Update tab visibility based on application state
@@ -331,30 +340,41 @@ function renderQuestions() {
         
         // Generate profile selector dropdown for questions with multiple applicable profiles
         const applicableProfiles = question.profiles.filter(p => p !== 'all');
-        let profileSelector = '';
+        let profileRow = '';
         if (applicableProfiles.length > 1) {
             const options = applicableProfiles.map(p => 
                 `<option value="${p}">${p.charAt(0).toUpperCase() + p.slice(1)}</option>`
             ).join('');
-            profileSelector = `
-                <div class="profile-selector">
-                    <label for="profile-${question.id}" class="profile-selector-label">Answered by:</label>
-                    <select id="profile-${question.id}" class="profile-select-input" data-question-id="${question.id}">
-                        <option value="">Select profile...</option>
-                        ${options}
-                    </select>
+            profileRow = `
+                <div class="profile-row">
+                    <div class="profile-can-answer">Can be answered by: ${profileBadges}</div>
+                    <div class="profile-selector">
+                        <label for="profile-${question.id}" class="profile-selector-label">Answered by:</label>
+                        <select id="profile-${question.id}" class="profile-select-input" data-question-id="${question.id}">
+                            <option value="">Select...</option>
+                            ${options}
+                        </select>
+                    </div>
+                </div>
+            `;
+        } else if (profileBadges) {
+            profileRow = `
+                <div class="profile-row">
+                    <div class="profile-can-answer">Can be answered by: ${profileBadges}</div>
                 </div>
             `;
         }
         
         questionDiv.innerHTML = `
             <div class="question-header">
-                <span class="question-theme">${question.theme}</span>
+                <div class="question-header-left">
+                    <span class="question-id">${question.id}</span>
+                    <span class="question-theme">${question.theme}</span>
+                </div>
                 <span class="question-weight">Weight: ${question.weight}</span>
             </div>
             <div class="question-text">${question.question}</div>
-            ${profileBadges ? `<div class="question-profiles">Can be answered by: ${profileBadges}</div>` : ''}
-            ${profileSelector}
+            ${profileRow}
             <div class="answer-buttons">
                 <button class="answer-btn" data-question-id="${question.id}" data-answer="yes">
                     ✓ Yes
@@ -363,9 +383,14 @@ function renderQuestions() {
                     ✗ No
                 </button>
             </div>
-            <div class="comment-section">
-                <label for="comment-${question.id}" class="comment-label">Comment (optional):</label>
-                <textarea id="comment-${question.id}" class="comment-input" data-question-id="${question.id}" placeholder="Add any notes or context for this question..." rows="2"></textarea>
+            <div class="comment-section collapsed">
+                <button class="comment-toggle" data-question-id="${question.id}">
+                    <span class="toggle-icon">▶</span>
+                    <span class="toggle-text">Add comment</span>
+                </button>
+                <div class="comment-content">
+                    <textarea id="comment-${question.id}" class="comment-input" data-question-id="${question.id}" placeholder="Add any notes or context for this question..." rows="2"></textarea>
+                </div>
             </div>
         `;
 
@@ -378,6 +403,23 @@ function renderQuestions() {
         // Add change handler for comment textarea
         const commentTextarea = questionDiv.querySelector('.comment-input');
         commentTextarea.addEventListener('input', () => handleComment(commentTextarea));
+        
+        // Add click handler for comment toggle
+        const commentToggle = questionDiv.querySelector('.comment-toggle');
+        const commentSection = questionDiv.querySelector('.comment-section');
+        commentToggle.addEventListener('click', () => {
+            commentSection.classList.toggle('collapsed');
+            const toggleIcon = commentToggle.querySelector('.toggle-icon');
+            const toggleText = commentToggle.querySelector('.toggle-text');
+            if (commentSection.classList.contains('collapsed')) {
+                toggleIcon.textContent = '▶';
+                toggleText.textContent = 'Add comment';
+            } else {
+                toggleIcon.textContent = '▼';
+                toggleText.textContent = 'Hide comment';
+                commentTextarea.focus();
+            }
+        });
         
         // Add change handler for profile selector
         const profileSelect = questionDiv.querySelector('.profile-select-input');
@@ -397,6 +439,12 @@ function renderQuestions() {
         // Restore previous comment if exists
         if (currentAssessment.comments && currentAssessment.comments[question.id]) {
             commentTextarea.value = currentAssessment.comments[question.id];
+            // Expand the comment section if there's a comment
+            commentSection.classList.remove('collapsed');
+            const toggleIcon = commentToggle.querySelector('.toggle-icon');
+            const toggleText = commentToggle.querySelector('.toggle-text');
+            toggleIcon.textContent = '▼';
+            toggleText.textContent = 'Hide comment';
         }
         
         // Pre-select the "Answered by" dropdown
