@@ -49,6 +49,7 @@
                             <button class="tab-button active" data-tab="setup">Setup</button>
                             <button class="tab-button" data-tab="interview">Interview</button>
                             <button class="tab-button" data-tab="results">Results</button>
+                            <button class="tab-button" data-tab="questions">Questions</button>
                         </nav>
                     </div>
                     <div class="header-right">
@@ -75,6 +76,7 @@
                 <button class="tab-button active" data-tab="setup">Setup</button>
                 <button class="tab-button" data-tab="interview">Interview</button>
                 <button class="tab-button" data-tab="results">Results</button>
+                <button class="tab-button" data-tab="questions">Questions</button>
             </nav>
 
             <!-- Interview Controls (shown only on interview tab) -->
@@ -157,6 +159,23 @@
                 </div>
             </div>
         </div>
+
+        <!-- Questions Tab -->
+        <div id="questions" class="tab-content">
+            <div class="card">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                    <h2>Question Editor</h2>
+                    <div>
+                        <button id="add-question-btn" class="btn btn-primary">+ Add Question</button>
+                        <button id="reset-questions-btn" class="btn btn-secondary">Reset to Default</button>
+                    </div>
+                </div>
+                <div id="questions-status" class="alert alert-info" style="margin-bottom: 1rem;">
+                    Using default questions. Click "Add Question" or edit existing questions to create a custom question set.
+                </div>
+                <div id="questions-list-container"></div>
+            </div>
+        </div>
     </div>
 
     <script src="questions.js"></script>
@@ -216,5 +235,57 @@
       }
     })();
     </script>
+
+    <!-- Question Editor Modal -->
+    <div id="question-modal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="modal-title">Add Question</h3>
+                <button class="modal-close" id="close-modal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="question-form">
+                    <div class="form-group">
+                        <label for="question-id">Question ID: *</label>
+                        <input type="text" id="question-id" placeholder="e.g., GO-24" required>
+                        <span id="id-error" class="error-message" style="display: none;"></span>
+                    </div>
+                    <div class="form-group">
+                        <label for="question-theme">Theme: *</label>
+                        <select id="question-theme" required>
+                            <option value="">Select a theme...</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="question-profiles">Profiles: *</label>
+                        <div id="question-profiles" class="checkbox-group">
+                            <label><input type="checkbox" value="all"> All</label>
+                            <label><input type="checkbox" value="developer"> Developer</label>
+                            <label><input type="checkbox" value="qa"> QA Engineer</label>
+                            <label><input type="checkbox" value="devops"> DevOps</label>
+                            <label><input type="checkbox" value="manager"> Manager</label>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="question-text">Question Text: *</label>
+                        <textarea id="question-text" rows="3" placeholder="Enter the question text..." required></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="question-category">Category:</label>
+                        <input type="text" id="question-category" placeholder="e.g., Test automation">
+                    </div>
+                    <div class="form-group">
+                        <label for="question-weight">Weight: *</label>
+                        <input type="number" id="question-weight" min="1" max="5" value="2" required>
+                        <small>Weight from 1 (low importance) to 5 (high importance)</small>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" id="cancel-modal">Cancel</button>
+                <button type="button" class="btn btn-primary" id="save-question">Save Question</button>
+            </div>
+        </div>
+    </div>
 </body>
 </html>
