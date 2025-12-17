@@ -386,16 +386,18 @@ function renderQuestions() {
                 </div>
                 <span class="question-weight">Weight: ${question.weight}</span>
             </div>
-            <div class="question-text">${question.question}</div>
-            ${profileRow}
-            <div class="answer-buttons">
-                <button class="answer-btn" data-question-id="${question.id}" data-answer="yes">
-                    ✓ Yes
-                </button>
-                <button class="answer-btn" data-question-id="${question.id}" data-answer="no">
-                    ✗ No
-                </button>
+            <div class="question-content">
+                <div class="question-text">${question.question}</div>
+                <div class="answer-buttons">
+                    <button class="answer-btn" data-question-id="${question.id}" data-answer="yes">
+                        ✓ Yes
+                    </button>
+                    <button class="answer-btn" data-question-id="${question.id}" data-answer="no">
+                        ✗ No
+                    </button>
+                </div>
             </div>
+            ${profileRow}
             <div class="comment-section collapsed">
                 <button class="comment-toggle" data-question-id="${question.id}">
                     <span class="toggle-icon">▶</span>
