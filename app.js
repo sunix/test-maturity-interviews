@@ -417,7 +417,7 @@ function renderQuestions() {
 
 // Handle Answer
 function handleAnswer(button) {
-    const questionId = parseInt(button.dataset.questionId);
+    const questionId = button.dataset.questionId;
     const answer = button.dataset.answer;
 
     // Remove previous selection
@@ -480,7 +480,7 @@ function handleAnswer(button) {
 
 // Handle Profile Selection
 function handleProfileSelection(select) {
-    const questionId = parseInt(select.dataset.questionId);
+    const questionId = select.dataset.questionId;
     const profile = select.value;
 
     // Initialize answeredBy object if it doesn't exist
@@ -504,7 +504,7 @@ function handleProfileSelection(select) {
 
 // Handle Comment
 function handleComment(textarea) {
-    const questionId = parseInt(textarea.dataset.questionId);
+    const questionId = textarea.dataset.questionId;
     const comment = textarea.value.trim();
 
     // Initialize comments object if it doesn't exist
@@ -779,7 +779,7 @@ function displayDetailedAnswers(assessment) {
     
     // Show only questions that were actually answered (not filtered by profile)
     // Since one assessment can have answers from multiple profiles
-    const answeredQuestionIds = Object.keys(assessment.answers).map(id => parseInt(id));
+    const answeredQuestionIds = Object.keys(assessment.answers);
     const assessmentQuestions = QUESTIONS_CATALOG.questions.filter(q => 
         answeredQuestionIds.includes(q.id)
     );
