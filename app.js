@@ -779,7 +779,7 @@ function displayDetailedAnswers(assessment) {
     
     // Show only questions that were actually answered (not filtered by profile)
     // Since one assessment can have answers from multiple profiles
-    const answeredQuestionIds = Object.keys(assessment.answers).map(id => parseInt(id));
+    const answeredQuestionIds = Object.keys(assessment.answers);
     const assessmentQuestions = QUESTIONS_CATALOG.questions.filter(q => 
         answeredQuestionIds.includes(q.id)
     );
