@@ -233,7 +233,11 @@ function switchTab(tabName) {
     // Show/hide interview controls based on active tab
     const interviewControls = document.getElementById('interview-controls');
     if (interviewControls) {
-        interviewControls.style.display = tabName === 'interview' ? 'block' : 'none';
+        if (tabName === 'interview') {
+            interviewControls.classList.remove('hidden');
+        } else {
+            interviewControls.classList.add('hidden');
+        }
     }
     
     // Update body class for padding adjustment

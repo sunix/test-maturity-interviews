@@ -58,6 +58,10 @@ body.interview-active {
     padding: 1rem 0;
 }
 
+.interview-controls.hidden {
+    display: none;
+}
+
 .interview-controls-content {
     display: flex;
     align-items: center;
@@ -495,7 +499,7 @@ header h1 {
 .question-id {
     display: inline-block;
     padding: 0.125rem 0.5rem;
-    background-color: var(--text-secondary);
+    background-color: #475569;
     color: white;
     border-radius: 0.25rem;
     font-size: 0.75rem;
@@ -658,6 +662,7 @@ header h1 {
     .interview-controls-content {
         flex-direction: column;
         gap: 1rem;
+        align-items: stretch;
     }
     
     .interview-controls .form-group {
