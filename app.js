@@ -2303,8 +2303,8 @@ function duplicateQuestion(questionId) {
     editingQuestionId = null;
     modalTitle.textContent = 'Add Question';
     
-    // Pre-fill all fields except ID
-    idInput.value = ''; // Leave ID blank for user to fill
+    // Pre-fill all fields including suggested ID with -DUP suffix
+    idInput.value = generateDuplicateId(questionId, questionsArray);
     idInput.disabled = false;
     document.getElementById('question-theme').value = question.theme;
     document.getElementById('question-text').value = question.question;
@@ -2318,6 +2318,24 @@ function duplicateQuestion(questionId) {
     });
     
     modal.style.display = 'flex';
+}
+
+// Generate a duplicate ID with -DUP suffix, handling conflicts
+function generateDuplicateId(originalId, questionsArray) {
+    // Collect all existing IDs into a Set for O(1) lookup performance
+    const existingIds = new Set(questionsArray.map(q => q.id));
+    
+    // Start with base duplicate ID (originalId + "-DUP")
+    let newId = `${originalId}-DUP`;
+    let suffix = 0;
+    
+    // Check if the ID already exists, if so, add numeric suffix
+    while (existingIds.has(newId)) {
+        suffix++;
+        newId = `${originalId}-DUP-${suffix}`;
+    }
+    
+    return newId;
 }
 
 // Reset to default questions
