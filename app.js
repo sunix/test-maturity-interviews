@@ -21,6 +21,9 @@ let syncFolderHandle = null;
 let syncEnabled = false;
 let syncInterval = null;
 
+// Maximum display length for sync folder names in header - longer names will be truncated with "..." and show full name in tooltip
+const MAX_FOLDER_NAME_LENGTH = 15;
+
 // Auto-save state
 let autoSaveTimeout = null;
 let autoSaveStatus = null;
@@ -1358,19 +1361,33 @@ function updateHeaderSyncStatus(status = null) {
     headerSyncIndicator.classList.remove('sync-synced', 'sync-saving', 'sync-no-folder');
     
     if (syncEnabled && syncFolderHandle) {
+        // Truncate folder name if longer than MAX_FOLDER_NAME_LENGTH characters
+        const fullFolderName = syncFolderHandle.name;
+        const isTruncated = fullFolderName.length > MAX_FOLDER_NAME_LENGTH;
+        const displayName = isTruncated
+            ? fullFolderName.slice(0, MAX_FOLDER_NAME_LENGTH) + '...' 
+            : fullFolderName;
+        
+        // Set display name and tooltip (only when truncated to avoid redundant tooltips)
+        folderNameElement.textContent = displayName;
+        if (isTruncated) {
+            folderNameElement.title = fullFolderName; // Tooltip with full name
+        } else {
+            folderNameElement.removeAttribute('title');
+        }
+        
         // Determine status
         if (status === 'saving' || status === 'refreshing') {
             headerSyncIndicator.classList.add('sync-saving');
-            folderNameElement.textContent = syncFolderHandle.name;
             statusTextElement.textContent = status === 'saving' ? 'Saving...' : 'Refreshing...';
         } else {
             headerSyncIndicator.classList.add('sync-synced');
-            folderNameElement.textContent = syncFolderHandle.name;
             statusTextElement.textContent = 'Synced';
         }
     } else {
         headerSyncIndicator.classList.add('sync-no-folder');
         folderNameElement.textContent = 'No sync folder';
+        folderNameElement.removeAttribute('title'); // Remove tooltip when no folder
         statusTextElement.textContent = 'Not syncing';
     }
 }
