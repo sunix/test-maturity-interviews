@@ -1938,6 +1938,7 @@ function renderQuestionsList() {
                 </div>
                 <div class="question-editor-actions">
                     <span class="question-editor-weight">Weight: ${question.weight}</span>
+                    <button class="btn btn-small btn-secondary" onclick="duplicateQuestion('${question.id}')">📋 Duplicate</button>
                     <button class="btn btn-small btn-secondary" onclick="editQuestion('${question.id}')">✏️ Edit</button>
                     ${customQuestions ? `<button class="btn btn-small btn-danger" onclick="deleteQuestion('${question.id}')">🗑️</button>` : ''}
                 </div>
@@ -2263,6 +2264,69 @@ function deleteQuestion(questionId) {
             renderQuestionsList();
         }
     }
+}
+
+// Duplicate question
+function duplicateQuestion(questionId) {
+    // If not using custom questions, clone default questions first
+    if (!customQuestions) {
+        if (confirm('Duplicating a question will create a custom question set. Continue?')) {
+            customQuestions = JSON.parse(JSON.stringify(QUESTIONS_CATALOG.questions));
+            activeQuestions = customQuestions;
+            saveCustomQuestions();
+            renderQuestionsList();
+        } else {
+            return;
+        }
+    }
+    
+    // Find the original question
+    const originalIndex = customQuestions.findIndex(q => q.id === questionId);
+    if (originalIndex === -1) {
+        alert('Question not found');
+        return;
+    }
+    
+    const originalQuestion = customQuestions[originalIndex];
+    
+    // Generate new question ID with -DUP suffix
+    const newQuestionId = generateDuplicateId(questionId);
+    
+    // Clone the question with new ID
+    const duplicatedQuestion = {
+        ...originalQuestion,
+        id: newQuestionId
+    };
+    
+    // Insert duplicated question right after the original
+    customQuestions.splice(originalIndex + 1, 0, duplicatedQuestion);
+    activeQuestions = customQuestions;
+    
+    // Save and update UI
+    saveCustomQuestions();
+    renderQuestionsList();
+    
+    // Highlight and focus the duplicated question
+    highlightAndFocusQuestion(newQuestionId);
+    
+    alert(`Question duplicated successfully! New ID: ${newQuestionId}`);
+}
+
+// Generate a duplicate ID with -DUP suffix, handling conflicts
+function generateDuplicateId(originalId) {
+    const questionsArray = customQuestions || QUESTIONS_CATALOG.questions;
+    
+    // Start with base duplicate ID (originalId + "-DUP")
+    let newId = `${originalId}-DUP`;
+    let suffix = 0;
+    
+    // Check if the ID already exists, if so, add numeric suffix
+    while (questionsArray.some(q => q.id === newId)) {
+        suffix++;
+        newId = `${originalId}-DUP-${suffix}`;
+    }
+    
+    return newId;
 }
 
 // Reset to default questions
