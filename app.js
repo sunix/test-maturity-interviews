@@ -1350,21 +1350,10 @@ function importQuestionsFromExcel(event) {
                 return;
             }
             
-            if (confirm(`Found ${importedQuestions.length} question(s). This will create a custom question set. Continue?`)) {
-                // Create custom questions if not already custom
-                if (!customQuestions) {
-                    customQuestions = [];
-                }
-                
-                // Merge questions, avoiding duplicates by ID
-                importedQuestions.forEach(imported => {
-                    const existingIndex = customQuestions.findIndex(q => q.id === imported.id);
-                    if (existingIndex >= 0) {
-                        customQuestions[existingIndex] = imported;
-                    } else {
-                        customQuestions.push(imported);
-                    }
-                });
+            if (confirm(`Found ${importedQuestions.length} question(s). This will replace your custom question set with the imported questions in their Excel file order. Continue?`)) {
+                // Replace the entire custom questions array with imported questions
+                // This preserves the exact ordering from the Excel file
+                customQuestions = importedQuestions;
                 
                 activeQuestions = customQuestions;
                 saveCustomQuestions();
