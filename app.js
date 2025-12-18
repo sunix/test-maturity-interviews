@@ -1210,7 +1210,11 @@ function exportAssessmentsToExcel() {
             sheet['!cols'] = colWidths;
             
             // Sanitize sheet name (Excel has restrictions)
-            let sheetName = assessment.name.substring(0, 31).replace(/[\\\/\?\*\[\]:'"]/g, '_');
+            let sheetName = assessment.name.substring(0, 31).replace(/[\\\/\?\*\[\]:<>'"]/g, '_');
+            // Ensure sheet name is not empty
+            if (!sheetName || sheetName.trim() === '') {
+                sheetName = 'Assessment';
+            }
             XLSX.utils.book_append_sheet(workbook, sheet, sheetName);
         });
         
@@ -1415,11 +1419,11 @@ function importQuestionsFromExcel(event) {
                 const row = jsonData[i];
                 if (!row || row.length === 0) continue;
                 
-                const questionId = row[0]?.toString().trim();
-                const theme = row[1]?.toString().trim();
-                const profilesStr = row[2]?.toString().trim();
-                const questionText = row[3]?.toString().trim();
-                const category = row[4]?.toString().trim() || '';
+                const questionId = (row[0] || '').toString().trim();
+                const theme = (row[1] || '').toString().trim();
+                const profilesStr = (row[2] || '').toString().trim();
+                const questionText = (row[3] || '').toString().trim();
+                const category = (row[4] || '').toString().trim();
                 const weight = Number(row[5]);
                 
                 // Validate required fields
