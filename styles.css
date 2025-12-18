@@ -1,6 +1,7 @@
 :root {
     --primary-color: #2563eb;
     --secondary-color: #64748b;
+    --secondary-dark: #475569;
     --success-color: #22c55e;
     --warning-color: #f59e0b;
     --danger-color: #ef4444;
@@ -394,7 +395,7 @@ header h1 {
 }
 
 .btn-secondary:hover {
-    background-color: #475569;
+    background-color: var(--secondary-dark);
 }
 
 .btn:disabled {
@@ -496,17 +497,6 @@ header h1 {
     gap: 0.5rem;
 }
 
-.question-id {
-    display: inline-block;
-    padding: 0.125rem 0.5rem;
-    background-color: #475569;
-    color: white;
-    border-radius: 0.25rem;
-    font-size: 0.75rem;
-    font-weight: 600;
-    font-family: monospace;
-}
-
 .question-theme {
     display: inline-block;
     padding: 0.125rem 0.625rem;
@@ -539,7 +529,7 @@ header h1 {
 .question-text .question-id {
     display: inline-block;
     padding: 0.125rem 0.5rem;
-    background-color: #475569;
+    background-color: var(--secondary-dark);
     color: white;
     border-radius: 0.25rem;
     font-size: 0.75rem;
