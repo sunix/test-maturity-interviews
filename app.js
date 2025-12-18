@@ -1358,19 +1358,28 @@ function updateHeaderSyncStatus(status = null) {
     headerSyncIndicator.classList.remove('sync-synced', 'sync-saving', 'sync-no-folder');
     
     if (syncEnabled && syncFolderHandle) {
+        // Truncate folder name if longer than 15 characters
+        const fullFolderName = syncFolderHandle.name;
+        const displayName = fullFolderName.length > 15 
+            ? fullFolderName.substring(0, 15) + '...' 
+            : fullFolderName;
+        
         // Determine status
         if (status === 'saving' || status === 'refreshing') {
             headerSyncIndicator.classList.add('sync-saving');
-            folderNameElement.textContent = syncFolderHandle.name;
+            folderNameElement.textContent = displayName;
+            folderNameElement.title = fullFolderName; // Tooltip with full name
             statusTextElement.textContent = status === 'saving' ? 'Saving...' : 'Refreshing...';
         } else {
             headerSyncIndicator.classList.add('sync-synced');
-            folderNameElement.textContent = syncFolderHandle.name;
+            folderNameElement.textContent = displayName;
+            folderNameElement.title = fullFolderName; // Tooltip with full name
             statusTextElement.textContent = 'Synced';
         }
     } else {
         headerSyncIndicator.classList.add('sync-no-folder');
         folderNameElement.textContent = 'No sync folder';
+        folderNameElement.removeAttribute('title'); // Remove tooltip when no folder
         statusTextElement.textContent = 'Not syncing';
     }
 }
