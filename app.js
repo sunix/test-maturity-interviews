@@ -2327,12 +2327,12 @@ function generateDuplicateId(originalId, questionsArray) {
     
     // Start with base duplicate ID (originalId + "-DUP")
     let newId = `${originalId}-DUP`;
-    let suffix = 0;
+    let counter = 0;
     
-    // Check if the ID already exists, if so, add numeric suffix
+    // Check if the ID already exists, if so, add numeric counter
     while (existingIds.has(newId)) {
-        suffix++;
-        newId = `${originalId}-DUP-${suffix}`;
+        counter++;
+        newId = `${originalId}-DUP-${counter}`;
     }
     
     return newId;
