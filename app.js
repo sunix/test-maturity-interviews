@@ -398,6 +398,9 @@ function renderQuestions() {
                             <span class="toggle-icon">▶</span>
                             <span class="toggle-text">Add comment</span>
                         </button>
+                        <div class="comment-content">
+                            <textarea id="comment-${question.id}" class="comment-input" data-question-id="${question.id}" placeholder="Add any notes or context for this question..." rows="2"></textarea>
+                        </div>
                     </div>
                     <div class="profile-row-left">
                         <span class="question-weight">Weight: ${question.weight}</span>
@@ -411,9 +414,6 @@ function renderQuestions() {
                         </select>
                     </div>
                 </div>
-                <div class="comment-content">
-                    <textarea id="comment-${question.id}" class="comment-input" data-question-id="${question.id}" placeholder="Add any notes or context for this question..." rows="2"></textarea>
-                </div>
             `;
         } else if (profileBadges) {
             profileRow = `
@@ -423,14 +423,14 @@ function renderQuestions() {
                             <span class="toggle-icon">▶</span>
                             <span class="toggle-text">Add comment</span>
                         </button>
+                        <div class="comment-content">
+                            <textarea id="comment-${question.id}" class="comment-input" data-question-id="${question.id}" placeholder="Add any notes or context for this question..." rows="2"></textarea>
+                        </div>
                     </div>
                     <div class="profile-row-left">
                         <span class="question-weight">Weight: ${question.weight}</span>
                         <div class="profile-can-answer">Can be answered by: ${profileBadges}</div>
                     </div>
-                </div>
-                <div class="comment-content">
-                    <textarea id="comment-${question.id}" class="comment-input" data-question-id="${question.id}" placeholder="Add any notes or context for this question..." rows="2"></textarea>
                 </div>
             `;
         }
