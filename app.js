@@ -392,44 +392,44 @@ function renderQuestions() {
                 `<option value="${p}">${p.charAt(0).toUpperCase() + p.slice(1)}</option>`
             ).join('');
             profileRow = `
-                <div class="profile-row">
-                    <div class="comment-section collapsed">
+                <div class="comment-section collapsed">
+                    <div class="comment-header">
                         <button class="comment-toggle" data-question-id="${question.id}">
                             <span class="toggle-icon">▶</span>
                             <span class="toggle-text">Add comment</span>
                         </button>
-                        <div class="comment-content">
-                            <textarea id="comment-${question.id}" class="comment-input" data-question-id="${question.id}" placeholder="Add any notes or context for this question..." rows="2"></textarea>
+                        <div class="profile-row-inline">
+                            <span class="question-weight">Weight: ${question.weight}</span>
+                            <div class="profile-can-answer">Can be answered by: ${profileBadges}</div>
+                        </div>
+                        <div class="profile-selector">
+                            <label for="profile-${question.id}" class="profile-selector-label">Answered by:</label>
+                            <select id="profile-${question.id}" class="profile-select-input" data-question-id="${question.id}">
+                                <option value="">Select...</option>
+                                ${options}
+                            </select>
                         </div>
                     </div>
-                    <div class="profile-row-left">
-                        <span class="question-weight">Weight: ${question.weight}</span>
-                        <div class="profile-can-answer">Can be answered by: ${profileBadges}</div>
-                    </div>
-                    <div class="profile-selector">
-                        <label for="profile-${question.id}" class="profile-selector-label">Answered by:</label>
-                        <select id="profile-${question.id}" class="profile-select-input" data-question-id="${question.id}">
-                            <option value="">Select...</option>
-                            ${options}
-                        </select>
+                    <div class="comment-content">
+                        <textarea id="comment-${question.id}" class="comment-input" data-question-id="${question.id}" placeholder="Add any notes or context for this question..." rows="2"></textarea>
                     </div>
                 </div>
             `;
         } else if (profileBadges) {
             profileRow = `
-                <div class="profile-row">
-                    <div class="comment-section collapsed">
+                <div class="comment-section collapsed">
+                    <div class="comment-header">
                         <button class="comment-toggle" data-question-id="${question.id}">
                             <span class="toggle-icon">▶</span>
                             <span class="toggle-text">Add comment</span>
                         </button>
-                        <div class="comment-content">
-                            <textarea id="comment-${question.id}" class="comment-input" data-question-id="${question.id}" placeholder="Add any notes or context for this question..." rows="2"></textarea>
+                        <div class="profile-row-inline">
+                            <span class="question-weight">Weight: ${question.weight}</span>
+                            <div class="profile-can-answer">Can be answered by: ${profileBadges}</div>
                         </div>
                     </div>
-                    <div class="profile-row-left">
-                        <span class="question-weight">Weight: ${question.weight}</span>
-                        <div class="profile-can-answer">Can be answered by: ${profileBadges}</div>
+                    <div class="comment-content">
+                        <textarea id="comment-${question.id}" class="comment-input" data-question-id="${question.id}" placeholder="Add any notes or context for this question..." rows="2"></textarea>
                     </div>
                 </div>
             `;

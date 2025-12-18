@@ -928,6 +928,13 @@ header h1 {
     display: none;
 }
 
+.comment-header {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+
 .comment-toggle {
     display: flex;
     align-items: center;
@@ -943,6 +950,13 @@ header h1 {
     border-radius: 0.25rem;
     transition: background-color 0.2s;
     white-space: nowrap;
+}
+
+.profile-row-inline {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    flex: 1;
 }
 
 .comment-toggle:hover {
