@@ -2076,6 +2076,7 @@ function findInsertionIndex(questions, newQuestion) {
     const firstCategoryIndex = questions.findIndex(q => 
         q.theme === newQuestion.theme && 
         q.category && 
+        typeof q.category === 'string' &&
         q.category.includes(newQuestion.category)
     );
     
