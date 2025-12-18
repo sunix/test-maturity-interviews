@@ -2314,7 +2314,7 @@ function duplicateQuestion(questionId) {
     // Set profile checkboxes
     const checkboxes = document.querySelectorAll('#question-profiles input[type="checkbox"]');
     checkboxes.forEach(cb => {
-        cb.checked = question.profiles.includes(cb.value);
+        cb.checked = question.profiles?.includes(cb.value) || false;
     });
     
     modal.style.display = 'flex';
