@@ -2270,14 +2270,13 @@ function deleteQuestion(questionId) {
 function duplicateQuestion(questionId) {
     // If not using custom questions, clone default questions first
     if (!customQuestions) {
-        if (confirm('Duplicating a question will create a custom question set. Continue?')) {
-            customQuestions = JSON.parse(JSON.stringify(QUESTIONS_CATALOG.questions));
-            activeQuestions = customQuestions;
-            saveCustomQuestions();
-            renderQuestionsList();
-        } else {
+        if (!confirm('Duplicating a question will create a custom question set. Continue?')) {
             return;
         }
+        customQuestions = JSON.parse(JSON.stringify(QUESTIONS_CATALOG.questions));
+        activeQuestions = customQuestions;
+        saveCustomQuestions();
+        renderQuestionsList();
     }
     
     // Find the original question
@@ -2290,7 +2289,7 @@ function duplicateQuestion(questionId) {
     const originalQuestion = customQuestions[originalIndex];
     
     // Generate new question ID with -DUP suffix
-    const newQuestionId = generateDuplicateId(questionId);
+    const newQuestionId = generateDuplicateId(questionId, customQuestions);
     
     // Clone the question with new ID
     const duplicatedQuestion = {
@@ -2313,11 +2312,12 @@ function duplicateQuestion(questionId) {
 }
 
 // Generate a duplicate ID with -DUP suffix, handling conflicts
-function generateDuplicateId(originalId) {
-    const questionsArray = customQuestions || QUESTIONS_CATALOG.questions;
+function generateDuplicateId(originalId, questionsArray) {
+    // Use provided array or fallback to custom or default questions
+    const questions = questionsArray || customQuestions || QUESTIONS_CATALOG.questions;
     
     // Collect all existing IDs into a Set for O(1) lookup performance
-    const existingIds = new Set(questionsArray.map(q => q.id));
+    const existingIds = new Set(questions.map(q => q.id));
     
     // Start with base duplicate ID (originalId + "-DUP")
     let newId = `${originalId}-DUP`;
