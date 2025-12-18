@@ -341,9 +341,27 @@ function handleProfileFilterChange() {
 function renderQuestions() {
     questionsContainer.innerHTML = '';
 
-    filteredQuestions.forEach(question => {
+    filteredQuestions.forEach((question, index) => {
         const questionDiv = document.createElement('div');
         questionDiv.className = 'question-item';
+        
+        // Determine theme grouping
+        const prevQuestion = index > 0 ? filteredQuestions[index - 1] : null;
+        const nextQuestion = index < filteredQuestions.length - 1 ? filteredQuestions[index + 1] : null;
+        const isFirstInGroup = !prevQuestion || prevQuestion.theme !== question.theme;
+        const isLastInGroup = !nextQuestion || nextQuestion.theme !== question.theme;
+        
+        // Apply grouping classes
+        if (!isFirstInGroup && !isLastInGroup) {
+            questionDiv.className += ' theme-group-middle';
+        } else if (isFirstInGroup && !isLastInGroup) {
+            questionDiv.className += ' theme-group-first';
+        } else if (!isFirstInGroup && isLastInGroup) {
+            questionDiv.className += ' theme-group-last';
+        }
+        
+        // Show theme header only for first question in group
+        const themeHeader = isFirstInGroup ? `<div class="question-theme-header">${question.theme}</div>` : '';
         
         // Generate profile badges for questions
         const profileBadges = question.profiles
@@ -360,7 +378,10 @@ function renderQuestions() {
             ).join('');
             profileRow = `
                 <div class="profile-row">
-                    <div class="profile-can-answer">Can be answered by: ${profileBadges}</div>
+                    <div class="profile-row-left">
+                        <span class="question-weight">Weight: ${question.weight}</span>
+                        <div class="profile-can-answer">Can be answered by: ${profileBadges}</div>
+                    </div>
                     <div class="profile-selector">
                         <label for="profile-${question.id}" class="profile-selector-label">Answered by:</label>
                         <select id="profile-${question.id}" class="profile-select-input" data-question-id="${question.id}">
@@ -373,21 +394,18 @@ function renderQuestions() {
         } else if (profileBadges) {
             profileRow = `
                 <div class="profile-row">
-                    <div class="profile-can-answer">Can be answered by: ${profileBadges}</div>
+                    <div class="profile-row-left">
+                        <span class="question-weight">Weight: ${question.weight}</span>
+                        <div class="profile-can-answer">Can be answered by: ${profileBadges}</div>
+                    </div>
                 </div>
             `;
         }
         
         questionDiv.innerHTML = `
-            <div class="question-header">
-                <div class="question-header-left">
-                    <span class="question-id">${question.id}</span>
-                    <span class="question-theme">${question.theme}</span>
-                </div>
-                <span class="question-weight">Weight: ${question.weight}</span>
-            </div>
+            ${themeHeader}
             <div class="question-content">
-                <div class="question-text">${question.question}</div>
+                <div class="question-text"><span class="question-id">${question.id}</span>${question.question}</div>
                 <div class="answer-buttons">
                     <button class="answer-btn" data-question-id="${question.id}" data-answer="yes">
                         ✓ Yes
