@@ -205,24 +205,16 @@ function setupEventListeners() {
         displayResults();
     });
 
-    // Export/Import data
+    // Excel Export/Import data
     exportDataBtn.addEventListener('click', exportData);
     importDataBtn.addEventListener('click', () => importFileInput.click());
     importFileInput.addEventListener('change', importData);
     
-    // Excel Export/Import for assessments
+    // Excel Export for assessments
     const exportDataExcelBtn = document.getElementById('export-data-excel');
-    const importDataExcelBtn = document.getElementById('import-data-excel');
-    const importExcelFileInput = document.getElementById('import-excel-file');
     
     if (exportDataExcelBtn) {
         exportDataExcelBtn.addEventListener('click', exportAssessmentsToExcel);
-    }
-    if (importDataExcelBtn) {
-        importDataExcelBtn.addEventListener('click', () => importExcelFileInput.click());
-    }
-    if (importExcelFileInput) {
-        importExcelFileInput.addEventListener('change', importAssessmentsFromExcel);
     }
     
     // Excel Export/Import for questions
@@ -1227,114 +1219,6 @@ function exportAssessmentsToExcel() {
         console.error('Error exporting to Excel:', error);
         alert('Error exporting to Excel: ' + error.message);
     }
-}
-
-// Import assessments from Excel
-function importAssessmentsFromExcel(event) {
-    const file = event.target.files[0];
-    if (!file) return;
-
-    const reader = new FileReader();
-    reader.onload = (e) => {
-        try {
-            const data = new Uint8Array(e.target.result);
-            const workbook = XLSX.read(data, { type: 'array' });
-            
-            const importedAssessments = [];
-            
-            // Process each sheet (skip Summary sheet)
-            workbook.SheetNames.forEach(sheetName => {
-                if (sheetName === 'Summary') return;
-                
-                const sheet = workbook.Sheets[sheetName];
-                const jsonData = XLSX.utils.sheet_to_json(sheet, { header: 1 });
-                
-                // Parse assessment data
-                if (jsonData.length < 6) return; // Not enough data
-                
-                const assessment = {
-                    name: jsonData[1][1] || sheetName,
-                    date: jsonData[2][1] || new Date().toISOString(),
-                    profile: jsonData[3][1] || 'all',
-                    answers: {},
-                    comments: {},
-                    answeredBy: {}
-                };
-                
-                // Find the start of question data (row with headers)
-                let startRow = -1;
-                for (let i = 0; i < jsonData.length; i++) {
-                    if (jsonData[i][0] === 'Question ID') {
-                        startRow = i + 1;
-                        break;
-                    }
-                }
-                
-                if (startRow === -1) return;
-                
-                // Parse questions and answers
-                for (let i = startRow; i < jsonData.length; i++) {
-                    const row = jsonData[i];
-                    if (!row || row.length === 0 || row[0] === '' || row[0] === 'Maturity Scores') break;
-                    
-                    const questionId = row[0];
-                    const answer = row[3];
-                    const answeredBy = row[4];
-                    const comment = row[5];
-                    
-                    if (questionId && answer) {
-                        // Normalize answer to lowercase for storage, accept common variations
-                        const normalizedAnswer = String(answer).toLowerCase().trim();
-                        // Accept: yes/no, y/n, YES/NO, Yes/No, etc.
-                        if (normalizedAnswer === 'yes' || normalizedAnswer === 'y') {
-                            assessment.answers[questionId] = 'yes';
-                            if (answeredBy) assessment.answeredBy[questionId] = answeredBy;
-                            if (comment) assessment.comments[questionId] = comment;
-                        } else if (normalizedAnswer === 'no' || normalizedAnswer === 'n') {
-                            assessment.answers[questionId] = 'no';
-                            if (answeredBy) assessment.answeredBy[questionId] = answeredBy;
-                            if (comment) assessment.comments[questionId] = comment;
-                        }
-                    }
-                }
-                
-                // Only add if we have some answers
-                if (Object.keys(assessment.answers).length > 0) {
-                    importedAssessments.push(assessment);
-                }
-            });
-            
-            if (importedAssessments.length === 0) {
-                alert('No valid assessments found in the Excel file');
-                return;
-            }
-            
-            if (confirm(`Found ${importedAssessments.length} assessment(s). This will merge them with existing ones. Continue?`)) {
-                // Merge assessments
-                importedAssessments.forEach(imported => {
-                    const existingIndex = assessments.findIndex(a => a.name === imported.name);
-                    if (existingIndex >= 0) {
-                        assessments[existingIndex] = imported;
-                    } else {
-                        assessments.push(imported);
-                    }
-                });
-                
-                saveAssessments();
-                updateSavedAssessmentsList();
-                updateResultsSelect();
-                alert('Assessments imported from Excel successfully!');
-            }
-        } catch (error) {
-            console.error('Error importing from Excel:', error);
-            alert('Error importing from Excel: ' + error.message);
-        }
-    };
-    
-    reader.readAsArrayBuffer(file);
-    
-    // Reset file input
-    event.target.value = '';
 }
 
 // Export questions to Excel
