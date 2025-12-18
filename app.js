@@ -1938,6 +1938,7 @@ function renderQuestionsList() {
                 </div>
                 <div class="question-editor-actions">
                     <span class="question-editor-weight">Weight: ${question.weight}</span>
+                    <button class="btn btn-small btn-secondary" onclick="duplicateQuestion('${question.id}')">📋 Duplicate</button>
                     <button class="btn btn-small btn-secondary" onclick="editQuestion('${question.id}')">✏️ Edit</button>
                     ${customQuestions ? `<button class="btn btn-small btn-danger" onclick="deleteQuestion('${question.id}')">🗑️</button>` : ''}
                 </div>
@@ -2263,6 +2264,78 @@ function deleteQuestion(questionId) {
             renderQuestionsList();
         }
     }
+}
+
+// Duplicate question
+function duplicateQuestion(questionId) {
+    // If not using custom questions, clone default questions first
+    if (!customQuestions) {
+        if (!confirm('Duplicating a question will create a custom question set. Continue?')) {
+            return;
+        }
+        customQuestions = JSON.parse(JSON.stringify(QUESTIONS_CATALOG.questions));
+        activeQuestions = customQuestions;
+        saveCustomQuestions();
+        renderQuestionsList();
+    }
+    
+    // Find the original question
+    const questionsArray = customQuestions || QUESTIONS_CATALOG.questions;
+    const question = questionsArray.find(q => q.id === questionId);
+    
+    if (!question) {
+        alert(`Question with ID '${questionId}' not found`);
+        return;
+    }
+    
+    // Open the add question modal with pre-filled data
+    const modal = document.getElementById('question-modal');
+    const modalTitle = document.getElementById('modal-title');
+    const form = document.getElementById('question-form');
+    const idInput = document.getElementById('question-id');
+    const idError = document.getElementById('id-error');
+    
+    // Reset form
+    form.reset();
+    idError.style.display = 'none';
+    
+    // Set to add mode (not edit mode)
+    editingQuestionId = null;
+    modalTitle.textContent = 'Add Question';
+    
+    // Pre-fill all fields including suggested ID with -DUP suffix
+    idInput.value = generateDuplicateId(questionId, questionsArray);
+    idInput.disabled = false;
+    document.getElementById('question-theme').value = question.theme;
+    document.getElementById('question-text').value = question.question;
+    document.getElementById('question-category').value = question.category || '';
+    document.getElementById('question-weight').value = question.weight;
+    
+    // Set profile checkboxes
+    const checkboxes = document.querySelectorAll('#question-profiles input[type="checkbox"]');
+    checkboxes.forEach(cb => {
+        cb.checked = question.profiles?.includes(cb.value) || false;
+    });
+    
+    modal.style.display = 'flex';
+}
+
+// Generate a duplicate ID with -DUP suffix, handling conflicts
+function generateDuplicateId(originalId, questionsArray) {
+    // Collect all existing IDs into a Set for O(1) lookup performance
+    const existingIds = new Set(questionsArray.map(q => q.id));
+    
+    // Start with base duplicate ID (originalId + "-DUP")
+    let newId = `${originalId}-DUP`;
+    let counter = 0;
+    
+    // Check if the ID already exists, if so, add numeric counter
+    while (existingIds.has(newId)) {
+        counter++;
+        newId = `${originalId}-DUP-${counter}`;
+    }
+    
+    return newId;
 }
 
 // Reset to default questions
