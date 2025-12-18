@@ -251,6 +251,21 @@ function switchTab(tabName) {
     
     // Update body class for padding adjustment
     document.body.classList.toggle('interview-active', tabName === 'interview');
+    
+    // Auto-select current assessment in Results tab if one is being edited
+    if (tabName === 'results' && currentAssessment && currentAssessment.name) {
+        // Find the index of the current assessment in the assessments array
+        // Match by both name and date to ensure uniqueness
+        const currentIndex = assessments.findIndex(a => 
+            a.name === currentAssessment.name && a.date === currentAssessment.date
+        );
+        if (currentIndex >= 0) {
+            // Select it in the dropdown
+            resultsSelect.value = currentIndex;
+            // Display its results
+            displayResults();
+        }
+    }
 }
 
 // Update tab visibility based on application state
