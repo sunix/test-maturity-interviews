@@ -341,9 +341,27 @@ function handleProfileFilterChange() {
 function renderQuestions() {
     questionsContainer.innerHTML = '';
 
-    filteredQuestions.forEach(question => {
+    filteredQuestions.forEach((question, index) => {
         const questionDiv = document.createElement('div');
         questionDiv.className = 'question-item';
+        
+        // Determine theme grouping
+        const prevQuestion = index > 0 ? filteredQuestions[index - 1] : null;
+        const nextQuestion = index < filteredQuestions.length - 1 ? filteredQuestions[index + 1] : null;
+        const isFirstInGroup = !prevQuestion || prevQuestion.theme !== question.theme;
+        const isLastInGroup = !nextQuestion || nextQuestion.theme !== question.theme;
+        
+        // Apply grouping classes
+        if (!isFirstInGroup && !isLastInGroup) {
+            questionDiv.className += ' theme-group-middle';
+        } else if (isFirstInGroup && !isLastInGroup) {
+            questionDiv.className += ' theme-group-first';
+        } else if (!isFirstInGroup && isLastInGroup) {
+            questionDiv.className += ' theme-group-last';
+        }
+        
+        // Show theme header only for first question in group
+        const themeHeader = isFirstInGroup ? `<div class="question-theme-header">${question.theme}</div>` : '';
         
         // Generate profile badges for questions
         const profileBadges = question.profiles
@@ -379,15 +397,9 @@ function renderQuestions() {
         }
         
         questionDiv.innerHTML = `
-            <div class="question-header">
-                <div class="question-header-left">
-                    <span class="question-id">${question.id}</span>
-                    <span class="question-theme">${question.theme}</span>
-                </div>
-                <span class="question-weight">Weight: ${question.weight}</span>
-            </div>
+            ${themeHeader}
             <div class="question-content">
-                <div class="question-text">${question.question}</div>
+                <div class="question-text"><span class="question-id">${question.id}</span>${question.question}</div>
                 <div class="answer-buttons">
                     <button class="answer-btn" data-question-id="${question.id}" data-answer="yes">
                         ✓ Yes
@@ -400,8 +412,11 @@ function renderQuestions() {
             ${profileRow}
             <div class="comment-section collapsed">
                 <button class="comment-toggle" data-question-id="${question.id}">
-                    <span class="toggle-icon">▶</span>
-                    <span class="toggle-text">Add comment</span>
+                    <div class="comment-toggle-left">
+                        <span class="toggle-icon">▶</span>
+                        <span class="toggle-text">Add comment</span>
+                    </div>
+                    <span class="comment-toggle-right">Weight: ${question.weight}</span>
                 </button>
                 <div class="comment-content">
                     <textarea id="comment-${question.id}" class="comment-input" data-question-id="${question.id}" placeholder="Add any notes or context for this question..." rows="2"></textarea>
