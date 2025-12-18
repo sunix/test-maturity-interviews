@@ -1273,9 +1273,13 @@ function importAssessmentsFromExcel(event) {
                     const comment = row[5];
                     
                     if (questionId && answer) {
-                        assessment.answers[questionId] = answer.toLowerCase();
-                        if (answeredBy) assessment.answeredBy[questionId] = answeredBy;
-                        if (comment) assessment.comments[questionId] = comment;
+                        // Normalize answer to lowercase for storage
+                        const normalizedAnswer = String(answer).toLowerCase().trim();
+                        if (normalizedAnswer === 'yes' || normalizedAnswer === 'no') {
+                            assessment.answers[questionId] = normalizedAnswer;
+                            if (answeredBy) assessment.answeredBy[questionId] = answeredBy;
+                            if (comment) assessment.comments[questionId] = comment;
+                        }
                     }
                 }
                 
@@ -1399,7 +1403,7 @@ function importQuestionsFromExcel(event) {
                 const profilesStr = row[2];
                 const questionText = row[3];
                 const category = row[4] || '';
-                const weight = parseInt(row[5]) || 2;
+                const weight = parseInt(row[5]);
                 
                 // Validate required fields
                 if (!questionId || !theme || !profilesStr || !questionText) {
@@ -1421,7 +1425,7 @@ function importQuestionsFromExcel(event) {
                 }
                 
                 // Validate weight
-                if (weight < 1 || weight > 5) {
+                if (isNaN(weight) || weight < 1 || weight > 5) {
                     console.warn(`Skipping row ${i + 1}: invalid weight ${weight}`);
                     continue;
                 }
