@@ -1697,6 +1697,30 @@ const THEME_PREFIXES = {
     "Culture & Collaboration": "CC-"
 };
 
+// Function to find the next available question number for a theme
+function getNextQuestionNumber(themePrefix) {
+    const questionsArray = customQuestions || QUESTIONS_CATALOG.questions;
+    let maxNumber = 0;
+    
+    // Regular expression to match question IDs with the theme prefix
+    // Handles formats like "GO-22", "GO-22-DEV", "GO-22-QA", etc.
+    // Properly escape all regex special characters in the prefix
+    const escapedPrefix = themePrefix.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, '\\$&');
+    const prefixRegex = new RegExp(`^${escapedPrefix}(\\d+)`, 'i');
+    
+    questionsArray.forEach(question => {
+        const match = question.id.match(prefixRegex);
+        if (match && match[1]) {
+            const number = parseInt(match[1], 10);
+            if (!isNaN(number) && number > maxNumber) {
+                maxNumber = number;
+            }
+        }
+    });
+    
+    return maxNumber + 1;
+}
+
 // Initialize question editor
 function initQuestionEditor() {
     const addQuestionBtn = document.getElementById('add-question-btn');
@@ -1722,10 +1746,11 @@ function initQuestionEditor() {
             if (questionIdInput && !questionIdInput.value.trim() && themeSelect.value) {
                 const prefix = THEME_PREFIXES[themeSelect.value];
                 if (prefix) {
-                    questionIdInput.value = prefix;
+                    const nextNumber = getNextQuestionNumber(prefix);
+                    questionIdInput.value = `${prefix}${nextNumber}`;
                     questionIdInput.focus();
                     // Move cursor to end
-                    questionIdInput.setSelectionRange(prefix.length, prefix.length);
+                    questionIdInput.setSelectionRange(questionIdInput.value.length, questionIdInput.value.length);
                 }
             }
         });
