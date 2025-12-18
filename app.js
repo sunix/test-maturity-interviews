@@ -2283,7 +2283,7 @@ function duplicateQuestion(questionId) {
     // Find the original question
     const originalIndex = customQuestions.findIndex(q => q.id === questionId);
     if (originalIndex === -1) {
-        alert('Question not found');
+        alert(`Question with ID '${questionId}' not found`);
         return;
     }
     
@@ -2316,12 +2316,15 @@ function duplicateQuestion(questionId) {
 function generateDuplicateId(originalId) {
     const questionsArray = customQuestions || QUESTIONS_CATALOG.questions;
     
+    // Collect all existing IDs into a Set for O(1) lookup performance
+    const existingIds = new Set(questionsArray.map(q => q.id));
+    
     // Start with base duplicate ID (originalId + "-DUP")
     let newId = `${originalId}-DUP`;
     let suffix = 0;
     
     // Check if the ID already exists, if so, add numeric suffix
-    while (questionsArray.some(q => q.id === newId)) {
+    while (existingIds.has(newId)) {
         suffix++;
         newId = `${originalId}-DUP-${suffix}`;
     }
