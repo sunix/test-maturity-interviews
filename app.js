@@ -205,10 +205,38 @@ function setupEventListeners() {
         displayResults();
     });
 
-    // Export/Import data
+    // Excel Export/Import data
     exportDataBtn.addEventListener('click', exportData);
     importDataBtn.addEventListener('click', () => importFileInput.click());
     importFileInput.addEventListener('change', importData);
+    
+    // Excel Export for assessments
+    const exportDataExcelBtn = document.getElementById('export-data-excel');
+    
+    if (exportDataExcelBtn) {
+        exportDataExcelBtn.addEventListener('click', exportAssessmentsToExcel);
+    }
+    
+    // Excel Export/Import for questions
+    const exportQuestionsExcelBtn = document.getElementById('export-questions-excel');
+    const importQuestionsExcelBtn = document.getElementById('import-questions-excel');
+    const importQuestionsExcelFileInput = document.getElementById('import-questions-excel-file');
+    
+    if (exportQuestionsExcelBtn) {
+        exportQuestionsExcelBtn.addEventListener('click', exportQuestionsToExcel);
+    }
+    if (importQuestionsExcelBtn) {
+        importQuestionsExcelBtn.addEventListener('click', () => importQuestionsExcelFileInput.click());
+    }
+    if (importQuestionsExcelFileInput) {
+        importQuestionsExcelFileInput.addEventListener('change', importQuestionsFromExcel);
+    }
+    
+    // Excel Export for results
+    const exportResultsExcelBtn = document.getElementById('export-results-excel');
+    if (exportResultsExcelBtn) {
+        exportResultsExcelBtn.addEventListener('click', exportResultToExcel);
+    }
 
     // Results select
     resultsSelect.addEventListener('change', displayResults);
@@ -1077,6 +1105,377 @@ function importData(event) {
     
     // Reset file input
     event.target.value = '';
+}
+
+// Excel Export/Import Functions
+
+// Export assessments to Excel
+function exportAssessmentsToExcel() {
+    if (assessments.length === 0) {
+        alert('No assessments to export');
+        return;
+    }
+    
+    // Check if XLSX library is available
+    if (typeof XLSX === 'undefined') {
+        alert('Excel library not loaded. Please refresh the page and try again.');
+        return;
+    }
+
+    try {
+        const workbook = XLSX.utils.book_new();
+        
+        // Create summary sheet
+        const summaryData = [
+            ['Assessment Name', 'Date', 'Total Questions', 'Answered Questions']
+        ];
+        
+        assessments.forEach(assessment => {
+            const totalQuestions = getActiveQuestionsCatalog().length;
+            const answeredQuestions = Object.keys(assessment.answers).length;
+            const date = new Date(assessment.date).toLocaleDateString();
+            summaryData.push([assessment.name, date, totalQuestions, answeredQuestions]);
+        });
+        
+        const summarySheet = XLSX.utils.aoa_to_sheet(summaryData);
+        XLSX.utils.book_append_sheet(workbook, summarySheet, 'Summary');
+        
+        // Create a sheet for each assessment
+        assessments.forEach(assessment => {
+            const assessmentData = [
+                ['Assessment Information'],
+                ['Name', assessment.name],
+                ['Date', new Date(assessment.date).toLocaleString()],
+                ['Profile', assessment.profile],
+                [],
+                ['Question ID', 'Theme', 'Question', 'Answer', 'Answered By', 'Comment', 'Weight', 'Category']
+            ];
+            
+            // Get all answered questions
+            const answeredQuestions = getActiveQuestionsCatalog().filter(q => 
+                assessment.answers[q.id]
+            );
+            
+            answeredQuestions.forEach(question => {
+                const answer = assessment.answers[question.id];
+                const answeredBy = assessment.answeredBy?.[question.id] || '';
+                const comment = assessment.comments?.[question.id] || '';
+                
+                assessmentData.push([
+                    question.id,
+                    question.theme,
+                    question.question,
+                    answer,
+                    answeredBy,
+                    comment,
+                    question.weight,
+                    question.category || ''
+                ]);
+            });
+            
+            // Add maturity scores
+            const scores = calculateMaturityScores(assessment);
+            assessmentData.push([]);
+            assessmentData.push(['Maturity Scores']);
+            assessmentData.push(['Theme', 'Score', 'Level']);
+            
+            const maturityLabels = ['', 'Initial', 'Managed', 'Defined', 'Measured', 'Optimized'];
+            Object.keys(scores).forEach(theme => {
+                const score = scores[theme];
+                assessmentData.push([theme, score, maturityLabels[score]]);
+            });
+            
+            const sheet = XLSX.utils.aoa_to_sheet(assessmentData);
+            
+            // Auto-size columns
+            const maxWidth = 100;
+            const colWidths = [
+                { wch: 15 },  // Question ID
+                { wch: 30 },  // Theme
+                { wch: 60 },  // Question
+                { wch: 10 },  // Answer
+                { wch: 15 },  // Answered By
+                { wch: 40 },  // Comment
+                { wch: 10 },  // Weight
+                { wch: 20 }   // Category
+            ];
+            sheet['!cols'] = colWidths;
+            
+            // Sanitize sheet name (Excel has restrictions)
+            let sheetName = assessment.name.substring(0, 31).replace(/[\\\/\?\*\[\]:<>'"]/g, '_');
+            // Ensure sheet name is not empty
+            if (!sheetName || sheetName.trim() === '') {
+                sheetName = 'Assessment';
+            }
+            XLSX.utils.book_append_sheet(workbook, sheet, sheetName);
+        });
+        
+        // Generate and download file
+        const filename = `test-maturity-assessments-${new Date().toISOString().split('T')[0]}.xlsx`;
+        XLSX.writeFile(workbook, filename);
+        
+        alert('Assessments exported to Excel successfully!');
+    } catch (error) {
+        console.error('Error exporting to Excel:', error);
+        alert('Error exporting to Excel: ' + error.message);
+    }
+}
+
+// Export questions to Excel
+function exportQuestionsToExcel() {
+    // Check if XLSX library is available
+    if (typeof XLSX === 'undefined') {
+        alert('Excel library not loaded. Please refresh the page and try again.');
+        return;
+    }
+    
+    try {
+        const questionsToExport = customQuestions || QUESTIONS_CATALOG.questions;
+        
+        const workbook = XLSX.utils.book_new();
+        
+        // Create questions sheet
+        const questionsData = [
+            ['Question ID', 'Theme', 'Profiles', 'Question', 'Category', 'Weight']
+        ];
+        
+        questionsToExport.forEach(question => {
+            questionsData.push([
+                question.id,
+                question.theme,
+                question.profiles.join(', '),
+                question.question,
+                question.category || '',
+                question.weight
+            ]);
+        });
+        
+        const sheet = XLSX.utils.aoa_to_sheet(questionsData);
+        
+        // Auto-size columns
+        sheet['!cols'] = [
+            { wch: 15 },  // Question ID
+            { wch: 30 },  // Theme
+            { wch: 30 },  // Profiles
+            { wch: 80 },  // Question
+            { wch: 25 },  // Category
+            { wch: 10 }   // Weight
+        ];
+        
+        XLSX.utils.book_append_sheet(workbook, sheet, 'Questions');
+        
+        // Generate and download file
+        const filename = `test-maturity-questions-${new Date().toISOString().split('T')[0]}.xlsx`;
+        XLSX.writeFile(workbook, filename);
+        
+        alert('Questions exported to Excel successfully!');
+    } catch (error) {
+        console.error('Error exporting questions to Excel:', error);
+        alert('Error exporting questions to Excel: ' + error.message);
+    }
+}
+
+// Import questions from Excel
+function importQuestionsFromExcel(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+        try {
+            const data = new Uint8Array(e.target.result);
+            const workbook = XLSX.read(data, { type: 'array' });
+            
+            // Get the first sheet
+            const firstSheetName = workbook.SheetNames[0];
+            const sheet = workbook.Sheets[firstSheetName];
+            const jsonData = XLSX.utils.sheet_to_json(sheet, { header: 1 });
+            
+            if (jsonData.length < 2) {
+                alert('Excel file is empty or invalid');
+                return;
+            }
+            
+            const importedQuestions = [];
+            
+            // Parse questions (skip header row)
+            for (let i = 1; i < jsonData.length; i++) {
+                const row = jsonData[i];
+                if (!row || row.length === 0) continue;
+                
+                const questionId = (row[0] || '').toString().trim();
+                const theme = (row[1] || '').toString().trim();
+                const profilesStr = (row[2] || '').toString().trim();
+                const questionText = (row[3] || '').toString().trim();
+                const category = (row[4] || '').toString().trim();
+                const weight = Number(row[5]);
+                
+                // Validate required fields
+                if (!questionId || !theme || !profilesStr || !questionText) {
+                    console.warn(`Skipping row ${i + 1}: missing required fields`);
+                    continue;
+                }
+                
+                // Validate theme
+                if (!QUESTIONS_CATALOG.themes.includes(theme)) {
+                    console.warn(`Skipping row ${i + 1}: invalid theme "${theme}"`);
+                    continue;
+                }
+                
+                // Parse profiles
+                const profiles = profilesStr.split(',').map(p => p.trim().toLowerCase()).filter(p => p);
+                if (profiles.length === 0) {
+                    console.warn(`Skipping row ${i + 1}: no valid profiles`);
+                    continue;
+                }
+                
+                // Validate weight
+                if (isNaN(weight) || weight < 1 || weight > 5) {
+                    console.warn(`Skipping row ${i + 1}: invalid weight ${weight}`);
+                    continue;
+                }
+                
+                importedQuestions.push({
+                    id: questionId,
+                    theme: theme,
+                    profiles: profiles,
+                    question: questionText,
+                    category: category,
+                    weight: weight
+                });
+            }
+            
+            if (importedQuestions.length === 0) {
+                alert('No valid questions found in the Excel file');
+                return;
+            }
+            
+            if (confirm(`Found ${importedQuestions.length} question(s). This will create a custom question set. Continue?`)) {
+                // Create custom questions if not already custom
+                if (!customQuestions) {
+                    customQuestions = [];
+                }
+                
+                // Merge questions, avoiding duplicates by ID
+                importedQuestions.forEach(imported => {
+                    const existingIndex = customQuestions.findIndex(q => q.id === imported.id);
+                    if (existingIndex >= 0) {
+                        customQuestions[existingIndex] = imported;
+                    } else {
+                        customQuestions.push(imported);
+                    }
+                });
+                
+                activeQuestions = customQuestions;
+                saveCustomQuestions();
+                renderQuestionsList();
+                
+                alert('Questions imported from Excel successfully!');
+            }
+        } catch (error) {
+            console.error('Error importing questions from Excel:', error);
+            alert('Error importing questions from Excel: ' + error.message);
+        }
+    };
+    
+    reader.readAsArrayBuffer(file);
+    
+    // Reset file input
+    event.target.value = '';
+}
+
+// Export single assessment result to Excel
+function exportResultToExcel() {
+    const selectedIndex = resultsSelect.value;
+    
+    if (selectedIndex === '') {
+        alert('Please select an assessment to export');
+        return;
+    }
+    
+    // Check if XLSX library is available
+    if (typeof XLSX === 'undefined') {
+        alert('Excel library not loaded. Please refresh the page and try again.');
+        return;
+    }
+    
+    try {
+        const assessment = assessments[selectedIndex];
+        const workbook = XLSX.utils.book_new();
+        
+        // Create assessment details sheet
+        const detailsData = [
+            ['Test Maturity Assessment Results'],
+            [],
+            ['Assessment Name', assessment.name],
+            ['Date', new Date(assessment.date).toLocaleString()],
+            ['Profile', assessment.profile],
+            []
+        ];
+        
+        // Add maturity scores
+        const scores = calculateMaturityScores(assessment);
+        detailsData.push(['Maturity Scores']);
+        detailsData.push(['Theme', 'Score (1-5)', 'Maturity Level']);
+        
+        const maturityLabels = ['', 'Initial', 'Managed', 'Defined', 'Measured', 'Optimized'];
+        Object.keys(scores).forEach(theme => {
+            const score = scores[theme];
+            detailsData.push([theme, score, maturityLabels[score]]);
+        });
+        
+        detailsData.push([]);
+        detailsData.push(['Detailed Answers']);
+        detailsData.push(['Question ID', 'Theme', 'Question', 'Answer', 'Answered By', 'Comment', 'Weight', 'Category']);
+        
+        // Get all answered questions
+        const answeredQuestions = getActiveQuestionsCatalog().filter(q => 
+            assessment.answers[q.id]
+        );
+        
+        answeredQuestions.forEach(question => {
+            const answer = assessment.answers[question.id];
+            const answeredBy = assessment.answeredBy?.[question.id] || '';
+            const comment = assessment.comments?.[question.id] || '';
+            
+            detailsData.push([
+                question.id,
+                question.theme,
+                question.question,
+                String(answer || '').toUpperCase(),
+                answeredBy,
+                comment,
+                question.weight,
+                question.category || ''
+            ]);
+        });
+        
+        const sheet = XLSX.utils.aoa_to_sheet(detailsData);
+        
+        // Auto-size columns
+        sheet['!cols'] = [
+            { wch: 15 },  // Question ID
+            { wch: 30 },  // Theme
+            { wch: 60 },  // Question
+            { wch: 10 },  // Answer
+            { wch: 15 },  // Answered By
+            { wch: 40 },  // Comment
+            { wch: 10 },  // Weight
+            { wch: 20 }   // Category
+        ];
+        
+        XLSX.utils.book_append_sheet(workbook, sheet, 'Results');
+        
+        // Generate and download file
+        const safeName = assessment.name.replace(/[^a-z0-9_-]/gi, '_');
+        const filename = `assessment-${safeName}-${new Date().toISOString().split('T')[0]}.xlsx`;
+        XLSX.writeFile(workbook, filename);
+        
+        alert('Assessment exported to Excel successfully!');
+    } catch (error) {
+        console.error('Error exporting result to Excel:', error);
+        alert('Error exporting result to Excel: ' + error.message);
+    }
 }
 
 // Auto-save Functions
