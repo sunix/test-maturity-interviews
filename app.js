@@ -21,8 +21,7 @@ let syncFolderHandle = null;
 let syncEnabled = false;
 let syncInterval = null;
 
-// Sync folder name truncation - limit to 15 characters to save header space
-// Names longer than this will be truncated with "..." appended and a tooltip will show the full name
+// Maximum display length for sync folder names in header - longer names will be truncated with "..." and show full name in tooltip
 const MAX_FOLDER_NAME_LENGTH = 15;
 
 // Auto-save state
@@ -1366,7 +1365,7 @@ function updateHeaderSyncStatus(status = null) {
         const fullFolderName = syncFolderHandle.name;
         const isTruncated = fullFolderName.length > MAX_FOLDER_NAME_LENGTH;
         const displayName = isTruncated
-            ? fullFolderName.substring(0, MAX_FOLDER_NAME_LENGTH) + '...' 
+            ? fullFolderName.slice(0, MAX_FOLDER_NAME_LENGTH) + '...' 
             : fullFolderName;
         
         // Set display name and tooltip (only when truncated to avoid redundant tooltips)
