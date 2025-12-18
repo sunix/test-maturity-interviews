@@ -1309,6 +1309,9 @@ async function selectSyncFolder() {
         // Start periodic sync
         startPeriodicSync();
         
+        // Reload custom questions from the newly selected folder
+        await loadCustomQuestions();
+        
         alert(`Sync folder set to: ${dirHandle.name}\n\nAssessments will be automatically synced to this folder.`);
     } catch (error) {
         if (error.name === 'AbortError') {
@@ -1417,6 +1420,9 @@ async function loadSyncSettings() {
                 
                 // Start periodic sync
                 startPeriodicSync();
+                
+                // Reload custom questions now that sync folder is available
+                await loadCustomQuestions();
                 
                 console.log(`Sync folder restored: ${folderName}`);
             } else {
