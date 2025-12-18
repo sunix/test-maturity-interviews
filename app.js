@@ -1704,7 +1704,9 @@ function getNextQuestionNumber(themePrefix) {
     
     // Regular expression to match question IDs with the theme prefix
     // Handles formats like "GO-22", "GO-22-DEV", "GO-22-QA", etc.
-    const prefixRegex = new RegExp(`^${themePrefix.replace('-', '\\-')}(\\d+)`, 'i');
+    // Properly escape all regex special characters in the prefix
+    const escapedPrefix = themePrefix.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, '\\$&');
+    const prefixRegex = new RegExp(`^${escapedPrefix}(\\d+)`, 'i');
     
     questionsArray.forEach(question => {
         const match = question.id.match(prefixRegex);
