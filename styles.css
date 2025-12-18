@@ -942,19 +942,6 @@ header h1 {
     text-align: left;
     border-radius: 0.25rem;
     transition: background-color 0.2s;
-    justify-content: space-between;
-}
-
-.comment-toggle-left {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-}
-
-.comment-toggle-right {
-    color: var(--text-secondary);
-    font-size: 0.75rem;
-    font-weight: 500;
 }
 
 .comment-toggle:hover {
@@ -1078,6 +1065,12 @@ header h1 {
     gap: 1rem;
     margin-bottom: 0.75rem;
     flex-wrap: wrap;
+}
+
+.profile-row-left {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
 }
 
 .profile-can-answer {
