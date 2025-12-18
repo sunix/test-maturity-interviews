@@ -1750,8 +1750,7 @@ function initQuestionEditor() {
                     questionIdInput.value = `${prefix}${nextNumber}`;
                     questionIdInput.focus();
                     // Move cursor to end
-                    const fullId = questionIdInput.value;
-                    questionIdInput.setSelectionRange(fullId.length, fullId.length);
+                    questionIdInput.setSelectionRange(questionIdInput.value.length, questionIdInput.value.length);
                 }
             }
         });
