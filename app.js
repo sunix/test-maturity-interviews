@@ -1894,6 +1894,7 @@ function renderQuestionsList() {
         item.draggable = true;
         item.dataset.index = index;
         item.dataset.questionId = question.id;
+        item.tabIndex = 0; // Make the item focusable
         
         const profileBadges = question.profiles
             .filter(p => p !== 'all')
@@ -2056,6 +2057,61 @@ function closeQuestionModal() {
     editingQuestionId = null;
 }
 
+// Find the correct insertion index for a new question based on theme and category
+function findInsertionIndex(questions, newQuestion) {
+    // Find the first question with the same theme
+    const firstThemeIndex = questions.findIndex(q => q.theme === newQuestion.theme);
+    
+    // If no questions with this theme exist, add at the end
+    if (firstThemeIndex === -1) {
+        return questions.length;
+    }
+    
+    // If no category is specified for the new question, insert at the beginning of the theme
+    if (!newQuestion.category || newQuestion.category.trim() === '') {
+        return firstThemeIndex;
+    }
+    
+    // Find the first question with the same theme and category
+    const firstCategoryIndex = questions.findIndex(q => 
+        q.theme === newQuestion.theme && 
+        q.category && 
+        typeof q.category === 'string' &&
+        q.category.includes(newQuestion.category)
+    );
+    
+    // If a matching category is found, insert there
+    if (firstCategoryIndex !== -1) {
+        return firstCategoryIndex;
+    }
+    
+    // Otherwise, insert at the beginning of the theme group
+    return firstThemeIndex;
+}
+
+// Highlight and focus a question in the editor
+function highlightAndFocusQuestion(questionId) {
+    // Use setTimeout to ensure the DOM has been updated
+    setTimeout(() => {
+        const questionElement = document.querySelector(`[data-question-id="${questionId}"]`);
+        if (questionElement) {
+            // Add highlight class
+            questionElement.classList.add('question-highlighted');
+            
+            // Scroll into view
+            questionElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            
+            // Focus the element
+            questionElement.focus();
+            
+            // Remove highlight after animation completes (3 seconds)
+            setTimeout(() => {
+                questionElement.classList.remove('question-highlighted');
+            }, 3000);
+        }
+    }, 100);
+}
+
 // Save question (add or update)
 function saveQuestion() {
     const idInput = document.getElementById('question-id');
@@ -2131,8 +2187,9 @@ function saveQuestion() {
             customQuestions[index] = questionData;
         }
     } else {
-        // Add new question
-        customQuestions.push(questionData);
+        // Add new question - insert at the correct position based on theme and category
+        const insertionIndex = findInsertionIndex(customQuestions, questionData);
+        customQuestions.splice(insertionIndex, 0, questionData);
     }
     
     // Update active questions
@@ -2142,6 +2199,11 @@ function saveQuestion() {
     saveCustomQuestions();
     renderQuestionsList();
     closeQuestionModal();
+    
+    // Highlight and focus the new question (only for newly added questions)
+    if (!editingQuestionId) {
+        highlightAndFocusQuestion(questionData.id);
+    }
     
     alert(editingQuestionId ? 'Question updated successfully!' : 'Question added successfully!');
 }
