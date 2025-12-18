@@ -393,6 +393,12 @@ function renderQuestions() {
             ).join('');
             profileRow = `
                 <div class="profile-row">
+                    <div class="comment-section collapsed">
+                        <button class="comment-toggle" data-question-id="${question.id}">
+                            <span class="toggle-icon">▶</span>
+                            <span class="toggle-text">Add comment</span>
+                        </button>
+                    </div>
                     <div class="profile-row-left">
                         <span class="question-weight">Weight: ${question.weight}</span>
                         <div class="profile-can-answer">Can be answered by: ${profileBadges}</div>
@@ -405,14 +411,26 @@ function renderQuestions() {
                         </select>
                     </div>
                 </div>
+                <div class="comment-content">
+                    <textarea id="comment-${question.id}" class="comment-input" data-question-id="${question.id}" placeholder="Add any notes or context for this question..." rows="2"></textarea>
+                </div>
             `;
         } else if (profileBadges) {
             profileRow = `
                 <div class="profile-row">
+                    <div class="comment-section collapsed">
+                        <button class="comment-toggle" data-question-id="${question.id}">
+                            <span class="toggle-icon">▶</span>
+                            <span class="toggle-text">Add comment</span>
+                        </button>
+                    </div>
                     <div class="profile-row-left">
                         <span class="question-weight">Weight: ${question.weight}</span>
                         <div class="profile-can-answer">Can be answered by: ${profileBadges}</div>
                     </div>
+                </div>
+                <div class="comment-content">
+                    <textarea id="comment-${question.id}" class="comment-input" data-question-id="${question.id}" placeholder="Add any notes or context for this question..." rows="2"></textarea>
                 </div>
             `;
         }
@@ -431,15 +449,6 @@ function renderQuestions() {
                 </div>
             </div>
             ${profileRow}
-            <div class="comment-section collapsed">
-                <button class="comment-toggle" data-question-id="${question.id}">
-                    <span class="toggle-icon">▶</span>
-                    <span class="toggle-text">Add comment</span>
-                </button>
-                <div class="comment-content">
-                    <textarea id="comment-${question.id}" class="comment-input" data-question-id="${question.id}" placeholder="Add any notes or context for this question..." rows="2"></textarea>
-                </div>
-            </div>
         `;
 
         // Add click handlers for answer buttons
