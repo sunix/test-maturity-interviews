@@ -1192,12 +1192,42 @@ header h1 {
     box-shadow: var(--shadow);
 }
 
+.question-editor-item:focus {
+    outline: 2px solid var(--primary-color);
+    outline-offset: 2px;
+}
+
 .question-editor-item.dragging {
     opacity: 0.5;
 }
 
 .question-editor-item.drag-over {
     border-top: 3px solid var(--primary-color);
+}
+
+.question-editor-item.question-highlighted {
+    animation: highlightPulse 3s ease-in-out;
+    outline: 2px solid var(--primary-color);
+    outline-offset: 2px;
+}
+
+@keyframes highlightPulse {
+    0% {
+        background-color: var(--card-bg);
+        box-shadow: 0 0 0 0 rgba(37, 99, 235, 0);
+    }
+    10% {
+        background-color: rgba(37, 99, 235, 0.1);
+        box-shadow: 0 0 20px 5px rgba(37, 99, 235, 0.3);
+    }
+    50% {
+        background-color: rgba(37, 99, 235, 0.05);
+        box-shadow: 0 0 10px 3px rgba(37, 99, 235, 0.2);
+    }
+    100% {
+        background-color: var(--card-bg);
+        box-shadow: 0 0 0 0 rgba(37, 99, 235, 0);
+    }
 }
 
 .question-editor-header {
