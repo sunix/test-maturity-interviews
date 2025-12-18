@@ -1681,6 +1681,16 @@ function startPeriodicSync() {
 // Constants for questions file
 const QUESTIONS_FILENAME = 'custom-questions.json';
 
+// Theme prefix mapping for auto-generating question IDs
+const THEME_PREFIXES = {
+    "Gouvernance & Organisation": "GO-",
+    "Méthodes & Standardisation": "MS-",
+    "Automatisation & CI/CD": "AC-",
+    "Données de Test & Conformité": "DT-",
+    "Environnements de test": "ET-",
+    "Culture & Collaboration": "CC-"
+};
+
 // Initialize question editor
 function initQuestionEditor() {
     const addQuestionBtn = document.getElementById('add-question-btn');
@@ -1690,6 +1700,7 @@ function initQuestionEditor() {
     const saveQuestionBtn = document.getElementById('save-question');
     const modal = document.getElementById('question-modal');
     const themeSelect = document.getElementById('question-theme');
+    const questionIdInput = document.getElementById('question-id');
     
     // Populate theme dropdown
     if (themeSelect) {
@@ -1698,6 +1709,19 @@ function initQuestionEditor() {
             option.value = theme;
             option.textContent = theme;
             themeSelect.appendChild(option);
+        });
+        
+        // Add event listener for theme selection to prefill question ID
+        themeSelect.addEventListener('change', () => {
+            if (questionIdInput && !questionIdInput.value.trim() && themeSelect.value) {
+                const prefix = THEME_PREFIXES[themeSelect.value];
+                if (prefix) {
+                    questionIdInput.value = prefix;
+                    questionIdInput.focus();
+                    // Move cursor to end
+                    questionIdInput.setSelectionRange(prefix.length, prefix.length);
+                }
+            }
         });
     }
     
