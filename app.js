@@ -1123,6 +1123,12 @@ function exportAssessmentsToExcel() {
         alert('No assessments to export');
         return;
     }
+    
+    // Check if XLSX library is available
+    if (typeof XLSX === 'undefined') {
+        alert('Excel library not loaded. Please refresh the page and try again.');
+        return;
+    }
 
     try {
         const workbook = XLSX.utils.book_new();
@@ -1204,7 +1210,7 @@ function exportAssessmentsToExcel() {
             sheet['!cols'] = colWidths;
             
             // Sanitize sheet name (Excel has restrictions)
-            let sheetName = assessment.name.substring(0, 31).replace(/[\\\/\?\*\[\]]/g, '_');
+            let sheetName = assessment.name.substring(0, 31).replace(/[\\\/\?\*\[\]:'"]/g, '_');
             XLSX.utils.book_append_sheet(workbook, sheet, sheetName);
         });
         
@@ -1273,10 +1279,15 @@ function importAssessmentsFromExcel(event) {
                     const comment = row[5];
                     
                     if (questionId && answer) {
-                        // Normalize answer to lowercase for storage
+                        // Normalize answer to lowercase for storage, accept common variations
                         const normalizedAnswer = String(answer).toLowerCase().trim();
-                        if (normalizedAnswer === 'yes' || normalizedAnswer === 'no') {
-                            assessment.answers[questionId] = normalizedAnswer;
+                        // Accept: yes/no, y/n, YES/NO, Yes/No, etc.
+                        if (normalizedAnswer === 'yes' || normalizedAnswer === 'y') {
+                            assessment.answers[questionId] = 'yes';
+                            if (answeredBy) assessment.answeredBy[questionId] = answeredBy;
+                            if (comment) assessment.comments[questionId] = comment;
+                        } else if (normalizedAnswer === 'no' || normalizedAnswer === 'n') {
+                            assessment.answers[questionId] = 'no';
                             if (answeredBy) assessment.answeredBy[questionId] = answeredBy;
                             if (comment) assessment.comments[questionId] = comment;
                         }
@@ -1324,6 +1335,12 @@ function importAssessmentsFromExcel(event) {
 
 // Export questions to Excel
 function exportQuestionsToExcel() {
+    // Check if XLSX library is available
+    if (typeof XLSX === 'undefined') {
+        alert('Excel library not loaded. Please refresh the page and try again.');
+        return;
+    }
+    
     try {
         const questionsToExport = customQuestions || QUESTIONS_CATALOG.questions;
         
@@ -1398,12 +1415,12 @@ function importQuestionsFromExcel(event) {
                 const row = jsonData[i];
                 if (!row || row.length === 0) continue;
                 
-                const questionId = row[0];
-                const theme = row[1];
-                const profilesStr = row[2];
-                const questionText = row[3];
-                const category = row[4] || '';
-                const weight = parseInt(row[5]);
+                const questionId = row[0]?.toString().trim();
+                const theme = row[1]?.toString().trim();
+                const profilesStr = row[2]?.toString().trim();
+                const questionText = row[3]?.toString().trim();
+                const category = row[4]?.toString().trim() || '';
+                const weight = Number(row[5]);
                 
                 // Validate required fields
                 if (!questionId || !theme || !profilesStr || !questionText) {
@@ -1488,6 +1505,12 @@ function exportResultToExcel() {
         return;
     }
     
+    // Check if XLSX library is available
+    if (typeof XLSX === 'undefined') {
+        alert('Excel library not loaded. Please refresh the page and try again.');
+        return;
+    }
+    
     try {
         const assessment = assessments[selectedIndex];
         const workbook = XLSX.utils.book_new();
@@ -1531,7 +1554,7 @@ function exportResultToExcel() {
                 question.id,
                 question.theme,
                 question.question,
-                answer.toUpperCase(),
+                String(answer || '').toUpperCase(),
                 answeredBy,
                 comment,
                 question.weight,
