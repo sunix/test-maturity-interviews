@@ -103,7 +103,7 @@ body.interview-active {
 .container {
     max-width: 1200px;
     margin: 0 auto;
-    padding: 2rem;
+    padding: 0 2rem 2rem 2rem;
 }
 
 header {
@@ -921,7 +921,7 @@ header h1 {
 /* Comment Section */
 /* Comment Section */
 .comment-section {
-    margin-top: 0.5rem;
+    margin-top: 0;
 }
 
 .comment-section.collapsed .comment-content {
@@ -938,10 +938,11 @@ header h1 {
     color: var(--text-secondary);
     font-size: 0.85rem;
     cursor: pointer;
-    width: 100%;
+    width: auto;
     text-align: left;
     border-radius: 0.25rem;
     transition: background-color 0.2s;
+    white-space: nowrap;
 }
 
 .comment-toggle:hover {
@@ -959,6 +960,7 @@ header h1 {
 
 .comment-content {
     padding-top: 0.5rem;
+    width: 100%;
 }
 
 .comment-label {
