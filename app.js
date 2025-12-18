@@ -2280,56 +2280,44 @@ function duplicateQuestion(questionId) {
     }
     
     // Find the original question
-    const originalIndex = customQuestions.findIndex(q => q.id === questionId);
-    if (originalIndex === -1) {
+    const questionsArray = customQuestions || QUESTIONS_CATALOG.questions;
+    const question = questionsArray.find(q => q.id === questionId);
+    
+    if (!question) {
         alert(`Question with ID '${questionId}' not found`);
         return;
     }
     
-    const originalQuestion = customQuestions[originalIndex];
+    // Open the add question modal with pre-filled data
+    const modal = document.getElementById('question-modal');
+    const modalTitle = document.getElementById('modal-title');
+    const form = document.getElementById('question-form');
+    const idInput = document.getElementById('question-id');
+    const idError = document.getElementById('id-error');
     
-    // Generate new question ID with -DUP suffix
-    const newQuestionId = generateDuplicateId(questionId, customQuestions);
+    // Reset form
+    form.reset();
+    idError.style.display = 'none';
     
-    // Clone the question with new ID
-    const duplicatedQuestion = {
-        ...originalQuestion,
-        id: newQuestionId
-    };
+    // Set to add mode (not edit mode)
+    editingQuestionId = null;
+    modalTitle.textContent = 'Add Question';
     
-    // Insert duplicated question right after the original
-    customQuestions.splice(originalIndex + 1, 0, duplicatedQuestion);
-    activeQuestions = customQuestions;
+    // Pre-fill all fields except ID
+    idInput.value = ''; // Leave ID blank for user to fill
+    idInput.disabled = false;
+    document.getElementById('question-theme').value = question.theme;
+    document.getElementById('question-text').value = question.question;
+    document.getElementById('question-category').value = question.category || '';
+    document.getElementById('question-weight').value = question.weight;
     
-    // Save and update UI
-    saveCustomQuestions();
-    renderQuestionsList();
+    // Set profile checkboxes
+    const checkboxes = document.querySelectorAll('#question-profiles input[type="checkbox"]');
+    checkboxes.forEach(cb => {
+        cb.checked = question.profiles.includes(cb.value);
+    });
     
-    // Highlight and focus the duplicated question
-    highlightAndFocusQuestion(newQuestionId);
-    
-    alert(`Question duplicated successfully! New ID: ${newQuestionId}`);
-}
-
-// Generate a duplicate ID with -DUP suffix, handling conflicts
-function generateDuplicateId(originalId, questionsArray) {
-    // Use provided array or fallback to custom or default questions
-    const questions = questionsArray || customQuestions || QUESTIONS_CATALOG.questions;
-    
-    // Collect all existing IDs into a Set for O(1) lookup performance
-    const existingIds = new Set(questions.map(q => q.id));
-    
-    // Start with base duplicate ID (originalId + "-DUP")
-    let newId = `${originalId}-DUP`;
-    let suffix = 0;
-    
-    // Check if the ID already exists, if so, add numeric suffix
-    while (existingIds.has(newId)) {
-        suffix++;
-        newId = `${originalId}-DUP-${suffix}`;
-    }
-    
-    return newId;
+    modal.style.display = 'flex';
 }
 
 // Reset to default questions
