@@ -21,6 +21,9 @@ let syncFolderHandle = null;
 let syncEnabled = false;
 let syncInterval = null;
 
+// Sync folder name truncation
+const MAX_FOLDER_NAME_LENGTH = 15;
+
 // Auto-save state
 let autoSaveTimeout = null;
 let autoSaveStatus = null;
@@ -1358,22 +1361,22 @@ function updateHeaderSyncStatus(status = null) {
     headerSyncIndicator.classList.remove('sync-synced', 'sync-saving', 'sync-no-folder');
     
     if (syncEnabled && syncFolderHandle) {
-        // Truncate folder name if longer than 15 characters
+        // Truncate folder name if longer than MAX_FOLDER_NAME_LENGTH characters
         const fullFolderName = syncFolderHandle.name;
-        const displayName = fullFolderName.length > 15 
-            ? fullFolderName.substring(0, 15) + '...' 
+        const displayName = fullFolderName.length > MAX_FOLDER_NAME_LENGTH 
+            ? fullFolderName.substring(0, MAX_FOLDER_NAME_LENGTH) + '...' 
             : fullFolderName;
+        
+        // Set display name and tooltip
+        folderNameElement.textContent = displayName;
+        folderNameElement.title = fullFolderName; // Tooltip with full name
         
         // Determine status
         if (status === 'saving' || status === 'refreshing') {
             headerSyncIndicator.classList.add('sync-saving');
-            folderNameElement.textContent = displayName;
-            folderNameElement.title = fullFolderName; // Tooltip with full name
             statusTextElement.textContent = status === 'saving' ? 'Saving...' : 'Refreshing...';
         } else {
             headerSyncIndicator.classList.add('sync-synced');
-            folderNameElement.textContent = displayName;
-            folderNameElement.title = fullFolderName; // Tooltip with full name
             statusTextElement.textContent = 'Synced';
         }
     } else {
