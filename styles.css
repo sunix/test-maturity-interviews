@@ -1365,11 +1365,15 @@ header h1 {
     font-weight: normal;
     cursor: pointer;
     white-space: nowrap;
+    justify-content: flex-start;
 }
 
 .checkbox-group input[type="checkbox"] {
     cursor: pointer;
     flex-shrink: 0;
+    width: 16px;
+    height: 16px;
+    margin: 0;
 }
 
 #question-text {
