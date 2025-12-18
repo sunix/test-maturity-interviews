@@ -22,7 +22,7 @@ let syncEnabled = false;
 let syncInterval = null;
 
 // Sync folder name truncation - limit to 15 characters to save header space
-// Names longer than this will be truncated with "..." appended
+// Names longer than this will be truncated with "..." appended and a tooltip will show the full name
 const MAX_FOLDER_NAME_LENGTH = 15;
 
 // Auto-save state
