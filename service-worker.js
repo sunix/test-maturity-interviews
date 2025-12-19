@@ -19,6 +19,9 @@ self.addEventListener('install', (event) => {
       })
       .catch((error) => {
         console.error('Failed to cache resources during install:', error);
+        // Installation will still proceed, but some resources may not be cached
+        // This allows the service worker to install even if some resources fail
+        return Promise.resolve();
       })
   );
   // Force the waiting service worker to become the active service worker
@@ -54,7 +57,14 @@ self.addEventListener('fetch', (event) => {
       })
       .catch((error) => {
         console.error('Fetch failed:', error);
-        // You can return a custom offline page here if desired
+        // Return a basic error response when both cache and network fail
+        return new Response('Network error occurred. Please check your connection.', {
+          status: 408,
+          statusText: 'Network error',
+          headers: new Headers({
+            'Content-Type': 'text/plain'
+          })
+        });
       })
   );
 });
@@ -73,9 +83,9 @@ self.addEventListener('activate', (event) => {
           }
         })
       );
+    }).then(() => {
+      // Ensure the service worker takes control immediately
+      return self.clients.claim();
     })
   );
-  
-  // Ensure the service worker takes control immediately
-  return self.clients.claim();
 });
