@@ -99,6 +99,24 @@ Assess your organization's testing maturity across 6 comprehensive dimensions:
 
 ## 🚀 Quick Start
 
+### Install as Windows App (Recommended) 🪟
+
+Transform the web app into a native Windows application:
+
+1. **Open in Chrome or Edge** on Windows
+2. **Look for the install icon** in the address bar (⊕ or 🖥️)
+3. **Click "Install Test Maturity Assessment"**
+4. **Launch from Start Menu** - it's now a Windows app!
+
+📖 **Detailed installation guide**: See [PWA_INSTALLATION.md](PWA_INSTALLATION.md)
+
+**Benefits of installing:**
+- ✅ Runs in its own window (no browser tabs)
+- ✅ Appears in Windows Start menu and taskbar
+- ✅ Works offline after first load
+- ✅ Faster startup with cached resources
+- ✅ Professional, app-like experience
+
 ### Basic Setup (30 seconds)
 1. Open `index.html` in any modern browser (Chrome, Firefox, Edge, Safari)
 2. Enter your application/team name
@@ -218,16 +236,20 @@ Shared OneDrive folder → Team updates monthly → Management views trends
 ## 🔧 Technical Details
 
 ### Architecture
-- **Type**: Single-page application (SPA)
+- **Type**: Single-page application (SPA) & Progressive Web App (PWA)
 - **Backend**: None required—fully client-side
 - **Framework**: Vanilla JavaScript (no build step needed)
 - **Visualization**: Chart.js (loaded via CDN)
 - **Storage**: Browser LocalStorage + IndexedDB (for folder handles)
 - **File Format**: JSON (human-readable, git-friendly)
+- **PWA Features**: Service Worker, Web App Manifest, offline support
 
 ### Browser Requirements
 - **Basic Features**: Any modern browser with localStorage
   - Chrome 60+, Firefox 55+, Safari 11+, Edge 79+
+- **PWA Installation**: Windows app installation support
+  - Chrome 86+, Edge 86+ (Windows 10+)
+  - Offline functionality via Service Worker
 - **Folder Sync**: File System Access API support
   - Chrome 86+, Edge 86+ (as of Dec 2023)
   - Not supported: Firefox, Safari (use Export/Import instead)
