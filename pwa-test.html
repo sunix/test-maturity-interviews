@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PWA Installation Test</title>
+    
+    <!-- Include same PWA meta tags as main app -->
+    <meta name="description" content="PWA Installation Test for Test Maturity Assessment">
+    <meta name="theme-color" content="#2563eb">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <link rel="manifest" href="manifest.json">
+    
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+        }
+        .test-result {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+        }
+        .pass {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .fail {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .info {
+            background-color: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+        button {
+            background-color: #2563eb;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        button:hover {
+            background-color: #1d4ed8;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔍 PWA Installation Tests</h1>
+    
+    <div class="test-section">
+        <h2>Automatic Tests</h2>
+        <div id="auto-tests"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>Manual Checks</h2>
+        <div class="test-result info">
+            <strong>✓ Check manifest.json</strong> - Should be accessible at /manifest.json
+            <br><a href="/manifest.json" target="_blank">Open manifest.json</a>
+        </div>
+        <div class="test-result info">
+            <strong>✓ Check service-worker.js</strong> - Should be accessible at /service-worker.js
+            <br><a href="/service-worker.js" target="_blank">Open service-worker.js</a>
+        </div>
+        <div class="test-result info">
+            <strong>✓ Check icons</strong> - All icon sizes should be available
+            <br><a href="/icons/icon-192x192.png" target="_blank">Open 192x192 icon</a>
+        </div>
+    </div>
+    
+    <div class="test-section">
+        <h2>Service Worker Status</h2>
+        <div id="sw-status"></div>
+        <button onclick="registerServiceWorker()">Register Service Worker</button>
+    </div>
+    
+    <div class="test-section">
+        <h2>Installation Instructions</h2>
+        <ol>
+            <li>Serve this app over HTTP/HTTPS (required for PWA)</li>
+            <li>Open in Chrome or Edge (version 86+)</li>
+            <li>Look for the install icon in the address bar</li>
+            <li>Click "Install" to add to Windows</li>
+            <li>Check Start Menu for "Test Maturity Assessment"</li>
+        </ol>
+    </div>
+    
+    <script>
+        // Run automatic tests
+        function runTests() {
+            const results = document.getElementById('auto-tests');
+            results.innerHTML = '';
+            
+            // Test 1: Service Worker API
+            addTestResult(results, 
+                'serviceWorker' in navigator,
+                'Service Worker API supported',
+                'Service Worker API NOT supported (use Chrome/Edge)'
+            );
+            
+            // Test 2: Manifest link
+            const manifestLink = document.querySelector('link[rel="manifest"]');
+            addTestResult(results,
+                manifestLink !== null,
+                'Manifest link found in HTML',
+                'Manifest link NOT found'
+            );
+            
+            // Test 3: Theme color
+            const themeColor = document.querySelector('meta[name="theme-color"]');
+            addTestResult(results,
+                themeColor !== null,
+                `Theme color defined: ${themeColor ? themeColor.content : 'N/A'}`,
+                'Theme color NOT defined'
+            );
+            
+            // Test 4: PWA meta tags
+            const appleCapable = document.querySelector('meta[name="apple-mobile-web-app-capable"]');
+            addTestResult(results,
+                appleCapable !== null,
+                'Apple mobile web app meta tags present',
+                'Apple mobile web app meta tags missing'
+            );
+            
+            // Test 5: Check manifest.json
+            fetch('/manifest.json')
+                .then(response => response.json())
+                .then(manifest => {
+                    addTestResult(results,
+                        manifest.name === 'Test Maturity Assessment',
+                        `Manifest loaded: ${manifest.name}`,
+                        'Manifest name mismatch'
+                    );
+                    addTestResult(results,
+                        manifest.icons && manifest.icons.length > 0,
+                        `Icons defined: ${manifest.icons.length} sizes`,
+                        'No icons in manifest'
+                    );
+                })
+                .catch(error => {
+                    addTestResult(results, false, '', `Failed to load manifest: ${error.message}`);
+                });
+        }
+        
+        function addTestResult(container, pass, passMsg, failMsg) {
+            const div = document.createElement('div');
+            div.className = `test-result ${pass ? 'pass' : 'fail'}`;
+            div.innerHTML = pass ? `✓ ${passMsg}` : `✗ ${failMsg}`;
+            container.appendChild(div);
+        }
+        
+        function registerServiceWorker() {
+            const statusDiv = document.getElementById('sw-status');
+            
+            if (!('serviceWorker' in navigator)) {
+                statusDiv.innerHTML = '<div class="test-result fail">✗ Service Worker not supported</div>';
+                return;
+            }
+            
+            navigator.serviceWorker.register('/service-worker.js')
+                .then(registration => {
+                    statusDiv.innerHTML = `
+                        <div class="test-result pass">
+                            ✓ Service Worker registered successfully<br>
+                            Scope: ${registration.scope}<br>
+                            State: ${registration.active ? registration.active.state : 'installing'}
+                        </div>
+                    `;
+                    
+                    // Check for updates
+                    registration.addEventListener('updatefound', () => {
+                        const newWorker = registration.installing;
+                        statusDiv.innerHTML += '<div class="test-result info">↻ Update found, installing...</div>';
+                    });
+                })
+                .catch(error => {
+                    statusDiv.innerHTML = `
+                        <div class="test-result fail">
+                            ✗ Service Worker registration failed<br>
+                            Error: ${error.message}
+                        </div>
+                    `;
+                });
+        }
+        
+        // Run tests on page load
+        window.addEventListener('DOMContentLoaded', runTests);
+    </script>
+</body>
+</html>
