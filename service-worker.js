@@ -19,9 +19,9 @@ self.addEventListener('install', (event) => {
       })
       .catch((error) => {
         console.error('Failed to cache resources during install:', error);
-        // Installation will still proceed, but some resources may not be cached
-        // This allows the service worker to install even if some resources fail
-        return Promise.resolve();
+        // Re-throw the error to prevent service worker from installing with incomplete cache
+        // This ensures the app won't install if critical resources can't be cached
+        throw error;
       })
   );
   // Force the waiting service worker to become the active service worker
@@ -57,10 +57,10 @@ self.addEventListener('fetch', (event) => {
       })
       .catch((error) => {
         console.error('Fetch failed:', error);
-        // Return a basic error response when both cache and network fail
-        return new Response('Network error occurred. Please check your connection.', {
-          status: 408,
-          statusText: 'Network error',
+        // Return a Service Unavailable response when both cache and network fail
+        return new Response('Service temporarily unavailable. Please check your connection and try again.', {
+          status: 503,
+          statusText: 'Service Unavailable',
           headers: new Headers({
             'Content-Type': 'text/plain'
           })
