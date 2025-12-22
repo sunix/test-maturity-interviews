@@ -1888,9 +1888,9 @@ async function performAutoSave() {
         const existingIndex = assessments.findIndex(a => a.name === currentAssessment.name);
         
         if (existingIndex >= 0) {
-            assessments[existingIndex] = { ...currentAssessment };
+            assessments[existingIndex] = JSON.parse(JSON.stringify(currentAssessment));
         } else {
-            assessments.push({ ...currentAssessment });
+            assessments.push(JSON.parse(JSON.stringify(currentAssessment)));
         }
 
         await saveAssessments();
