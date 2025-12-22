@@ -97,14 +97,21 @@
             <div id="interview-controls" class="interview-controls hidden">
                 <div class="interview-controls-content">
                     <div class="form-group">
-                        <label for="profile-filter">Filter by Profile:</label>
-                        <select id="profile-filter">
-                            <option value="">All profiles</option>
-                            <option value="developer">Developer</option>
-                            <option value="qa">QA Engineer</option>
-                            <option value="devops">DevOps</option>
-                            <option value="manager">Manager</option>
-                        </select>
+                        <label>Filter by Profiles:</label>
+                        <div id="profile-filter" class="profile-filter-checkboxes">
+                            <label class="profile-filter-checkbox">
+                                <input type="checkbox" value="developer"> Developer
+                            </label>
+                            <label class="profile-filter-checkbox">
+                                <input type="checkbox" value="qa"> QA Engineer
+                            </label>
+                            <label class="profile-filter-checkbox">
+                                <input type="checkbox" value="devops"> DevOps
+                            </label>
+                            <label class="profile-filter-checkbox">
+                                <input type="checkbox" value="manager"> Manager
+                            </label>
+                        </div>
                     </div>
                     <div class="progress-bar">
                         <div class="progress-fill" id="progress-fill"></div>
