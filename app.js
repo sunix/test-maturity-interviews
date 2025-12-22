@@ -5,7 +5,8 @@ let currentAssessment = {
     date: '',
     answers: {},
     comments: {},
-    answeredBy: {} // Track which profile answered each question
+    answeredBy: {}, // Track which profile answered each question
+    attachments: {} // Store file attachments for each question
 };
 
 let assessments = [];
@@ -342,7 +343,8 @@ function startInterview() {
         date: new Date().toISOString(),
         answers: {},
         comments: {},
-        answeredBy: {}
+        answeredBy: {},
+        attachments: {}
     };
 
     // Reset profile filter checkboxes
@@ -440,7 +442,7 @@ function renderQuestions() {
                     <div class="comment-header">
                         <button class="comment-toggle" data-question-id="${question.id}">
                             <span class="toggle-icon">▶</span>
-                            <span class="toggle-text">Add comment</span>
+                            <span class="toggle-text">Add comment or files</span>
                         </button>
                         <div class="profile-row-inline">
                             <span class="question-weight">Weight: ${question.weight}</span>
@@ -456,6 +458,14 @@ function renderQuestions() {
                     </div>
                     <div class="comment-content">
                         <textarea id="comment-${question.id}" class="comment-input" data-question-id="${question.id}" placeholder="Add any notes or context for this question..." rows="2"></textarea>
+                        <div class="attachment-controls">
+                            <label class="btn-attachment-upload">
+                                📎 Attach Files
+                                <input type="file" id="file-${question.id}" data-question-id="${question.id}" multiple accept="image/*,.pdf,.doc,.docx,.txt" style="display: none;">
+                            </label>
+                            <span class="attachment-hint">or paste screenshots (Ctrl+V)</span>
+                        </div>
+                        <div id="attachments-${question.id}" class="attachments-container"></div>
                     </div>
                 </div>
             `;
@@ -465,7 +475,7 @@ function renderQuestions() {
                     <div class="comment-header">
                         <button class="comment-toggle" data-question-id="${question.id}">
                             <span class="toggle-icon">▶</span>
-                            <span class="toggle-text">Add comment</span>
+                            <span class="toggle-text">Add comment or files</span>
                         </button>
                         <div class="profile-row-inline">
                             <span class="question-weight">Weight: ${question.weight}</span>
@@ -474,6 +484,14 @@ function renderQuestions() {
                     </div>
                     <div class="comment-content">
                         <textarea id="comment-${question.id}" class="comment-input" data-question-id="${question.id}" placeholder="Add any notes or context for this question..." rows="2"></textarea>
+                        <div class="attachment-controls">
+                            <label class="btn-attachment-upload">
+                                📎 Attach Files
+                                <input type="file" id="file-${question.id}" data-question-id="${question.id}" multiple accept="image/*,.pdf,.doc,.docx,.txt" style="display: none;">
+                            </label>
+                            <span class="attachment-hint">or paste screenshots (Ctrl+V)</span>
+                        </div>
+                        <div id="attachments-${question.id}" class="attachments-container"></div>
                     </div>
                 </div>
             `;
@@ -514,10 +532,10 @@ function renderQuestions() {
             const toggleText = commentToggle.querySelector('.toggle-text');
             if (commentSection.classList.contains('collapsed')) {
                 toggleIcon.textContent = '▶';
-                toggleText.textContent = 'Add comment';
+                toggleText.textContent = 'Add comment or files';
             } else {
                 toggleIcon.textContent = '▼';
-                toggleText.textContent = 'Hide comment';
+                toggleText.textContent = 'Hide comment and files';
                 commentTextarea.focus();
             }
         });
@@ -526,6 +544,18 @@ function renderQuestions() {
         const profileSelect = questionDiv.querySelector('.profile-select-input');
         if (profileSelect) {
             profileSelect.addEventListener('change', () => handleProfileSelection(profileSelect));
+        }
+        
+        // Add file input change handler
+        const fileInput = questionDiv.querySelector(`#file-${question.id}`);
+        if (fileInput) {
+            fileInput.addEventListener('change', (e) => handleFileAttachment(e.target, question.id));
+        }
+        
+        // Add paste event listener to the comment section for screenshots
+        const commentContent = questionDiv.querySelector('.comment-content');
+        if (commentContent) {
+            commentContent.addEventListener('paste', (e) => handlePaste(e, question.id));
         }
 
         // Restore previous answer if exists
@@ -545,7 +575,18 @@ function renderQuestions() {
             const toggleIcon = commentToggle.querySelector('.toggle-icon');
             const toggleText = commentToggle.querySelector('.toggle-text');
             toggleIcon.textContent = '▼';
-            toggleText.textContent = 'Hide comment';
+            toggleText.textContent = 'Hide comment and files';
+        }
+        
+        // Check if there are attachments (will render after appending to DOM)
+        const hasAttachments = currentAssessment.attachments && currentAssessment.attachments[question.id];
+        if (hasAttachments && commentSection) {
+            // Expand the comment section if there are attachments
+            commentSection.classList.remove('collapsed');
+            const toggleIcon = commentToggle.querySelector('.toggle-icon');
+            const toggleText = commentToggle.querySelector('.toggle-text');
+            toggleIcon.textContent = '▼';
+            toggleText.textContent = 'Hide comment and files';
         }
         
         // Pre-select the "Answered by" dropdown
@@ -568,6 +609,11 @@ function renderQuestions() {
         }
 
         questionsContainer.appendChild(questionDiv);
+        
+        // Restore previous attachments AFTER appending to DOM
+        if (hasAttachments) {
+            renderAttachments(question.id);
+        }
     });
 }
 
@@ -689,6 +735,203 @@ function handleComment(textarea) {
     triggerAutoSave();
 }
 
+// Handle File Attachment
+async function handleFileAttachment(input, questionId) {
+    const files = input.files;
+    if (!files || files.length === 0) return;
+
+    // Initialize attachments object if it doesn't exist
+    if (!currentAssessment.attachments) {
+        currentAssessment.attachments = {};
+    }
+
+    // Initialize array for this question if needed
+    if (!currentAssessment.attachments[questionId]) {
+        currentAssessment.attachments[questionId] = [];
+    }
+
+    // Process each file
+    for (const file of files) {
+        // Check file size (max 5MB per file)
+        if (file.size > 5 * 1024 * 1024) {
+            alert(`File "${file.name}" is too large. Maximum size is 5MB.`);
+            continue;
+        }
+
+        try {
+            const base64 = await fileToBase64(file);
+            currentAssessment.attachments[questionId].push({
+                name: file.name,
+                type: file.type,
+                size: file.size,
+                data: base64,
+                timestamp: new Date().toISOString()
+            });
+        } catch (error) {
+            console.error('Error processing file:', error);
+            alert(`Error processing file "${file.name}"`);
+        }
+    }
+
+    // Clear input to allow re-uploading the same file
+    input.value = '';
+
+    // Re-render the question to show attachments
+    renderAttachments(questionId);
+    
+    // Mark as actively editing
+    markAsActivelyEditing();
+    
+    // Trigger auto-save
+    triggerAutoSave();
+}
+
+// Convert file to base64
+function fileToBase64(file) {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+    });
+}
+
+// Handle paste event for image screenshots
+function handlePaste(event, questionId) {
+    const items = event.clipboardData?.items;
+    if (!items) return;
+
+    for (const item of items) {
+        if (item.type.indexOf('image') !== -1) {
+            event.preventDefault();
+            const file = item.getAsFile();
+            if (file) {
+                const input = document.createElement('input');
+                input.type = 'file';
+                const dataTransfer = new DataTransfer();
+                dataTransfer.items.add(file);
+                input.files = dataTransfer.files;
+                handleFileAttachment(input, questionId);
+            }
+            break;
+        }
+    }
+}
+
+// Remove attachment
+function removeAttachment(questionId, index) {
+    if (!currentAssessment.attachments || !currentAssessment.attachments[questionId]) {
+        return;
+    }
+
+    if (confirm('Are you sure you want to remove this attachment?')) {
+        currentAssessment.attachments[questionId].splice(index, 1);
+        
+        // Remove the array if empty
+        if (currentAssessment.attachments[questionId].length === 0) {
+            delete currentAssessment.attachments[questionId];
+        }
+
+        // Re-render attachments
+        renderAttachments(questionId);
+        
+        // Mark as actively editing
+        markAsActivelyEditing();
+        
+        // Trigger auto-save
+        triggerAutoSave();
+    }
+}
+
+// Render attachments for a question
+function renderAttachments(questionId) {
+    const container = document.getElementById(`attachments-${questionId}`);
+    if (!container) return;
+
+    container.innerHTML = '';
+
+    const attachments = currentAssessment.attachments?.[questionId];
+    if (!attachments || attachments.length === 0) {
+        return;
+    }
+
+    attachments.forEach((attachment, index) => {
+        const attachmentDiv = document.createElement('div');
+        attachmentDiv.className = 'attachment-item';
+        
+        const isImage = attachment.type.startsWith('image/');
+        const icon = isImage ? '🖼️' : '📄';
+        const sizeKB = Math.round(attachment.size / 1024);
+        
+        attachmentDiv.innerHTML = `
+            <span class="attachment-icon">${icon}</span>
+            <span class="attachment-name" title="${attachment.name}">${attachment.name}</span>
+            <span class="attachment-size">(${sizeKB} KB)</span>
+            ${isImage ? `<button class="btn-attachment-preview" data-question-id="${questionId}" data-index="${index}">👁️ Preview</button>` : ''}
+            <button class="btn-attachment-download" data-question-id="${questionId}" data-index="${index}">⬇️ Download</button>
+            <button class="btn-attachment-remove" data-question-id="${questionId}" data-index="${index}">🗑️</button>
+        `;
+
+        // Add event listeners
+        const previewBtn = attachmentDiv.querySelector('.btn-attachment-preview');
+        if (previewBtn) {
+            previewBtn.addEventListener('click', () => previewAttachment(questionId, index));
+        }
+
+        const downloadBtn = attachmentDiv.querySelector('.btn-attachment-download');
+        downloadBtn.addEventListener('click', () => downloadAttachment(questionId, index));
+
+        const removeBtn = attachmentDiv.querySelector('.btn-attachment-remove');
+        removeBtn.addEventListener('click', () => removeAttachment(questionId, index));
+
+        container.appendChild(attachmentDiv);
+    });
+}
+
+// Preview attachment (for images)
+function previewAttachment(questionId, index) {
+    const attachment = currentAssessment.attachments?.[questionId]?.[index];
+    if (!attachment) return;
+
+    const modal = document.createElement('div');
+    modal.className = 'attachment-preview-modal';
+    modal.innerHTML = `
+        <div class="attachment-preview-content">
+            <div class="attachment-preview-header">
+                <span>${attachment.name}</span>
+                <button class="attachment-preview-close">&times;</button>
+            </div>
+            <div class="attachment-preview-body">
+                <img src="${attachment.data}" alt="${attachment.name}">
+            </div>
+        </div>
+    `;
+
+    document.body.appendChild(modal);
+
+    const closeBtn = modal.querySelector('.attachment-preview-close');
+    closeBtn.addEventListener('click', () => document.body.removeChild(modal));
+    
+    modal.addEventListener('click', (e) => {
+        if (e.target === modal) {
+            document.body.removeChild(modal);
+        }
+    });
+}
+
+// Download attachment
+function downloadAttachment(questionId, index) {
+    const attachment = currentAssessment.attachments?.[questionId]?.[index];
+    if (!attachment) return;
+
+    const link = document.createElement('a');
+    link.href = attachment.data;
+    link.download = attachment.name;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+}
+
 // Update Progress
 function updateProgress() {
     const totalQuestions = filteredQuestions.length;
@@ -757,12 +1000,12 @@ function saveAssessment() {
     
     if (existingIndex >= 0) {
         if (confirm('An assessment with this name already exists. Do you want to overwrite it?')) {
-            assessments[existingIndex] = { ...currentAssessment };
+            assessments[existingIndex] = JSON.parse(JSON.stringify(currentAssessment));
         } else {
             return;
         }
     } else {
-        assessments.push({ ...currentAssessment });
+        assessments.push(JSON.parse(JSON.stringify(currentAssessment)));
     }
 
     saveAssessments();
@@ -838,7 +1081,7 @@ function updateSavedAssessmentsList() {
 
 // Load Assessment for editing
 function loadAssessment(index) {
-    currentAssessment = { ...assessments[index] };
+    currentAssessment = JSON.parse(JSON.stringify(assessments[index]));
     
     appNameInput.value = currentAssessment.name;
     
@@ -959,6 +1202,7 @@ function displayDetailedAnswers(assessment) {
         const answer = assessment.answers[question.id];
         const comment = assessment.comments ? assessment.comments[question.id] : null;
         const answeredBy = assessment.answeredBy ? assessment.answeredBy[question.id] : null;
+        const attachments = assessment.attachments ? assessment.attachments[question.id] : null;
         
         if (answer) {
             const answerDiv = document.createElement('div');
@@ -977,6 +1221,24 @@ function displayDetailedAnswers(assessment) {
                 answeredByHtml = `<span class="answered-by-badge profile-${answeredBy}">Answered by: ${answeredBy}</span>`;
             }
             
+            let attachmentsHtml = '';
+            if (attachments && attachments.length > 0) {
+                const attachmentsList = attachments.map((attachment, index) => {
+                    const isImage = attachment.type.startsWith('image/');
+                    const icon = isImage ? '🖼️' : '📄';
+                    const sizeKB = Math.round(attachment.size / 1024);
+                    return `
+                        <div class="result-attachment-item">
+                            <span class="attachment-icon">${icon}</span>
+                            <span class="attachment-name">${escapeHtml(attachment.name)}</span>
+                            <span class="attachment-size">(${sizeKB} KB)</span>
+                            <button class="btn-result-attachment-view" onclick="viewResultAttachment('${question.id}', ${index})">👁️ View</button>
+                        </div>
+                    `;
+                }).join('');
+                attachmentsHtml = `<div class="answer-attachments"><strong>Attachments:</strong>${attachmentsList}</div>`;
+            }
+            
             answerDiv.innerHTML = `
                 <div class="answer-detail-header">
                     <span class="answer-theme-tag">${question.theme}</span>
@@ -987,11 +1249,58 @@ function displayDetailedAnswers(assessment) {
                 </div>
                 <div class="answer-question">${question.question}</div>
                 ${commentHtml}
+                ${attachmentsHtml}
             `;
             
             themeScoresDiv.appendChild(answerDiv);
         }
     });
+}
+
+// View attachment from results page
+function viewResultAttachment(questionId, index) {
+    const selectedIndex = resultsSelect.value;
+    if (selectedIndex === '') return;
+    
+    const assessment = assessments[selectedIndex];
+    const attachment = assessment.attachments?.[questionId]?.[index];
+    if (!attachment) return;
+
+    // If it's an image, show in preview modal
+    if (attachment.type.startsWith('image/')) {
+        const modal = document.createElement('div');
+        modal.className = 'attachment-preview-modal';
+        modal.innerHTML = `
+            <div class="attachment-preview-content">
+                <div class="attachment-preview-header">
+                    <span>${escapeHtml(attachment.name)}</span>
+                    <button class="attachment-preview-close">&times;</button>
+                </div>
+                <div class="attachment-preview-body">
+                    <img src="${attachment.data}" alt="${escapeHtml(attachment.name)}">
+                </div>
+            </div>
+        `;
+
+        document.body.appendChild(modal);
+
+        const closeBtn = modal.querySelector('.attachment-preview-close');
+        closeBtn.addEventListener('click', () => document.body.removeChild(modal));
+        
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) {
+                document.body.removeChild(modal);
+            }
+        });
+    } else {
+        // For non-images, download the file
+        const link = document.createElement('a');
+        link.href = attachment.data;
+        link.download = attachment.name;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    }
 }
 
 // Render Radar Chart
@@ -1582,9 +1891,9 @@ async function performAutoSave() {
         const existingIndex = assessments.findIndex(a => a.name === currentAssessment.name);
         
         if (existingIndex >= 0) {
-            assessments[existingIndex] = { ...currentAssessment };
+            assessments[existingIndex] = JSON.parse(JSON.stringify(currentAssessment));
         } else {
-            assessments.push({ ...currentAssessment });
+            assessments.push(JSON.parse(JSON.stringify(currentAssessment)));
         }
 
         await saveAssessments();
@@ -2023,7 +2332,7 @@ async function syncFromFolder() {
                     if (currentAssessment && 
                         currentAssessment.name === imported.name && 
                         !isCurrentlyEditingAssessment(imported.name)) {
-                        currentAssessment = { ...imported };
+                        currentAssessment = JSON.parse(JSON.stringify(imported));
                         currentAssessmentUpdated = true;
                     }
                 }
