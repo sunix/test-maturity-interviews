@@ -997,12 +997,12 @@ function saveAssessment() {
     
     if (existingIndex >= 0) {
         if (confirm('An assessment with this name already exists. Do you want to overwrite it?')) {
-            assessments[existingIndex] = { ...currentAssessment };
+            assessments[existingIndex] = JSON.parse(JSON.stringify(currentAssessment));
         } else {
             return;
         }
     } else {
-        assessments.push({ ...currentAssessment });
+        assessments.push(JSON.parse(JSON.stringify(currentAssessment)));
     }
 
     saveAssessments();
@@ -1078,7 +1078,7 @@ function updateSavedAssessmentsList() {
 
 // Load Assessment for editing
 function loadAssessment(index) {
-    currentAssessment = { ...assessments[index] };
+    currentAssessment = JSON.parse(JSON.stringify(assessments[index]));
     
     appNameInput.value = currentAssessment.name;
     
