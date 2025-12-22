@@ -578,17 +578,15 @@ function renderQuestions() {
             toggleText.textContent = 'Hide comment and files';
         }
         
-        // Restore previous attachments if exist
-        if (currentAssessment.attachments && currentAssessment.attachments[question.id]) {
-            renderAttachments(question.id);
+        // Check if there are attachments (will render after appending to DOM)
+        const hasAttachments = currentAssessment.attachments && currentAssessment.attachments[question.id];
+        if (hasAttachments && commentSection) {
             // Expand the comment section if there are attachments
-            if (commentSection) {
-                commentSection.classList.remove('collapsed');
-                const toggleIcon = commentToggle.querySelector('.toggle-icon');
-                const toggleText = commentToggle.querySelector('.toggle-text');
-                toggleIcon.textContent = '▼';
-                toggleText.textContent = 'Hide comment and files';
-            }
+            commentSection.classList.remove('collapsed');
+            const toggleIcon = commentToggle.querySelector('.toggle-icon');
+            const toggleText = commentToggle.querySelector('.toggle-text');
+            toggleIcon.textContent = '▼';
+            toggleText.textContent = 'Hide comment and files';
         }
         
         // Pre-select the "Answered by" dropdown
@@ -611,6 +609,11 @@ function renderQuestions() {
         }
 
         questionsContainer.appendChild(questionDiv);
+        
+        // Restore previous attachments AFTER appending to DOM
+        if (hasAttachments) {
+            renderAttachments(question.id);
+        }
     });
 }
 
