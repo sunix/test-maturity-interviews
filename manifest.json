@@ -2,7 +2,7 @@
   "name": "Test Maturity Assessment",
   "short_name": "Test Maturity",
   "description": "Evaluate and track testing maturity across teams and applications",
-  "start_url": "/",
+  "start_url": "/test-maturity-interviews/",
   "display": "standalone",
   "background_color": "#ffffff",
   "theme_color": "#2563eb",

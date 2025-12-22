@@ -1,12 +1,13 @@
 // Service Worker for Test Maturity Assessment PWA
 const CACHE_NAME = 'test-maturity-v1';
+const BASE_PATH = '/test-maturity-interviews';
 const urlsToCache = [
-  '/',
-  '/index.html',
-  '/app.js',
-  '/questions.js',
-  '/styles.css',
-  '/manifest.json'
+  `${BASE_PATH}/`,
+  `${BASE_PATH}/index.html`,
+  `${BASE_PATH}/app.js`,
+  `${BASE_PATH}/questions.js`,
+  `${BASE_PATH}/styles.css`,
+  `${BASE_PATH}/manifest.json`
 ];
 
 // Install event - cache resources
