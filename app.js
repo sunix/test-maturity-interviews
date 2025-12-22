@@ -1011,6 +1011,14 @@ function renderRadarChart(scores) {
         options: {
             responsive: true,
             maintainAspectRatio: true,
+            layout: {
+                padding: {
+                    top: 30,
+                    bottom: 30,
+                    left: 40,
+                    right: 40
+                }
+            },
             scales: {
                 r: {
                     beginAtZero: true,
@@ -1022,7 +1030,8 @@ function renderRadarChart(scores) {
                     pointLabels: {
                         font: {
                             size: 12
-                        }
+                        },
+                        padding: 10
                     }
                 }
             },
