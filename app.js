@@ -135,7 +135,7 @@ const tabs = document.querySelectorAll('.tab-button');
 const tabContents = document.querySelectorAll('.tab-content');
 const appNameInput = document.getElementById('app-name');
 const startInterviewBtn = document.getElementById('start-interview');
-const profileFilter = document.getElementById('profile-filter');
+const profileFilterContainer = document.getElementById('profile-filter');
 const questionsContainer = document.getElementById('questions-container');
 const progressFill = document.getElementById('progress-fill');
 const progressText = document.getElementById('progress-text');
@@ -194,9 +194,12 @@ function setupEventListeners() {
     // Start interview
     startInterviewBtn.addEventListener('click', startInterview);
     
-    // Profile filter change
-    if (profileFilter) {
-        profileFilter.addEventListener('change', handleProfileFilterChange);
+    // Profile filter checkboxes change
+    if (profileFilterContainer) {
+        const profileCheckboxes = profileFilterContainer.querySelectorAll('input[type="checkbox"]');
+        profileCheckboxes.forEach(checkbox => {
+            checkbox.addEventListener('change', handleProfileFilterChange);
+        });
     }
 
     // View results
@@ -342,9 +345,12 @@ function startInterview() {
         answeredBy: {}
     };
 
-    // Reset profile filter
-    if (profileFilter) {
-        profileFilter.value = '';
+    // Reset profile filter checkboxes
+    if (profileFilterContainer) {
+        const profileCheckboxes = profileFilterContainer.querySelectorAll('input[type="checkbox"]');
+        profileCheckboxes.forEach(checkbox => {
+            checkbox.checked = false;
+        });
     }
     
     // Show all questions initially (no filter)
@@ -366,15 +372,22 @@ function startInterview() {
 
 // Handle profile filter change
 function handleProfileFilterChange() {
-    const selectedProfile = profileFilter.value;
+    // Get all selected profiles from checkboxes
+    const selectedProfiles = [];
+    if (profileFilterContainer) {
+        const profileCheckboxes = profileFilterContainer.querySelectorAll('input[type="checkbox"]:checked');
+        profileCheckboxes.forEach(checkbox => {
+            selectedProfiles.push(checkbox.value);
+        });
+    }
     
-    if (!selectedProfile) {
-        // Show all questions
+    if (selectedProfiles.length === 0) {
+        // Show all questions if no profiles selected
         filteredQuestions = getActiveQuestionsCatalog();
     } else {
-        // Filter questions by selected profile
+        // Filter questions by selected profiles - show questions that match ANY of the selected profiles
         filteredQuestions = getActiveQuestionsCatalog().filter(q => 
-            q.profiles.includes(selectedProfile)
+            selectedProfiles.some(profile => q.profiles.includes(profile))
         );
     }
     
@@ -542,8 +555,15 @@ function renderQuestions() {
                 profileSelect.value = currentAssessment.answeredBy[question.id];
             } 
             // Second priority: pre-select with current profile filter if it's applicable to this question
-            else if (profileFilter && profileFilter.value && applicableProfiles.includes(profileFilter.value)) {
-                profileSelect.value = profileFilter.value;
+            else if (profileFilterContainer) {
+                const selectedProfiles = Array.from(
+                    profileFilterContainer.querySelectorAll('input[type="checkbox"]:checked')
+                ).map(cb => cb.value);
+                
+                // If only one profile is selected and it's applicable to this question, pre-select it
+                if (selectedProfiles.length === 1 && applicableProfiles.includes(selectedProfiles[0])) {
+                    profileSelect.value = selectedProfiles[0];
+                }
             }
         }
 
@@ -581,14 +601,21 @@ function handleAnswer(button) {
         if (profileSelect.value) {
             // Use the selected value from dropdown
             currentAssessment.answeredBy[questionId] = profileSelect.value;
-        } else if (profileFilter && profileFilter.value) {
-            // No dropdown selection, but profile filter is set - use filter value and update dropdown
-            const question = getActiveQuestionsCatalog().find(q => q.id === questionId);
-            if (question) {
-                const applicableProfiles = question.profiles.filter(p => p !== 'all');
-                if (applicableProfiles.includes(profileFilter.value)) {
-                    currentAssessment.answeredBy[questionId] = profileFilter.value;
-                    profileSelect.value = profileFilter.value; // Update the dropdown
+        } else if (profileFilterContainer) {
+            // No dropdown selection, but profile filter is set
+            const selectedProfiles = Array.from(
+                profileFilterContainer.querySelectorAll('input[type="checkbox"]:checked')
+            ).map(cb => cb.value);
+            
+            // If only one profile is selected, use it and update dropdown
+            if (selectedProfiles.length === 1) {
+                const question = getActiveQuestionsCatalog().find(q => q.id === questionId);
+                if (question) {
+                    const applicableProfiles = question.profiles.filter(p => p !== 'all');
+                    if (applicableProfiles.includes(selectedProfiles[0])) {
+                        currentAssessment.answeredBy[questionId] = selectedProfiles[0];
+                        profileSelect.value = selectedProfiles[0]; // Update the dropdown
+                    }
                 }
             }
         }
@@ -815,9 +842,12 @@ function loadAssessment(index) {
     
     appNameInput.value = currentAssessment.name;
     
-    // Reset profile filter
-    if (profileFilter) {
-        profileFilter.value = '';
+    // Reset profile filter checkboxes
+    if (profileFilterContainer) {
+        const profileCheckboxes = profileFilterContainer.querySelectorAll('input[type="checkbox"]');
+        profileCheckboxes.forEach(checkbox => {
+            checkbox.checked = false;
+        });
     }
     
     // Show all questions (user can filter if needed)
