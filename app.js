@@ -2329,7 +2329,7 @@ async function syncFromFolder() {
                     if (currentAssessment && 
                         currentAssessment.name === imported.name && 
                         !isCurrentlyEditingAssessment(imported.name)) {
-                        currentAssessment = { ...imported };
+                        currentAssessment = JSON.parse(JSON.stringify(imported));
                         currentAssessmentUpdated = true;
                     }
                 }
