@@ -584,6 +584,7 @@ header h1 {
 .chart-container {
     position: relative;
     height: 400px;
+    max-width: 600px;
     margin: 2rem auto;
 }
 
