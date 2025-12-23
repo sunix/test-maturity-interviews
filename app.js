@@ -1084,10 +1084,18 @@ async function deleteAssessment(index) {
         
         // Delete the file from sync folder if sync is enabled
         if (syncEnabled && syncFolderHandle && assessment) {
+            // Attempt to delete file, but don't block deletion if it fails
+            // The orphaned file cleanup in syncToFolder will handle any remaining files
             await deleteAssessmentFile(assessment);
         }
         
+        // Remove from local array
         assessments.splice(index, 1);
+        
+        // Save and update UI
+        // Note: saveAssessments() will trigger syncToFolder() which includes
+        // orphaned file cleanup, ensuring any files that weren't deleted above
+        // will be cleaned up during the next sync
         saveAssessments();
         updateSavedAssessmentsList();
         updateResultsSelect();
