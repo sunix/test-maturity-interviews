@@ -1746,3 +1746,42 @@ header h1 {
         max-height: 95vh;
     }
 }
+
+/* Profile Customization Styles */
+.profile-custom-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 1.5rem;
+}
+
+.profile-custom-item {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.profile-custom-item label {
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.profile-custom-item input[type="text"],
+.profile-custom-item input[type="email"] {
+    padding: 0.5rem;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    font-size: 0.875rem;
+}
+
+.profile-custom-item input[type="text"]:focus,
+.profile-custom-item input[type="email"]:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+}
+
+.profile-custom-item input[type="email"] {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+}

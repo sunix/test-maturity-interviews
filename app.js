@@ -6,7 +6,8 @@ let currentAssessment = {
     answers: {},
     comments: {},
     answeredBy: {}, // Track which profile answered each question
-    attachments: {} // Store file attachments for each question
+    attachments: {}, // Store file attachments for each question
+    profileMapping: {} // Custom profile names and emails for each role: { developer: { name: string, email: string }, qa: { name: string, email: string }, devops: { name: string, email: string }, manager: { name: string, email: string } }
 };
 
 let assessments = [];
@@ -157,6 +158,8 @@ const headerSyncIndicator = document.getElementById('header-sync-indicator');
 const headerSelectSyncFolderBtn = document.getElementById('header-select-sync-folder');
 const hamburgerBtn = document.getElementById('hamburger-menu');
 const tabsMobile = document.querySelector('.tabs-mobile');
+const customizeProfilesCheckbox = document.getElementById('customize-profiles-checkbox');
+const profileCustomizationSection = document.getElementById('profile-customization-section');
 
 // Initialize
 document.addEventListener('DOMContentLoaded', async () => {
@@ -255,6 +258,11 @@ function setupEventListeners() {
     if (headerSelectSyncFolderBtn) {
         headerSelectSyncFolderBtn.addEventListener('click', selectSyncFolder);
     }
+    
+    // Profile customization checkbox
+    if (customizeProfilesCheckbox) {
+        customizeProfilesCheckbox.addEventListener('change', toggleProfileCustomization);
+    }
 }
 
 // Close mobile menu
@@ -330,6 +338,27 @@ function updateTabVisibility() {
     }
 }
 
+// Utility: capitalize first letter of a string
+function capitalizeFirstLetter(str) {
+    return str.charAt(0).toUpperCase() + str.slice(1);
+}
+
+// Utility: ensure assessment has profileMapping for backward compatibility
+function ensureProfileMappingExists(assessment) {
+    if (!assessment.profileMapping) {
+        assessment.profileMapping = {};
+    }
+}
+
+// Toggle profile customization section visibility
+function toggleProfileCustomization() {
+    if (profileCustomizationSection) {
+        profileCustomizationSection.style.display = customizeProfilesCheckbox.checked ? 'block' : 'none';
+    }
+}
+
+
+
 // Start Interview
 function startInterview() {
     const appName = appNameInput.value.trim();
@@ -347,8 +376,24 @@ function startInterview() {
         answers: {},
         comments: {},
         answeredBy: {},
-        attachments: {}
+        attachments: {},
+        profileMapping: {}
     };
+    
+    // Capture custom profile names and emails if checkbox is checked
+    if (customizeProfilesCheckbox && customizeProfilesCheckbox.checked) {
+        ALL_PROFILES.forEach(profile => {
+            const nameInput = document.getElementById(`profile-${profile}-name`);
+            const emailInput = document.getElementById(`profile-${profile}-email`);
+            
+            if (nameInput && nameInput.value.trim()) {
+                currentAssessment.profileMapping[profile] = {
+                    name: nameInput.value.trim(),
+                    email: emailInput ? emailInput.value.trim() : ''
+                };
+            }
+        });
+    }
 
     // Reset profile filter checkboxes
     if (profileFilterContainer) {
@@ -1066,6 +1111,8 @@ function loadAssessments() {
     if (saved) {
         try {
             assessments = JSON.parse(saved);
+            // Ensure backward compatibility: add profileMapping if it doesn't exist
+            assessments.forEach(assessment => ensureProfileMappingExists(assessment));
             updateResultsSelect();
             updateTabVisibility(); // Update tab visibility after loading assessments
         } catch (e) {
@@ -2323,6 +2370,8 @@ async function syncFromFolder() {
                         typeof data.profile === 'string' && 
                         typeof data.answers === 'object' &&
                         data.date) {
+                        // Ensure backward compatibility
+                        ensureProfileMappingExists(data);
                         // Store file metadata for comparison
                         data._fileLastModified = file.lastModified;
                         importedAssessments.push(data);
