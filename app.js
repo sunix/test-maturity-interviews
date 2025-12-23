@@ -7,7 +7,7 @@ let currentAssessment = {
     comments: {},
     answeredBy: {}, // Track which profile answered each question
     attachments: {}, // Store file attachments for each question
-    profileMapping: {} // Custom profile names and emails: { developer: { name: 'John Doe', email: 'john@example.com' }, ... }
+    profileMapping: {} // Custom profile names and emails for each role: { developer: { name: string, email: string }, qa: { name: string, email: string }, devops: { name: string, email: string }, manager: { name: string, email: string } }
 };
 
 let assessments = [];
@@ -338,6 +338,18 @@ function updateTabVisibility() {
     }
 }
 
+// Utility: capitalize first letter of a string
+function capitalizeFirstLetter(str) {
+    return str.charAt(0).toUpperCase() + str.slice(1);
+}
+
+// Utility: ensure assessment has profileMapping for backward compatibility
+function ensureProfileMappingExists(assessment) {
+    if (!assessment.profileMapping) {
+        assessment.profileMapping = {};
+    }
+}
+
 // Toggle profile customization section visibility
 function toggleProfileCustomization() {
     if (profileCustomizationSection) {
@@ -351,7 +363,7 @@ function getProfileDisplayName(profile) {
         return currentAssessment.profileMapping[profile].name || profile;
     }
     // Return capitalized default name
-    return profile.charAt(0).toUpperCase() + profile.slice(1);
+    return capitalizeFirstLetter(profile);
 }
 
 // Get profile email if available
@@ -1121,12 +1133,7 @@ function loadAssessments() {
         try {
             assessments = JSON.parse(saved);
             // Ensure backward compatibility: add profileMapping if it doesn't exist
-            assessments = assessments.map(assessment => {
-                if (!assessment.profileMapping) {
-                    assessment.profileMapping = {};
-                }
-                return assessment;
-            });
+            assessments.forEach(assessment => ensureProfileMappingExists(assessment));
             updateResultsSelect();
             updateTabVisibility(); // Update tab visibility after loading assessments
         } catch (e) {
@@ -2408,10 +2415,8 @@ async function syncFromFolder() {
                         typeof data.profile === 'string' && 
                         typeof data.answers === 'object' &&
                         data.date) {
-                        // Ensure backward compatibility: add profileMapping if it doesn't exist
-                        if (!data.profileMapping) {
-                            data.profileMapping = {};
-                        }
+                        // Ensure backward compatibility
+                        ensureProfileMappingExists(data);
                         // Store file metadata for comparison
                         data._fileLastModified = file.lastModified;
                         importedAssessments.push(data);
