@@ -1078,8 +1078,15 @@ function loadAssessment(index) {
 }
 
 // Delete Assessment
-function deleteAssessment(index) {
+async function deleteAssessment(index) {
     if (confirm('Are you sure you want to delete this assessment?')) {
+        const assessment = assessments[index];
+        
+        // Delete the file from sync folder if sync is enabled
+        if (syncEnabled && syncFolderHandle && assessment) {
+            await deleteAssessmentFile(assessment);
+        }
+        
         assessments.splice(index, 1);
         saveAssessments();
         updateSavedAssessmentsList();
@@ -2385,6 +2392,26 @@ async function syncToFolder() {
             alert('Permission denied. Please re-select the sync folder.');
             disableSync();
         }
+    }
+}
+
+// Delete assessment file from sync folder
+async function deleteAssessmentFile(assessment) {
+    if (!syncFolderHandle) return;
+    
+    try {
+        // Create the filename that would have been used for this assessment
+        const safeName = assessment.name.replace(/[^a-z0-9_-]/gi, '_');
+        const dateStr = new Date(assessment.date).toISOString().split('T')[0];
+        const filename = `assessment-${safeName}-${dateStr}.json`;
+        
+        // Try to remove the file
+        const fileHandle = await syncFolderHandle.getFileHandle(filename);
+        await fileHandle.remove();
+        console.log(`Deleted assessment file: ${filename}`);
+    } catch (error) {
+        // File might not exist or permission error - log but don't fail
+        console.warn(`Could not delete assessment file:`, error);
     }
 }
 
