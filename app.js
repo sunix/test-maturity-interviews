@@ -1078,9 +1078,24 @@ function loadAssessment(index) {
 }
 
 // Delete Assessment
-function deleteAssessment(index) {
+async function deleteAssessment(index) {
     if (confirm('Are you sure you want to delete this assessment?')) {
+        const assessment = assessments[index];
+        
+        // Delete the file from sync folder if sync is enabled
+        if (syncEnabled && syncFolderHandle && assessment) {
+            // Attempt to delete file, but don't block deletion if it fails
+            // The orphaned file cleanup in syncToFolder will handle any remaining files
+            await deleteAssessmentFile(assessment);
+        }
+        
+        // Remove from local array
         assessments.splice(index, 1);
+        
+        // Save and update UI
+        // Note: saveAssessments() will trigger syncToFolder() which includes
+        // orphaned file cleanup, ensuring any files that weren't deleted above
+        // will be cleaned up during the next sync
         saveAssessments();
         updateSavedAssessmentsList();
         updateResultsSelect();
@@ -2346,11 +2361,16 @@ async function syncToFolder() {
         // Update status to saving
         updateHeaderSyncStatus('saving');
         
+        // Track which files should exist
+        const expectedFiles = new Set();
+        
         for (const assessment of assessments) {
             // Create a safe filename
             const safeName = assessment.name.replace(/[^a-z0-9_-]/gi, '_');
             const dateStr = new Date(assessment.date).toISOString().split('T')[0];
             const filename = `assessment-${safeName}-${dateStr}.json`;
+            
+            expectedFiles.add(filename);
             
             // Create or update the file
             const fileHandle = await syncFolderHandle.getFileHandle(filename, { create: true });
@@ -2371,6 +2391,26 @@ async function syncToFolder() {
             }
         }
         
+        // Clean up orphaned assessment files (files that no longer have a corresponding assessment)
+        try {
+            for await (const entry of syncFolderHandle.values()) {
+                if (entry.kind === 'file' && 
+                    entry.name.startsWith('assessment-') && 
+                    entry.name.endsWith('.json') &&
+                    !expectedFiles.has(entry.name)) {
+                    // This is an orphaned assessment file, remove it
+                    try {
+                        await syncFolderHandle.removeEntry(entry.name);
+                        console.log(`Removed orphaned assessment file: ${entry.name}`);
+                    } catch (removeError) {
+                        console.warn(`Could not remove orphaned file ${entry.name}:`, removeError);
+                    }
+                }
+            }
+        } catch (cleanupError) {
+            console.warn('Error during orphaned files cleanup:', cleanupError);
+        }
+        
         console.log(`Synced ${assessments.length} assessments to folder`);
         
         // Update status to synced
@@ -2384,6 +2424,27 @@ async function syncToFolder() {
         if (error.name === 'NotAllowedError') {
             alert('Permission denied. Please re-select the sync folder.');
             disableSync();
+        }
+    }
+}
+
+// Delete assessment file from sync folder
+async function deleteAssessmentFile(assessment) {
+    if (!syncFolderHandle) return;
+    
+    try {
+        // Create the filename that would have been used for this assessment
+        const safeName = assessment.name.replace(/[^a-z0-9_-]/gi, '_');
+        const dateStr = new Date(assessment.date).toISOString().split('T')[0];
+        const filename = `assessment-${safeName}-${dateStr}.json`;
+        
+        // Try to remove the file using the directory handle's removeEntry method
+        await syncFolderHandle.removeEntry(filename);
+        console.log(`Deleted assessment file: ${filename}`);
+    } catch (error) {
+        // File might not exist (NotFoundError) or permission error - log but don't fail
+        if (error.name !== 'NotFoundError') {
+            console.warn(`Could not delete assessment file:`, error);
         }
     }
 }
