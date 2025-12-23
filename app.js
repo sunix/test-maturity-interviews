@@ -48,6 +48,9 @@ const MATURITY_SCALE_MAX = 5;
 const PERCENTAGE_TO_SCALE_DIVISOR = 20; // Maps 0-100% to 0-5 range
 const SCALE_OFFSET = 0.5; // Ensures proper rounding to maturity levels
 
+// All available profiles - used for "Answered by" dropdown
+const ALL_PROFILES = ['developer', 'qa', 'devops', 'manager'];
+
 // IndexedDB for persisting folder handle
 const DB_NAME = 'TestMaturityDB';
 const DB_VERSION = 1;
@@ -430,13 +433,14 @@ function renderQuestions() {
             .map(p => `<span class="profile-badge profile-${p}">${p}</span>`)
             .join(' ');
         
-        // Generate profile selector dropdown for questions with multiple applicable profiles
+        // Generate profile selector dropdown - show all profiles since anyone may have the answer
         const applicableProfiles = question.profiles.filter(p => p !== 'all');
+        const options = ALL_PROFILES.map(p => 
+            `<option value="${p}">${p.charAt(0).toUpperCase() + p.slice(1)}</option>`
+        ).join('');
+        
         let profileRow = '';
-        if (applicableProfiles.length > 1) {
-            const options = applicableProfiles.map(p => 
-                `<option value="${p}">${p.charAt(0).toUpperCase() + p.slice(1)}</option>`
-            ).join('');
+        if (profileBadges) {
             profileRow = `
                 <div class="comment-section collapsed">
                     <div class="comment-header">
@@ -454,32 +458,6 @@ function renderQuestions() {
                                 <option value="">Select...</option>
                                 ${options}
                             </select>
-                        </div>
-                    </div>
-                    <div class="comment-content">
-                        <textarea id="comment-${question.id}" class="comment-input" data-question-id="${question.id}" placeholder="Add any notes or context for this question..." rows="2"></textarea>
-                        <div class="attachment-controls">
-                            <label class="btn-attachment-upload">
-                                📎 Attach Files
-                                <input type="file" id="file-${question.id}" data-question-id="${question.id}" multiple accept="image/*,.pdf,.doc,.docx,.txt" style="display: none;">
-                            </label>
-                            <span class="attachment-hint">or paste screenshots (Ctrl+V)</span>
-                        </div>
-                        <div id="attachments-${question.id}" class="attachments-container"></div>
-                    </div>
-                </div>
-            `;
-        } else if (profileBadges) {
-            profileRow = `
-                <div class="comment-section collapsed">
-                    <div class="comment-header">
-                        <button class="comment-toggle" data-question-id="${question.id}">
-                            <span class="toggle-icon">▶</span>
-                            <span class="toggle-text">Add comment or files</span>
-                        </button>
-                        <div class="profile-row-inline">
-                            <span class="question-weight">Weight: ${question.weight}</span>
-                            <div class="profile-can-answer">Can be answered by: ${profileBadges}</div>
                         </div>
                     </div>
                     <div class="comment-content">
@@ -595,14 +573,14 @@ function renderQuestions() {
             if (currentAssessment.answeredBy && currentAssessment.answeredBy[question.id]) {
                 profileSelect.value = currentAssessment.answeredBy[question.id];
             } 
-            // Second priority: pre-select with current profile filter if it's applicable to this question
+            // Second priority: pre-select with current profile filter if only one profile is selected
             else if (profileFilterContainer) {
                 const selectedProfiles = Array.from(
                     profileFilterContainer.querySelectorAll('input[type="checkbox"]:checked')
                 ).map(cb => cb.value);
                 
-                // If only one profile is selected and it's applicable to this question, pre-select it
-                if (selectedProfiles.length === 1 && applicableProfiles.includes(selectedProfiles[0])) {
+                // If only one profile is selected, pre-select it
+                if (selectedProfiles.length === 1 && ALL_PROFILES.includes(selectedProfiles[0])) {
                     profileSelect.value = selectedProfiles[0];
                 }
             }
@@ -643,7 +621,7 @@ function handleAnswer(button) {
     // Store answeredBy if profile selector exists
     const profileSelect = questionDiv.querySelector('.profile-select-input');
     if (profileSelect) {
-        // Multi-profile question
+        // Question with profile selector
         if (profileSelect.value) {
             // Use the selected value from dropdown
             currentAssessment.answeredBy[questionId] = profileSelect.value;
@@ -654,15 +632,9 @@ function handleAnswer(button) {
             ).map(cb => cb.value);
             
             // If only one profile is selected, use it and update dropdown
-            if (selectedProfiles.length === 1) {
-                const question = getActiveQuestionsCatalog().find(q => q.id === questionId);
-                if (question) {
-                    const applicableProfiles = question.profiles.filter(p => p !== 'all');
-                    if (applicableProfiles.includes(selectedProfiles[0])) {
-                        currentAssessment.answeredBy[questionId] = selectedProfiles[0];
-                        profileSelect.value = selectedProfiles[0]; // Update the dropdown
-                    }
-                }
+            if (selectedProfiles.length === 1 && ALL_PROFILES.includes(selectedProfiles[0])) {
+                currentAssessment.answeredBy[questionId] = selectedProfiles[0];
+                profileSelect.value = selectedProfiles[0]; // Update the dropdown
             }
         }
     } else {
