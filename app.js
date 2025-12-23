@@ -2353,11 +2353,16 @@ async function syncToFolder() {
         // Update status to saving
         updateHeaderSyncStatus('saving');
         
+        // Track which files should exist
+        const expectedFiles = new Set();
+        
         for (const assessment of assessments) {
             // Create a safe filename
             const safeName = assessment.name.replace(/[^a-z0-9_-]/gi, '_');
             const dateStr = new Date(assessment.date).toISOString().split('T')[0];
             const filename = `assessment-${safeName}-${dateStr}.json`;
+            
+            expectedFiles.add(filename);
             
             // Create or update the file
             const fileHandle = await syncFolderHandle.getFileHandle(filename, { create: true });
@@ -2376,6 +2381,26 @@ async function syncToFolder() {
             if (assessmentIndex >= 0) {
                 assessments[assessmentIndex]._fileLastModified = savedFile.lastModified;
             }
+        }
+        
+        // Clean up orphaned assessment files (files that no longer have a corresponding assessment)
+        try {
+            for await (const entry of syncFolderHandle.values()) {
+                if (entry.kind === 'file' && 
+                    entry.name.startsWith('assessment-') && 
+                    entry.name.endsWith('.json') &&
+                    !expectedFiles.has(entry.name)) {
+                    // This is an orphaned assessment file, remove it
+                    try {
+                        await entry.remove();
+                        console.log(`Removed orphaned assessment file: ${entry.name}`);
+                    } catch (removeError) {
+                        console.warn(`Could not remove orphaned file ${entry.name}:`, removeError);
+                    }
+                }
+            }
+        } catch (cleanupError) {
+            console.warn('Error during orphaned files cleanup:', cleanupError);
         }
         
         console.log(`Synced ${assessments.length} assessments to folder`);
