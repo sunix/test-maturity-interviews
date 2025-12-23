@@ -2392,7 +2392,7 @@ async function syncToFolder() {
                     !expectedFiles.has(entry.name)) {
                     // This is an orphaned assessment file, remove it
                     try {
-                        await entry.remove();
+                        await syncFolderHandle.removeEntry(entry.name);
                         console.log(`Removed orphaned assessment file: ${entry.name}`);
                     } catch (removeError) {
                         console.warn(`Could not remove orphaned file ${entry.name}:`, removeError);
@@ -2430,13 +2430,14 @@ async function deleteAssessmentFile(assessment) {
         const dateStr = new Date(assessment.date).toISOString().split('T')[0];
         const filename = `assessment-${safeName}-${dateStr}.json`;
         
-        // Try to remove the file
-        const fileHandle = await syncFolderHandle.getFileHandle(filename);
-        await fileHandle.remove();
+        // Try to remove the file using the directory handle's removeEntry method
+        await syncFolderHandle.removeEntry(filename);
         console.log(`Deleted assessment file: ${filename}`);
     } catch (error) {
-        // File might not exist or permission error - log but don't fail
-        console.warn(`Could not delete assessment file:`, error);
+        // File might not exist (NotFoundError) or permission error - log but don't fail
+        if (error.name !== 'NotFoundError') {
+            console.warn(`Could not delete assessment file:`, error);
+        }
     }
 }
 
