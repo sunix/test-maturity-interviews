@@ -357,22 +357,7 @@ function toggleProfileCustomization() {
     }
 }
 
-// Get display name for a profile (custom or default)
-function getProfileDisplayName(profile) {
-    if (currentAssessment.profileMapping && currentAssessment.profileMapping[profile]) {
-        return currentAssessment.profileMapping[profile].name || profile;
-    }
-    // Return capitalized default name
-    return capitalizeFirstLetter(profile);
-}
 
-// Get profile email if available
-function getProfileEmail(profile) {
-    if (currentAssessment.profileMapping && currentAssessment.profileMapping[profile]) {
-        return currentAssessment.profileMapping[profile].email || '';
-    }
-    return '';
-}
 
 // Start Interview
 function startInterview() {
@@ -490,20 +475,14 @@ function renderQuestions() {
         // Generate profile badges for questions
         const profileBadges = question.profiles
             .filter(p => p !== 'all')
-            .map(p => {
-                const displayName = getProfileDisplayName(p);
-                return `<span class="profile-badge profile-${p}">${displayName}</span>`;
-            })
+            .map(p => `<span class="profile-badge profile-${p}">${p}</span>`)
             .join(' ');
         
         // Generate profile selector dropdown - show all profiles since anyone may have the answer
         const applicableProfiles = question.profiles.filter(p => p !== 'all');
-        const options = ALL_PROFILES.map(p => {
-            const displayName = getProfileDisplayName(p);
-            const email = getProfileEmail(p);
-            const displayText = email ? `${displayName} (${email})` : displayName;
-            return `<option value="${p}">${escapeHtml(displayText)}</option>`;
-        }).join('');
+        const options = ALL_PROFILES.map(p => 
+            `<option value="${p}">${p.charAt(0).toUpperCase() + p.slice(1)}</option>`
+        ).join('');
         
         let profileRow = '';
         if (profileBadges) {
@@ -1338,15 +1317,7 @@ function displayDetailedAnswers(assessment) {
             
             let answeredByHtml = '';
             if (answeredBy) {
-                // Get custom profile name if available
-                let displayName = answeredBy;
-                let email = '';
-                if (assessment.profileMapping && assessment.profileMapping[answeredBy]) {
-                    displayName = assessment.profileMapping[answeredBy].name || answeredBy;
-                    email = assessment.profileMapping[answeredBy].email || '';
-                }
-                const displayText = email ? `${displayName} (${email})` : displayName;
-                answeredByHtml = `<span class="answered-by-badge profile-${answeredBy}">Answered by: ${escapeHtml(displayText)}</span>`;
+                answeredByHtml = `<span class="answered-by-badge profile-${answeredBy}">Answered by: ${answeredBy}</span>`;
             }
             
             let attachmentsHtml = '';
@@ -1637,20 +1608,12 @@ function exportAssessmentsToExcel() {
                 const answeredBy = assessment.answeredBy?.[question.id] || '';
                 const comment = assessment.comments?.[question.id] || '';
                 
-                // Get custom profile name if available
-                let answeredByDisplay = answeredBy;
-                if (answeredBy && assessment.profileMapping && assessment.profileMapping[answeredBy]) {
-                    const name = assessment.profileMapping[answeredBy].name || answeredBy;
-                    const email = assessment.profileMapping[answeredBy].email || '';
-                    answeredByDisplay = email ? `${name} (${email})` : name;
-                }
-                
                 assessmentData.push([
                     question.id,
                     question.theme,
                     question.question,
                     answer,
-                    answeredByDisplay,
+                    answeredBy,
                     comment,
                     question.weight,
                     question.category || ''
@@ -1911,20 +1874,12 @@ function exportResultToExcel() {
             const answeredBy = assessment.answeredBy?.[question.id] || '';
             const comment = assessment.comments?.[question.id] || '';
             
-            // Get custom profile name if available
-            let answeredByDisplay = answeredBy;
-            if (answeredBy && assessment.profileMapping && assessment.profileMapping[answeredBy]) {
-                const name = assessment.profileMapping[answeredBy].name || answeredBy;
-                const email = assessment.profileMapping[answeredBy].email || '';
-                answeredByDisplay = email ? `${name} (${email})` : name;
-            }
-            
             detailsData.push([
                 question.id,
                 question.theme,
                 question.question,
                 String(answer || '').toUpperCase(),
-                answeredByDisplay,
+                answeredBy,
                 comment,
                 question.weight,
                 question.category || ''
