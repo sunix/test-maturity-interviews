@@ -1579,6 +1579,7 @@ header h1 {
 }
 
 .btn-attachment-preview,
+.btn-attachment-rename,
 .btn-attachment-download,
 .btn-attachment-remove {
     padding: 0.25rem 0.5rem;
@@ -1592,6 +1593,7 @@ header h1 {
 }
 
 .btn-attachment-preview:hover,
+.btn-attachment-rename:hover,
 .btn-attachment-download:hover {
     background-color: var(--primary-color);
     color: white;
