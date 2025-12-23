@@ -790,6 +790,67 @@ function handlePaste(event, questionId) {
     }
 }
 
+// Rename attachment
+function renameAttachment(questionId, index) {
+    if (!currentAssessment.attachments || !currentAssessment.attachments[questionId]) {
+        return;
+    }
+
+    const attachment = currentAssessment.attachments[questionId][index];
+    if (!attachment) return;
+
+    // Extract file extension
+    const lastDotIndex = attachment.name.lastIndexOf('.');
+    const extension = lastDotIndex > -1 ? attachment.name.substring(lastDotIndex) : '';
+    const nameWithoutExt = lastDotIndex > -1 ? attachment.name.substring(0, lastDotIndex) : attachment.name;
+
+    // Prompt for new name
+    const newName = prompt('Enter new file name (without extension):', nameWithoutExt);
+    
+    if (newName === null) {
+        // User cancelled
+        return;
+    }
+    
+    if (newName.trim() === '') {
+        alert('File name cannot be empty.');
+        return;
+    }
+
+    // Sanitize the filename - remove/replace invalid characters
+    let sanitizedName = newName.trim()
+        // Replace invalid characters with underscore
+        .replace(/[<>:"/\\|?*\x00-\x1F\x7F]/g, '_')
+        // Replace multiple consecutive underscores with single underscore
+        .replace(/_+/g, '_')
+        // Remove leading/trailing underscores and dots
+        .replace(/^[._]+|[._]+$/g, '');
+    
+    // Check for reserved Windows filenames
+    const reservedNames = /^(con|prn|aux|nul|com[0-9]|lpt[0-9])$/i;
+    if (reservedNames.test(sanitizedName)) {
+        sanitizedName = '_' + sanitizedName;
+    }
+    
+    // Ensure the name is not empty after sanitization
+    if (sanitizedName === '') {
+        alert('Invalid file name. Please use alphanumeric characters.');
+        return;
+    }
+    
+    // Update the attachment name with extension
+    attachment.name = sanitizedName + extension;
+
+    // Re-render attachments
+    renderAttachments(questionId);
+    
+    // Mark as actively editing
+    markAsActivelyEditing();
+    
+    // Trigger auto-save
+    triggerAutoSave();
+}
+
 // Remove attachment
 function removeAttachment(questionId, index) {
     if (!currentAssessment.attachments || !currentAssessment.attachments[questionId]) {
@@ -840,6 +901,7 @@ function renderAttachments(questionId) {
             <span class="attachment-name" title="${attachment.name}">${attachment.name}</span>
             <span class="attachment-size">(${sizeKB} KB)</span>
             ${isImage ? `<button class="btn-attachment-preview" data-question-id="${questionId}" data-index="${index}">👁️ Preview</button>` : ''}
+            <button class="btn-attachment-rename" data-question-id="${questionId}" data-index="${index}">✏️ Rename</button>
             <button class="btn-attachment-download" data-question-id="${questionId}" data-index="${index}">⬇️ Download</button>
             <button class="btn-attachment-remove" data-question-id="${questionId}" data-index="${index}">🗑️</button>
         `;
@@ -849,6 +911,9 @@ function renderAttachments(questionId) {
         if (previewBtn) {
             previewBtn.addEventListener('click', () => previewAttachment(questionId, index));
         }
+
+        const renameBtn = attachmentDiv.querySelector('.btn-attachment-rename');
+        renameBtn.addEventListener('click', () => renameAttachment(questionId, index));
 
         const downloadBtn = attachmentDiv.querySelector('.btn-attachment-download');
         downloadBtn.addEventListener('click', () => downloadAttachment(questionId, index));
