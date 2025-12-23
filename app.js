@@ -6,7 +6,8 @@ let currentAssessment = {
     answers: {},
     comments: {},
     answeredBy: {}, // Track which profile answered each question
-    attachments: {} // Store file attachments for each question
+    attachments: {}, // Store file attachments for each question
+    profileMapping: {} // Custom profile names and emails: { developer: { name: 'John Doe', email: 'john@example.com' }, ... }
 };
 
 let assessments = [];
@@ -157,6 +158,8 @@ const headerSyncIndicator = document.getElementById('header-sync-indicator');
 const headerSelectSyncFolderBtn = document.getElementById('header-select-sync-folder');
 const hamburgerBtn = document.getElementById('hamburger-menu');
 const tabsMobile = document.querySelector('.tabs-mobile');
+const customizeProfilesCheckbox = document.getElementById('customize-profiles-checkbox');
+const profileCustomizationSection = document.getElementById('profile-customization-section');
 
 // Initialize
 document.addEventListener('DOMContentLoaded', async () => {
@@ -255,6 +258,11 @@ function setupEventListeners() {
     if (headerSelectSyncFolderBtn) {
         headerSelectSyncFolderBtn.addEventListener('click', selectSyncFolder);
     }
+    
+    // Profile customization checkbox
+    if (customizeProfilesCheckbox) {
+        customizeProfilesCheckbox.addEventListener('change', toggleProfileCustomization);
+    }
 }
 
 // Close mobile menu
@@ -330,6 +338,30 @@ function updateTabVisibility() {
     }
 }
 
+// Toggle profile customization section visibility
+function toggleProfileCustomization() {
+    if (profileCustomizationSection) {
+        profileCustomizationSection.style.display = customizeProfilesCheckbox.checked ? 'block' : 'none';
+    }
+}
+
+// Get display name for a profile (custom or default)
+function getProfileDisplayName(profile) {
+    if (currentAssessment.profileMapping && currentAssessment.profileMapping[profile]) {
+        return currentAssessment.profileMapping[profile].name || profile;
+    }
+    // Return capitalized default name
+    return profile.charAt(0).toUpperCase() + profile.slice(1);
+}
+
+// Get profile email if available
+function getProfileEmail(profile) {
+    if (currentAssessment.profileMapping && currentAssessment.profileMapping[profile]) {
+        return currentAssessment.profileMapping[profile].email || '';
+    }
+    return '';
+}
+
 // Start Interview
 function startInterview() {
     const appName = appNameInput.value.trim();
@@ -347,8 +379,24 @@ function startInterview() {
         answers: {},
         comments: {},
         answeredBy: {},
-        attachments: {}
+        attachments: {},
+        profileMapping: {}
     };
+    
+    // Capture custom profile names and emails if checkbox is checked
+    if (customizeProfilesCheckbox && customizeProfilesCheckbox.checked) {
+        ALL_PROFILES.forEach(profile => {
+            const nameInput = document.getElementById(`profile-${profile}-name`);
+            const emailInput = document.getElementById(`profile-${profile}-email`);
+            
+            if (nameInput && nameInput.value.trim()) {
+                currentAssessment.profileMapping[profile] = {
+                    name: nameInput.value.trim(),
+                    email: emailInput ? emailInput.value.trim() : ''
+                };
+            }
+        });
+    }
 
     // Reset profile filter checkboxes
     if (profileFilterContainer) {
@@ -430,14 +478,20 @@ function renderQuestions() {
         // Generate profile badges for questions
         const profileBadges = question.profiles
             .filter(p => p !== 'all')
-            .map(p => `<span class="profile-badge profile-${p}">${p}</span>`)
+            .map(p => {
+                const displayName = getProfileDisplayName(p);
+                return `<span class="profile-badge profile-${p}">${displayName}</span>`;
+            })
             .join(' ');
         
         // Generate profile selector dropdown - show all profiles since anyone may have the answer
         const applicableProfiles = question.profiles.filter(p => p !== 'all');
-        const options = ALL_PROFILES.map(p => 
-            `<option value="${p}">${p.charAt(0).toUpperCase() + p.slice(1)}</option>`
-        ).join('');
+        const options = ALL_PROFILES.map(p => {
+            const displayName = getProfileDisplayName(p);
+            const email = getProfileEmail(p);
+            const displayText = email ? `${displayName} (${email})` : displayName;
+            return `<option value="${p}">${escapeHtml(displayText)}</option>`;
+        }).join('');
         
         let profileRow = '';
         if (profileBadges) {
@@ -1066,6 +1120,13 @@ function loadAssessments() {
     if (saved) {
         try {
             assessments = JSON.parse(saved);
+            // Ensure backward compatibility: add profileMapping if it doesn't exist
+            assessments = assessments.map(assessment => {
+                if (!assessment.profileMapping) {
+                    assessment.profileMapping = {};
+                }
+                return assessment;
+            });
             updateResultsSelect();
             updateTabVisibility(); // Update tab visibility after loading assessments
         } catch (e) {
@@ -1270,7 +1331,15 @@ function displayDetailedAnswers(assessment) {
             
             let answeredByHtml = '';
             if (answeredBy) {
-                answeredByHtml = `<span class="answered-by-badge profile-${answeredBy}">Answered by: ${answeredBy}</span>`;
+                // Get custom profile name if available
+                let displayName = answeredBy;
+                let email = '';
+                if (assessment.profileMapping && assessment.profileMapping[answeredBy]) {
+                    displayName = assessment.profileMapping[answeredBy].name || answeredBy;
+                    email = assessment.profileMapping[answeredBy].email || '';
+                }
+                const displayText = email ? `${displayName} (${email})` : displayName;
+                answeredByHtml = `<span class="answered-by-badge profile-${answeredBy}">Answered by: ${escapeHtml(displayText)}</span>`;
             }
             
             let attachmentsHtml = '';
@@ -1561,12 +1630,20 @@ function exportAssessmentsToExcel() {
                 const answeredBy = assessment.answeredBy?.[question.id] || '';
                 const comment = assessment.comments?.[question.id] || '';
                 
+                // Get custom profile name if available
+                let answeredByDisplay = answeredBy;
+                if (answeredBy && assessment.profileMapping && assessment.profileMapping[answeredBy]) {
+                    const name = assessment.profileMapping[answeredBy].name || answeredBy;
+                    const email = assessment.profileMapping[answeredBy].email || '';
+                    answeredByDisplay = email ? `${name} (${email})` : name;
+                }
+                
                 assessmentData.push([
                     question.id,
                     question.theme,
                     question.question,
                     answer,
-                    answeredBy,
+                    answeredByDisplay,
                     comment,
                     question.weight,
                     question.category || ''
@@ -1827,12 +1904,20 @@ function exportResultToExcel() {
             const answeredBy = assessment.answeredBy?.[question.id] || '';
             const comment = assessment.comments?.[question.id] || '';
             
+            // Get custom profile name if available
+            let answeredByDisplay = answeredBy;
+            if (answeredBy && assessment.profileMapping && assessment.profileMapping[answeredBy]) {
+                const name = assessment.profileMapping[answeredBy].name || answeredBy;
+                const email = assessment.profileMapping[answeredBy].email || '';
+                answeredByDisplay = email ? `${name} (${email})` : name;
+            }
+            
             detailsData.push([
                 question.id,
                 question.theme,
                 question.question,
                 String(answer || '').toUpperCase(),
-                answeredBy,
+                answeredByDisplay,
                 comment,
                 question.weight,
                 question.category || ''
@@ -2323,6 +2408,10 @@ async function syncFromFolder() {
                         typeof data.profile === 'string' && 
                         typeof data.answers === 'object' &&
                         data.date) {
+                        // Ensure backward compatibility: add profileMapping if it doesn't exist
+                        if (!data.profileMapping) {
+                            data.profileMapping = {};
+                        }
                         // Store file metadata for comparison
                         data._fileLastModified = file.lastModified;
                         importedAssessments.push(data);
