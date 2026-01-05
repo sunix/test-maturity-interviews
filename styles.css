@@ -351,6 +351,77 @@ header h1 {
     display: block;
 }
 
+/* Update Banner */
+.update-banner {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 0.75rem 1rem;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    animation: slideDown 0.3s ease-out;
+}
+
+.update-banner.hidden {
+    display: none;
+}
+
+.update-banner-content {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+
+.update-icon {
+    font-size: 1.5rem;
+    animation: rotate 2s linear infinite;
+}
+
+@keyframes rotate {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+@keyframes slideDown {
+    from {
+        transform: translateY(-100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+.update-message {
+    font-weight: 600;
+    font-size: 0.95rem;
+}
+
+.update-banner .btn {
+    margin: 0;
+}
+
+.update-banner .btn-primary {
+    background: white;
+    color: #667eea;
+    font-weight: 600;
+}
+
+.update-banner .btn-primary:hover {
+    background: #f0f0f0;
+}
+
+.update-banner .btn-secondary {
+    background: rgba(255, 255, 255, 0.2);
+    color: white;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.update-banner .btn-secondary:hover {
+    background: rgba(255, 255, 255, 0.3);
+}
+
 /* Cards */
 .card {
     background: var(--card-bg);
