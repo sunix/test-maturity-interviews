@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fix Visualization - Attachments Preservation</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 1400px;
+            margin: 20px auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #333;
+        }
+        .container {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+        }
+        h1 {
+            color: #667eea;
+            text-align: center;
+            margin-bottom: 40px;
+        }
+        .comparison {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin: 40px 0;
+        }
+        .scenario {
+            background: #f8fafc;
+            border-radius: 8px;
+            padding: 20px;
+            border: 2px solid #e2e8f0;
+        }
+        .scenario.before {
+            border-color: #ef4444;
+        }
+        .scenario.after {
+            border-color: #10b981;
+        }
+        .scenario h2 {
+            margin-top: 0;
+            padding-bottom: 10px;
+            border-bottom: 2px solid;
+        }
+        .scenario.before h2 {
+            color: #ef4444;
+            border-color: #ef4444;
+        }
+        .scenario.after h2 {
+            color: #10b981;
+            border-color: #10b981;
+        }
+        .step {
+            background: white;
+            margin: 15px 0;
+            padding: 15px;
+            border-radius: 6px;
+            border-left: 4px solid #94a3b8;
+            position: relative;
+        }
+        .step-number {
+            position: absolute;
+            left: -12px;
+            top: 10px;
+            background: #94a3b8;
+            color: white;
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 14px;
+        }
+        .step-title {
+            font-weight: bold;
+            color: #1e293b;
+            margin-bottom: 8px;
+            margin-left: 20px;
+        }
+        .step-detail {
+            color: #64748b;
+            margin-left: 20px;
+            font-size: 14px;
+        }
+        .code-block {
+            background: #1e293b;
+            color: #e2e8f0;
+            padding: 12px;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            margin: 10px 0;
+            overflow-x: auto;
+        }
+        .highlight-bad {
+            background: #fecaca;
+            padding: 2px 6px;
+            border-radius: 3px;
+            color: #991b1b;
+        }
+        .highlight-good {
+            background: #bbf7d0;
+            padding: 2px 6px;
+            border-radius: 3px;
+            color: #166534;
+        }
+        .icon {
+            font-size: 24px;
+            margin-right: 8px;
+        }
+        .result {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 6px;
+            font-weight: bold;
+            text-align: center;
+        }
+        .result.bad {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+        .result.good {
+            background: #dcfce7;
+            color: #166534;
+        }
+        .legend {
+            background: #f1f5f9;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 30px 0;
+        }
+        .legend h3 {
+            margin-top: 0;
+            color: #475569;
+        }
+        .legend-item {
+            display: flex;
+            align-items: center;
+            margin: 10px 0;
+        }
+        .legend-icon {
+            width: 40px;
+            font-size: 20px;
+        }
+        @media (max-width: 768px) {
+            .comparison {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔧 Fix Visualization: Attachments Preservation During Sync</h1>
+        
+        <div class="legend">
+            <h3>📖 Understanding the Problem</h3>
+            <p>When team members use different versions of the app and sync through a shared folder (OneDrive, Google Drive, etc.), 
+            attachments could be lost if an older version re-saves an assessment that was created with a newer version.</p>
+            <div class="legend-item">
+                <span class="legend-icon">📸</span>
+                <span><strong>Attachments:</strong> Screenshots, images, and files attached to questions</span>
+            </div>
+            <div class="legend-item">
+                <span class="legend-icon">🔄</span>
+                <span><strong>Sync:</strong> Automatic synchronization through shared folders</span>
+            </div>
+            <div class="legend-item">
+                <span class="legend-icon">📱</span>
+                <span><strong>Versions:</strong> Different team members may have different app versions</span>
+            </div>
+        </div>
+
+        <div class="comparison">
+            <!-- BEFORE FIX -->
+            <div class="scenario before">
+                <h2><span class="icon">❌</span>Before Fix (v1.0.0)</h2>
+                
+                <div class="step">
+                    <div class="step-number">1</div>
+                    <div class="step-title">Team Member A (New Version)</div>
+                    <div class="step-detail">
+                        Creates assessment with attachments
+                        <div class="code-block">
+{
+  "name": "MyApp",
+  "answers": {"Q1": "yes"},
+  "attachments": {
+    "Q1": [{"name": "screenshot.png", ...}]
+  }
+}
+                        </div>
+                        <span class="highlight-good">✓ Attachments saved to file</span>
+                    </div>
+                </div>
+
+                <div class="step">
+                    <div class="step-number">2</div>
+                    <div class="step-title">Team Member B (Old Version)</div>
+                    <div class="step-detail">
+                        Opens and edits the same assessment
+                        <div class="code-block">
+// Old version loads the file
+const assessment = JSON.parse(fileContent);
+// Has attachments in memory ✓
+
+// But when saving...
+assessments[i] = assessment; // Direct replacement
+// Old version doesn't know about attachments!
+                        </div>
+                        <span class="highlight-bad">✗ Attachments not preserved</span>
+                    </div>
+                </div>
+
+                <div class="step">
+                    <div class="step-number">3</div>
+                    <div class="step-title">File is Re-Saved</div>
+                    <div class="step-detail">
+                        Assessment written back to folder
+                        <div class="code-block">
+{
+  "name": "MyApp",
+  "answers": {"Q1": "yes", "Q2": "no"}
+  <span class="highlight-bad">// attachments field missing!</span>
+}
+                        </div>
+                        <span class="highlight-bad">✗ Attachments lost permanently</span>
+                    </div>
+                </div>
+
+                <div class="result bad">
+                    <span class="icon">💥</span> DATA LOSS: Attachments deleted
+                </div>
+            </div>
+
+            <!-- AFTER FIX -->
+            <div class="scenario after">
+                <h2><span class="icon">✅</span>After Fix (v1.1.0)</h2>
+                
+                <div class="step">
+                    <div class="step-number">1</div>
+                    <div class="step-title">Team Member A (New Version)</div>
+                    <div class="step-detail">
+                        Creates assessment with attachments
+                        <div class="code-block">
+{
+  "name": "MyApp",
+  "answers": {"Q1": "yes"},
+  "attachments": {
+    "Q1": [{"name": "screenshot.png", ...}]
+  },
+  <span class="highlight-good">"appVersion": "1.1.0"</span>
+}
+                        </div>
+                        <span class="highlight-good">✓ Attachments and version saved</span>
+                    </div>
+                </div>
+
+                <div class="step">
+                    <div class="step-number">2</div>
+                    <div class="step-title">Team Member B (Any Version)</div>
+                    <div class="step-detail">
+                        Opens and edits the same assessment
+                        <div class="code-block">
+// Deep merge preserves all fields
+function deepMergeAssessment(existing, imported) {
+  const merged = { ...imported };
+  
+  for (const key in existing) {
+    if (!(key in merged)) {
+      <span class="highlight-good">merged[key] = existing[key]; // Preserve!</span>
+    }
+  }
+  return merged;
+}
+                        </div>
+                        <span class="highlight-good">✓ Attachments preserved in memory</span>
+                    </div>
+                </div>
+
+                <div class="step">
+                    <div class="step-number">3</div>
+                    <div class="step-title">File is Re-Saved</div>
+                    <div class="step-detail">
+                        Assessment written back to folder
+                        <div class="code-block">
+{
+  "name": "MyApp",
+  "answers": {"Q1": "yes", "Q2": "no"},
+  <span class="highlight-good">"attachments": {
+    "Q1": [{"name": "screenshot.png", ...}]
+  },</span>
+  "appVersion": "1.1.0"
+}
+                        </div>
+                        <span class="highlight-good">✓ Attachments safely preserved</span>
+                    </div>
+                </div>
+
+                <div class="result good">
+                    <span class="icon">🎉</span> DATA SAFE: All fields preserved
+                </div>
+            </div>
+        </div>
+
+        <div class="legend">
+            <h3>🔑 Key Improvements</h3>
+            <div class="legend-item">
+                <span class="legend-icon">🔢</span>
+                <span><strong>Version Tracking:</strong> Every assessment now includes its app version</span>
+            </div>
+            <div class="legend-item">
+                <span class="legend-icon">🔄</span>
+                <span><strong>Deep Merge:</strong> Intelligently combines data from both versions</span>
+            </div>
+            <div class="legend-item">
+                <span class="legend-icon">🛡️</span>
+                <span><strong>Defensive Preservation:</strong> Unknown fields are kept, not deleted</span>
+            </div>
+            <div class="legend-item">
+                <span class="legend-icon">↔️</span>
+                <span><strong>Backward Compatible:</strong> Works with both old and new versions</span>
+            </div>
+        </div>
+
+        <div style="text-align: center; margin-top: 40px; color: #64748b;">
+            <p><strong>Result:</strong> Team members can collaborate safely regardless of app version</p>
+            <p style="font-size: 24px;">✨ No more lost attachments! ✨</p>
+        </div>
+    </div>
+</body>
+</html>

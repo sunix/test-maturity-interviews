@@ -1,5 +1,7 @@
 // Service Worker for Test Maturity Assessment PWA
-const CACHE_NAME = 'test-maturity-v1';
+// IMPORTANT: Increment this version number when deploying updates to force cache refresh
+const APP_VERSION = '1.1.0';
+const CACHE_NAME = `test-maturity-v${APP_VERSION}`;
 const BASE_PATH = '/test-maturity-interviews';
 const urlsToCache = [
   `${BASE_PATH}/`,
@@ -9,6 +11,13 @@ const urlsToCache = [
   `${BASE_PATH}/styles.css`,
   `${BASE_PATH}/manifest.json`
 ];
+
+// Message handler for SKIP_WAITING
+self.addEventListener('message', (event) => {
+  if (event.data && event.data.type === 'SKIP_WAITING') {
+    self.skipWaiting();
+  }
+});
 
 // Install event - cache resources
 self.addEventListener('install', (event) => {
@@ -25,8 +34,7 @@ self.addEventListener('install', (event) => {
         throw error;
       })
   );
-  // Force the waiting service worker to become the active service worker
-  self.skipWaiting();
+  // Don't auto-activate - wait for user confirmation via SKIP_WAITING message
 });
 
 // Fetch event - serve from cache, fallback to network

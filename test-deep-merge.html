@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Deep Merge Test - Attachments Preservation</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 20px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .test-section {
+            background: white;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        h1 { color: #333; }
+        h2 { color: #2563eb; margin-top: 0; }
+        .test-case {
+            border-left: 4px solid #2563eb;
+            padding: 10px 15px;
+            margin: 10px 0;
+            background: #f0f7ff;
+        }
+        .pass { border-left-color: #10b981; background: #f0fdf4; }
+        .fail { border-left-color: #ef4444; background: #fef2f2; }
+        pre {
+            background: #1e293b;
+            color: #e2e8f0;
+            padding: 15px;
+            border-radius: 4px;
+            overflow-x: auto;
+        }
+        button {
+            background: #2563eb;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            margin: 5px;
+        }
+        button:hover { background: #1d4ed8; }
+        .result { margin-top: 10px; font-weight: bold; }
+        .result.pass { color: #10b981; }
+        .result.fail { color: #ef4444; }
+    </style>
+</head>
+<body>
+    <h1>🧪 Deep Merge Function Test</h1>
+    <p>This page tests the deep merge functionality to ensure attachments and other fields are preserved during sync operations.</p>
+
+    <div class="test-section">
+        <h2>Test Setup</h2>
+        <p>We'll simulate the scenario where:</p>
+        <ol>
+            <li>A new app version creates an assessment with attachments</li>
+            <li>An old app version loads that assessment and re-saves it</li>
+            <li>The deep merge function should preserve the attachments</li>
+        </ol>
+    </div>
+
+    <div class="test-section">
+        <h2>Test Cases</h2>
+        <button onclick="runAllTests()">▶️ Run All Tests</button>
+        <div id="test-results"></div>
+    </div>
+
+    <script>
+        // Define the APP_VERSION constant and deepMergeAssessment function
+        // (copied from app.js for testing purposes)
+        const APP_VERSION = '1.1.0';
+
+        // Deep merge function to preserve all fields when syncing assessments
+        function deepMergeAssessment(existing, imported) {
+            const merged = { ...imported };
+            
+            for (const key in existing) {
+                if (!(key in merged)) {
+                    merged[key] = existing[key];
+                    console.log(`Preserved field '${key}' from existing assessment during sync`);
+                }
+            }
+            
+            merged.appVersion = imported.appVersion || existing.appVersion || APP_VERSION;
+            if (imported._fileLastModified) {
+                merged._fileLastModified = imported._fileLastModified;
+            }
+            
+            return merged;
+        }
+
+        // Test utilities
+        function assert(condition, message) {
+            if (!condition) {
+                throw new Error(`Assertion failed: ${message}`);
+            }
+        }
+
+        function assertEqual(actual, expected, message) {
+            if (JSON.stringify(actual) !== JSON.stringify(expected)) {
+                throw new Error(`${message}\nExpected: ${JSON.stringify(expected)}\nActual: ${JSON.stringify(actual)}`);
+            }
+        }
+
+        function assertHasProperty(obj, prop, message) {
+            if (!(prop in obj)) {
+                throw new Error(`${message}\nObject missing property: ${prop}`);
+            }
+        }
+
+        // Test cases
+        const tests = [
+            {
+                name: "Test 1: Attachments are preserved when old version syncs",
+                run: () => {
+                    // Existing assessment in memory (old version, no attachments field)
+                    const existing = {
+                        name: "Test App",
+                        profile: "all",
+                        date: "2024-01-01T00:00:00.000Z",
+                        answers: { "Q1": "yes", "Q2": "no" },
+                        comments: { "Q1": "Good" },
+                        answeredBy: { "Q1": "developer" },
+                        _fileLastModified: 1000
+                    };
+
+                    // Imported from file (new version, has attachments)
+                    const imported = {
+                        name: "Test App",
+                        profile: "all",
+                        date: "2024-01-01T00:00:00.000Z",
+                        answers: { "Q1": "yes", "Q2": "no", "Q3": "yes" },
+                        comments: { "Q1": "Good" },
+                        answeredBy: { "Q1": "developer" },
+                        attachments: {
+                            "Q1": [{
+                                name: "screenshot.png",
+                                type: "image/png",
+                                size: 12345,
+                                data: "data:image/png;base64,ABC123",
+                                timestamp: "2024-01-01T10:00:00.000Z"
+                            }]
+                        },
+                        appVersion: "1.1.0",
+                        _fileLastModified: 2000
+                    };
+
+                    const merged = deepMergeAssessment(existing, imported);
+
+                    // Verify attachments are preserved
+                    assertHasProperty(merged, 'attachments', 'Merged object should have attachments');
+                    assertEqual(merged.attachments, imported.attachments, 'Attachments should be preserved');
+                    assertEqual(merged.answers, imported.answers, 'Answers should be from imported (newer file)');
+                    assertEqual(merged.appVersion, "1.1.0", 'App version should be set');
+                }
+            },
+            {
+                name: "Test 2: New fields in existing are preserved",
+                run: () => {
+                    // Existing assessment has a custom field
+                    const existing = {
+                        name: "Test App",
+                        answers: { "Q1": "yes" },
+                        customField: "custom value",
+                        _fileLastModified: 1000
+                    };
+
+                    // Imported doesn't have custom field
+                    const imported = {
+                        name: "Test App",
+                        answers: { "Q1": "yes", "Q2": "yes" },
+                        _fileLastModified: 2000
+                    };
+
+                    const merged = deepMergeAssessment(existing, imported);
+
+                    assertHasProperty(merged, 'customField', 'Custom field should be preserved');
+                    assertEqual(merged.customField, "custom value", 'Custom field value should match');
+                    assertEqual(merged.answers, imported.answers, 'Answers should be from imported');
+                }
+            },
+            {
+                name: "Test 3: Imported version takes precedence for common fields",
+                run: () => {
+                    const existing = {
+                        name: "Test App",
+                        answers: { "Q1": "no" },
+                        comments: { "Q1": "Old comment" },
+                        _fileLastModified: 1000
+                    };
+
+                    const imported = {
+                        name: "Test App",
+                        answers: { "Q1": "yes" },
+                        comments: { "Q1": "New comment" },
+                        _fileLastModified: 2000
+                    };
+
+                    const merged = deepMergeAssessment(existing, imported);
+
+                    assertEqual(merged.answers["Q1"], "yes", 'Answer should be from imported (newer)');
+                    assertEqual(merged.comments["Q1"], "New comment", 'Comment should be from imported (newer)');
+                }
+            },
+            {
+                name: "Test 4: Multiple fields are preserved correctly",
+                run: () => {
+                    const existing = {
+                        name: "Test App",
+                        answers: {},
+                        attachments: { "Q1": [{ name: "file1.txt" }] },
+                        customField1: "value1",
+                        _fileLastModified: 1000
+                    };
+
+                    const imported = {
+                        name: "Test App",
+                        answers: { "Q1": "yes" },
+                        comments: { "Q1": "Comment" },
+                        customField2: "value2",
+                        _fileLastModified: 2000
+                    };
+
+                    const merged = deepMergeAssessment(existing, imported);
+
+                    assertHasProperty(merged, 'attachments', 'Attachments should be preserved');
+                    assertHasProperty(merged, 'customField1', 'CustomField1 should be preserved');
+                    assertHasProperty(merged, 'customField2', 'CustomField2 should be included');
+                    assertHasProperty(merged, 'comments', 'Comments should be included');
+                }
+            },
+            {
+                name: "Test 5: Empty attachments object is preserved",
+                run: () => {
+                    const existing = {
+                        name: "Test App",
+                        answers: { "Q1": "yes" },
+                        attachments: {},
+                        _fileLastModified: 1000
+                    };
+
+                    const imported = {
+                        name: "Test App",
+                        answers: { "Q1": "yes", "Q2": "no" },
+                        _fileLastModified: 2000
+                    };
+
+                    const merged = deepMergeAssessment(existing, imported);
+
+                    assertHasProperty(merged, 'attachments', 'Empty attachments object should be preserved');
+                    assertEqual(merged.attachments, {}, 'Attachments should be empty object');
+                }
+            }
+        ];
+
+        function runTest(test) {
+            try {
+                test.run();
+                return { pass: true, name: test.name };
+            } catch (error) {
+                return { pass: false, name: test.name, error: error.message };
+            }
+        }
+
+        function runAllTests() {
+            const resultsDiv = document.getElementById('test-results');
+            resultsDiv.innerHTML = '<p>Running tests...</p>';
+            
+            const results = tests.map(runTest);
+            const passed = results.filter(r => r.pass).length;
+            const failed = results.filter(r => !r.pass).length;
+
+            let html = '';
+            results.forEach(result => {
+                const className = result.pass ? 'pass' : 'fail';
+                const icon = result.pass ? '✅' : '❌';
+                html += `
+                    <div class="test-case ${className}">
+                        <strong>${icon} ${result.name}</strong>
+                        ${result.error ? `<pre>${result.error}</pre>` : ''}
+                    </div>
+                `;
+            });
+
+            html += `
+                <div class="result ${failed === 0 ? 'pass' : 'fail'}">
+                    <h3>Results: ${passed}/${tests.length} tests passed</h3>
+                    ${failed === 0 ? '🎉 All tests passed!' : `⚠️ ${failed} test(s) failed`}
+                </div>
+            `;
+
+            resultsDiv.innerHTML = html;
+        }
+
+        // Auto-run tests on page load
+        window.addEventListener('DOMContentLoaded', () => {
+            setTimeout(runAllTests, 500);
+        });
+    </script>
+</body>
+</html>

@@ -93,6 +93,16 @@
                 <button class="tab-button" data-tab="results">Results</button>
             </nav>
 
+            <!-- Update Available Banner -->
+            <div id="update-banner" class="update-banner hidden">
+                <div class="update-banner-content">
+                    <span class="update-icon">🔄</span>
+                    <span class="update-message">A new version is available!</span>
+                    <button id="update-reload-btn" class="btn btn-primary btn-small">Update Now</button>
+                    <button id="update-dismiss-btn" class="btn btn-secondary btn-small">Dismiss</button>
+                </div>
+            </div>
+
             <!-- Interview Controls (shown only on interview tab) -->
             <div id="interview-controls" class="interview-controls hidden">
                 <div class="interview-controls-content">
@@ -336,17 +346,80 @@
     
     <!-- Service Worker Registration -->
     <script>
-        // Register service worker for PWA functionality
+        // Register service worker for PWA functionality with update detection
         if ('serviceWorker' in navigator) {
+            let refreshing = false;
+            
+            // Detect when service worker update is available
+            navigator.serviceWorker.addEventListener('controllerchange', () => {
+                if (refreshing) return;
+                refreshing = true;
+                window.location.reload();
+            });
+            
             window.addEventListener('load', () => {
                 navigator.serviceWorker.register('/test-maturity-interviews/service-worker.js')
                     .then((registration) => {
                         console.log('Service Worker registered successfully:', registration.scope);
+                        
+                        // Check for updates every 60 seconds when app is active
+                        setInterval(() => {
+                            registration.update();
+                        }, 60000);
+                        
+                        // Check for updates when page becomes visible
+                        document.addEventListener('visibilitychange', () => {
+                            if (!document.hidden) {
+                                registration.update();
+                            }
+                        });
+                        
+                        // Listen for updates
+                        registration.addEventListener('updatefound', () => {
+                            const newWorker = registration.installing;
+                            
+                            newWorker.addEventListener('statechange', () => {
+                                if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                                    // New service worker available
+                                    console.log('New version available!');
+                                    showUpdateBanner(newWorker);
+                                }
+                            });
+                        });
                     })
                     .catch((error) => {
                         console.log('Service Worker registration failed:', error);
                     });
             });
+            
+            // Show update banner
+            function showUpdateBanner(newWorker) {
+                const banner = document.getElementById('update-banner');
+                const reloadBtn = document.getElementById('update-reload-btn');
+                const dismissBtn = document.getElementById('update-dismiss-btn');
+                
+                if (!banner) return;
+                
+                banner.classList.remove('hidden');
+                
+                // Remove existing listeners to prevent duplicates
+                const newReloadBtn = reloadBtn.cloneNode(true);
+                const newDismissBtn = dismissBtn.cloneNode(true);
+                reloadBtn.parentNode.replaceChild(newReloadBtn, reloadBtn);
+                dismissBtn.parentNode.replaceChild(newDismissBtn, dismissBtn);
+                
+                // Update now button
+                newReloadBtn.addEventListener('click', () => {
+                    if (newWorker) {
+                        newWorker.postMessage({ type: 'SKIP_WAITING' });
+                    }
+                });
+                
+                // Dismiss button
+                newDismissBtn.addEventListener('click', () => {
+                    banner.classList.add('hidden');
+                });
+            }
         }
     </script>
 </body>
