@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Update Banner Demo</title>
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        body {
+            padding: 20px;
+            background: #f8fafc;
+        }
+        .demo-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 20px;
+        }
+        .demo-section {
+            margin: 30px 0;
+        }
+        .demo-section h2 {
+            color: #2563eb;
+            margin-bottom: 15px;
+        }
+        .code-block {
+            background: #1e293b;
+            color: #e2e8f0;
+            padding: 15px;
+            border-radius: 4px;
+            overflow-x: auto;
+            margin: 10px 0;
+        }
+        .info-box {
+            background: #f0f7ff;
+            border-left: 4px solid #2563eb;
+            padding: 15px;
+            margin: 15px 0;
+        }
+        .btn-demo {
+            margin: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="demo-container">
+        <h1>🔄 PWA Update Banner Demo</h1>
+        
+        <div class="demo-section">
+            <h2>Live Demo</h2>
+            <p>Click the button below to see the update banner in action:</p>
+            <button class="btn btn-primary btn-demo" onclick="showBanner()">Show Update Banner</button>
+            <button class="btn btn-secondary btn-demo" onclick="hideBanner()">Hide Banner</button>
+        </div>
+
+        <!-- Update Available Banner -->
+        <div id="update-banner" class="update-banner hidden">
+            <div class="update-banner-content">
+                <span class="update-icon">🔄</span>
+                <span class="update-message">A new version is available!</span>
+                <button id="update-reload-btn" class="btn btn-primary btn-small" onclick="alert('In the real app, this reloads the page with the new version!')">Update Now</button>
+                <button id="update-dismiss-btn" class="btn btn-secondary btn-small" onclick="hideBanner()">Dismiss</button>
+            </div>
+        </div>
+
+        <div class="demo-section">
+            <h2>How It Works</h2>
+            <div class="info-box">
+                <strong>📱 Automatic Update Detection:</strong>
+                <ul style="margin: 10px 0; padding-left: 20px;">
+                    <li>Service worker checks for updates every 60 seconds</li>
+                    <li>Also checks when the app becomes visible (tab switching)</li>
+                    <li>When a new version is detected, the banner appears</li>
+                    <li>User can choose when to update (no forced reload)</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="demo-section">
+            <h2>Key Features</h2>
+            
+            <h3>Version-Based Cache</h3>
+            <div class="code-block">
+// Service Worker
+const APP_VERSION = '1.1.0';
+const CACHE_NAME = `test-maturity-v${APP_VERSION}`;
+            </div>
+            <p>When the version changes, the cache name changes, forcing a refresh.</p>
+
+            <h3>Update Detection</h3>
+            <div class="code-block">
+// Check for updates periodically
+setInterval(() => {
+    registration.update();
+}, 60000); // Every 60 seconds
+
+// Check when page becomes visible
+document.addEventListener('visibilitychange', () => {
+    if (!document.hidden) {
+        registration.update();
+    }
+});
+            </div>
+
+            <h3>User-Controlled Updates</h3>
+            <div class="code-block">
+// Listen for "Update Now" button
+reloadBtn.addEventListener('click', () => {
+    newWorker.postMessage({ type: 'SKIP_WAITING' });
+});
+            </div>
+        </div>
+
+        <div class="demo-section">
+            <h2>Benefits</h2>
+            <div class="info-box">
+                <strong>✅ No More Stale Caches:</strong> Users automatically get notified about updates<br>
+                <strong>✅ User Choice:</strong> Users can update immediately or dismiss and continue working<br>
+                <strong>✅ No Manual Refresh:</strong> No need for Ctrl+Shift+R anymore<br>
+                <strong>✅ Data Safety:</strong> Combined with deep merge, ensures no data loss across versions
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function showBanner() {
+            const banner = document.getElementById('update-banner');
+            banner.classList.remove('hidden');
+        }
+
+        function hideBanner() {
+            const banner = document.getElementById('update-banner');
+            banner.classList.add('hidden');
+        }
+
+        // Auto-show banner after 2 seconds for demo
+        setTimeout(showBanner, 2000);
+    </script>
+</body>
+</html>
