@@ -1,3 +1,6 @@
+// Application version for compatibility tracking
+const APP_VERSION = '1.1.0'; // Version supporting attachments
+
 // Application state
 let currentAssessment = {
     name: '',
@@ -6,7 +9,8 @@ let currentAssessment = {
     answers: {},
     comments: {},
     answeredBy: {}, // Track which profile answered each question
-    attachments: {} // Store file attachments for each question
+    attachments: {}, // Store file attachments for each question
+    appVersion: APP_VERSION // Track which version created/modified this assessment
 };
 
 let assessments = [];
@@ -40,6 +44,32 @@ const SYNC_INTERVAL_IDLE = 5000; // 5 seconds when idle
 // Helper function to get active questions catalog
 function getActiveQuestionsCatalog() {
     return activeQuestions || QUESTIONS_CATALOG.questions;
+}
+
+// Deep merge function to preserve all fields when syncing assessments
+// This ensures that newer fields (like attachments) are preserved even if
+// an older version of the app loads and re-saves an assessment
+function deepMergeAssessment(existing, imported) {
+    // Start with the imported data (newer file version)
+    const merged = { ...imported };
+    
+    // Preserve any fields that exist in the existing assessment but not in imported
+    // This handles the case where an old app version loads a new assessment
+    for (const key in existing) {
+        if (!(key in merged)) {
+            // Field exists in existing but not in imported - preserve it
+            merged[key] = existing[key];
+            console.log(`Preserved field '${key}' from existing assessment during sync`);
+        }
+    }
+    
+    // Always use the imported version's appVersion and _fileLastModified
+    merged.appVersion = imported.appVersion || existing.appVersion || APP_VERSION;
+    if (imported._fileLastModified) {
+        merged._fileLastModified = imported._fileLastModified;
+    }
+    
+    return merged;
 }
 
 // Constants for maturity calculation
@@ -347,7 +377,8 @@ function startInterview() {
         answers: {},
         comments: {},
         answeredBy: {},
-        attachments: {}
+        attachments: {},
+        appVersion: APP_VERSION
     };
 
     // Reset profile filter checkboxes
@@ -1035,6 +1066,11 @@ function saveAssessment() {
     // Check if assessment with same name exists
     const existingIndex = assessments.findIndex(a => a.name === currentAssessment.name);
     
+    // Ensure appVersion is set on the current assessment
+    if (!currentAssessment.appVersion) {
+        currentAssessment.appVersion = APP_VERSION;
+    }
+    
     if (existingIndex >= 0) {
         if (confirm('An assessment with this name already exists. Do you want to overwrite it?')) {
             assessments[existingIndex] = JSON.parse(JSON.stringify(currentAssessment));
@@ -1119,6 +1155,20 @@ function updateSavedAssessmentsList() {
 // Load Assessment for editing
 function loadAssessment(index) {
     currentAssessment = JSON.parse(JSON.stringify(assessments[index]));
+    
+    // Ensure all expected fields exist with defaults
+    if (!currentAssessment.comments) {
+        currentAssessment.comments = {};
+    }
+    if (!currentAssessment.answeredBy) {
+        currentAssessment.answeredBy = {};
+    }
+    if (!currentAssessment.attachments) {
+        currentAssessment.attachments = {};
+    }
+    if (!currentAssessment.appVersion) {
+        currentAssessment.appVersion = APP_VERSION;
+    }
     
     appNameInput.value = currentAssessment.name;
     
@@ -1942,6 +1992,11 @@ async function performAutoSave() {
         // Check if assessment with same name exists
         const existingIndex = assessments.findIndex(a => a.name === currentAssessment.name);
         
+        // Ensure appVersion is set on the current assessment
+        if (!currentAssessment.appVersion) {
+            currentAssessment.appVersion = APP_VERSION;
+        }
+        
         if (existingIndex >= 0) {
             assessments[existingIndex] = JSON.parse(JSON.stringify(currentAssessment));
         } else {
@@ -2377,14 +2432,16 @@ async function syncFromFolder() {
                 }
                 
                 if (shouldUpdate) {
-                    assessments[existingIndex] = imported;
+                    // Use deep merge to preserve all fields from both versions
+                    // This ensures attachments and other newer fields are not lost
+                    assessments[existingIndex] = deepMergeAssessment(existing, imported);
                     merged++;
                     
                     // Update current assessment only if it's not being actively edited
                     if (currentAssessment && 
                         currentAssessment.name === imported.name && 
                         !isCurrentlyEditingAssessment(imported.name)) {
-                        currentAssessment = JSON.parse(JSON.stringify(imported));
+                        currentAssessment = deepMergeAssessment(currentAssessment, imported);
                         currentAssessmentUpdated = true;
                     }
                 }
