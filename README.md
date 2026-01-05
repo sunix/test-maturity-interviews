@@ -297,6 +297,12 @@ Folder sync is the killer feature that makes team collaboration seamless:
 - If the folder is in OneDrive/Google Drive, changes sync across devices automatically
 - Perfect for distributed teams
 
+**Version Compatibility & Data Preservation** (v1.1.0+):
+- All assessments include version metadata for compatibility tracking
+- Deep merge strategy preserves all fields when syncing between different app versions
+- Attachments and other newer fields are automatically preserved even if an older version syncs
+- This ensures data integrity across team members using different app versions
+
 ### Troubleshooting Folder Sync
 
 | Issue | Solution |
@@ -305,6 +311,7 @@ Folder sync is the killer feature that makes team collaboration seamless:
 | Not syncing | Check browser console for errors; ensure folder permissions granted |
 | Browser not supported | Use Chrome 86+ or Edge 86+; fallback to Export/Import |
 | Lost folder connection | App will prompt to re-select folder on next load |
+| Attachments missing after sync | Ensure all team members use v1.1.0+; older versions may not display attachments but won't delete them |
 ## 🎨 Customization: Question Editor
 
 Create your own question sets tailored to your organization:
