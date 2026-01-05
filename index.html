@@ -402,21 +402,23 @@
                 
                 banner.classList.remove('hidden');
                 
+                // Remove existing listeners to prevent duplicates
+                const newReloadBtn = reloadBtn.cloneNode(true);
+                const newDismissBtn = dismissBtn.cloneNode(true);
+                reloadBtn.parentNode.replaceChild(newReloadBtn, reloadBtn);
+                dismissBtn.parentNode.replaceChild(newDismissBtn, dismissBtn);
+                
                 // Update now button
-                if (reloadBtn) {
-                    reloadBtn.addEventListener('click', () => {
-                        if (newWorker) {
-                            newWorker.postMessage({ type: 'SKIP_WAITING' });
-                        }
-                    }, { once: true });
-                }
+                newReloadBtn.addEventListener('click', () => {
+                    if (newWorker) {
+                        newWorker.postMessage({ type: 'SKIP_WAITING' });
+                    }
+                });
                 
                 // Dismiss button
-                if (dismissBtn) {
-                    dismissBtn.addEventListener('click', () => {
-                        banner.classList.add('hidden');
-                    }, { once: true });
-                }
+                newDismissBtn.addEventListener('click', () => {
+                    banner.classList.add('hidden');
+                });
             }
         }
     </script>
