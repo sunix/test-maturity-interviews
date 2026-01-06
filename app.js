@@ -188,7 +188,6 @@ const interviewDatesContainer = document.getElementById('interview-dates-contain
 const addInterviewDateBtn = document.getElementById('add-interview-date');
 const editIntervieweesInput = document.getElementById('edit-interviewees');
 const editGeneralCommentsInput = document.getElementById('edit-general-comments');
-const saveMetadataBtn = document.getElementById('save-metadata');
 const progressFill = document.getElementById('progress-fill');
 const progressText = document.getElementById('progress-text');
 const viewResultsBtn = document.getElementById('view-results');
@@ -314,9 +313,18 @@ function setupEventListeners() {
         addInterviewDateBtn.addEventListener('click', addInterviewDate);
     }
     
-    // Save metadata
-    if (saveMetadataBtn) {
-        saveMetadataBtn.addEventListener('click', saveMetadata);
+    // Auto-save metadata on input changes
+    if (editAppNameInput) {
+        editAppNameInput.addEventListener('input', handleMetadataChange);
+    }
+    if (editInterviewNameInput) {
+        editInterviewNameInput.addEventListener('input', handleMetadataChange);
+    }
+    if (editIntervieweesInput) {
+        editIntervieweesInput.addEventListener('input', handleMetadataChange);
+    }
+    if (editGeneralCommentsInput) {
+        editGeneralCommentsInput.addEventListener('input', handleMetadataChange);
     }
 }
 
@@ -488,7 +496,10 @@ function handleProfileFilterChange() {
     // Update current assessment's selected profiles for persistence
     if (currentAssessment) {
         currentAssessment.selectedProfiles = selectedProfiles;
-        saveAssessment(); // Auto-save when profile selection changes
+        // Mark as actively editing
+        markAsActivelyEditing();
+        // Trigger auto-save
+        triggerAutoSave();
     }
     
     if (selectedProfiles.length === 0) {
@@ -536,11 +547,18 @@ function addInterviewDate() {
     dateInput.type = 'datetime-local';
     dateInput.className = 'form-control';
     
+    // Add auto-save listener to the date input
+    dateInput.addEventListener('change', handleMetadataChange);
+    
     const removeBtn = document.createElement('button');
     removeBtn.type = 'button';
     removeBtn.className = 'remove-date-btn';
     removeBtn.textContent = 'Remove';
-    removeBtn.onclick = () => dateItem.remove();
+    removeBtn.onclick = () => {
+        dateItem.remove();
+        // Trigger auto-save when a date is removed
+        handleMetadataChange();
+    };
     
     dateItem.appendChild(dateInput);
     dateItem.appendChild(removeBtn);
@@ -590,11 +608,18 @@ function populateMetadataEditor() {
                 dateInput.value = localDatetime;
             }
             
+            // Add auto-save listener to the date input
+            dateInput.addEventListener('change', handleMetadataChange);
+            
             const removeBtn = document.createElement('button');
             removeBtn.type = 'button';
             removeBtn.className = 'remove-date-btn';
             removeBtn.textContent = 'Remove';
-            removeBtn.onclick = () => dateItem.remove();
+            removeBtn.onclick = () => {
+                dateItem.remove();
+                // Trigger auto-save when a date is removed
+                handleMetadataChange();
+            };
             
             dateItem.appendChild(dateInput);
             dateItem.appendChild(removeBtn);
@@ -616,10 +641,9 @@ function populateMetadataEditor() {
     }
 }
 
-// Save metadata changes
-function saveMetadata() {
+// Handle metadata field changes with auto-save
+function handleMetadataChange() {
     if (!currentAssessment) {
-        alert('No active interview to update');
         return;
     }
     
@@ -640,6 +664,7 @@ function saveMetadata() {
                 dates.push(new Date(input.value).toISOString());
             }
         });
+        // Use current date as fallback to ensure at least one date is always set
         currentAssessment.interviewDates = dates.length > 0 ? dates : [new Date().toISOString()];
         
         // Also set interviewDate to first date for backward compatibility
@@ -665,23 +690,11 @@ function saveMetadata() {
         interviewTitle.textContent = `Interview: ${currentAssessment.name} - ${currentAssessment.interviewName}`;
     }
     
-    // Save the assessment
-    saveAssessment();
+    // Mark as actively editing
+    markAsActivelyEditing();
     
-    // Show success message
-    if (autoSaveStatus) {
-        autoSaveStatus.textContent = '● Metadata updated';
-        autoSaveStatus.style.color = 'var(--success-color)';
-        setTimeout(() => {
-            autoSaveStatus.textContent = '● All changes saved';
-        }, 2000);
-    }
-    
-    // Close the editor
-    if (metadataEditor) {
-        metadataEditor.classList.add('hidden');
-        toggleMetadataBtn.classList.remove('expanded');
-    }
+    // Trigger auto-save
+    triggerAutoSave();
 }
 
 // Render Questions
@@ -2335,7 +2348,7 @@ function updateAutoSaveStatus(status, message = '') {
 
 // Trigger auto-save with debouncing
 function triggerAutoSave() {
-    if (!currentAssessment.name) {
+    if (!currentAssessment || !currentAssessment.name) {
         // No assessment to save yet
         return;
     }
