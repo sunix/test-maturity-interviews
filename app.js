@@ -2366,8 +2366,11 @@ async function performAutoSave() {
             return;
         }
 
-        // Check if assessment with same name exists
-        const existingIndex = assessments.findIndex(a => a.name === currentAssessment.name);
+        // Check if assessment with same name and interviewName exists
+        const existingIndex = assessments.findIndex(a => 
+            a.name === currentAssessment.name && 
+            (a.interviewName || a.name) === (currentAssessment.interviewName || currentAssessment.name)
+        );
         
         // Ensure appVersion is set on the current assessment
         if (!currentAssessment.appVersion) {
@@ -2478,10 +2481,11 @@ function markAsActivelyEditing() {
 }
 
 // Helper function to check if user is currently editing a specific assessment
-function isCurrentlyEditingAssessment(assessmentName) {
+function isCurrentlyEditingAssessment(assessmentName, assessmentInterviewName) {
     return isActivelyEditing && 
            currentAssessment && 
-           currentAssessment.name === assessmentName;
+           currentAssessment.name === assessmentName &&
+           (currentAssessment.interviewName || currentAssessment.name) === (assessmentInterviewName || assessmentName);
 }
 
 // Filesystem Sync Functions
@@ -2774,15 +2778,18 @@ async function syncFromFolder() {
         let currentAssessmentUpdated = false;
         
         importedAssessments.forEach(imported => {
-            const existingIndex = assessments.findIndex(a => a.name === imported.name);
+            const existingIndex = assessments.findIndex(a => 
+                a.name === imported.name && 
+                (a.interviewName || a.name) === (imported.interviewName || imported.name)
+            );
             if (existingIndex >= 0) {
                 // Check if the imported file is different
                 // Compare using file modification time or content hash
                 const existing = assessments[existingIndex];
                 
                 // IMPORTANT: Don't overwrite the currently edited assessment if user is actively editing it
-                if (isCurrentlyEditingAssessment(imported.name)) {
-                    console.log(`Skipping update for ${imported.name} - user is actively editing`);
+                if (isCurrentlyEditingAssessment(imported.name, imported.interviewName)) {
+                    console.log(`Skipping update for ${imported.name} - ${imported.interviewName || imported.name} - user is actively editing`);
                     skipped++;
                     return;
                 }
@@ -2817,7 +2824,8 @@ async function syncFromFolder() {
                     // Update current assessment only if it's not being actively edited
                     if (currentAssessment && 
                         currentAssessment.name === imported.name && 
-                        !isCurrentlyEditingAssessment(imported.name)) {
+                        (currentAssessment.interviewName || currentAssessment.name) === (imported.interviewName || imported.name) &&
+                        !isCurrentlyEditingAssessment(imported.name, imported.interviewName)) {
                         currentAssessment = deepMergeAssessment(currentAssessment, imported);
                         currentAssessmentUpdated = true;
                     }
