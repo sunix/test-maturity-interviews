@@ -1,5 +1,5 @@
 // Application version for compatibility tracking
-const APP_VERSION = '1.2.1'; // Version with fix for multiple interviews per application
+const APP_VERSION = '1.2.2'; // Version bump to refresh PWA cache
 
 // Application state
 let currentAssessment = {
