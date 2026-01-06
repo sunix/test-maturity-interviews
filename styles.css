@@ -65,8 +65,15 @@ body.interview-active {
 
 .interview-controls-content {
     display: flex;
+    flex-direction: column;
+    gap: 0;
+}
+
+.interview-controls-row {
+    display: flex;
     align-items: center;
     gap: 1rem;
+    width: 100%;
 }
 
 .interview-controls .form-group {
@@ -1945,7 +1952,8 @@ header h1 {
     margin-top: 0.5rem;
 }
 
-/* Profile filter as separate group */
+/* Profile filter as separate group within row */
 .profile-filter-group {
-    margin-bottom: 1rem;
+    margin-bottom: 0;
+    flex: 0 0 auto;
 }
