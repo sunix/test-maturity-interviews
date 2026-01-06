@@ -181,10 +181,11 @@ const questionsContainer = document.getElementById('questions-container');
 
 // Metadata editor elements
 const toggleMetadataBtn = document.getElementById('toggle-metadata-editor');
-const metadataEditor = document.getElementById('metadata-editor');
+const metadataSection = document.querySelector('.metadata-section');
 const editAppNameInput = document.getElementById('edit-app-name');
 const editInterviewNameInput = document.getElementById('edit-interview-name');
-const editInterviewDateInput = document.getElementById('edit-interview-date');
+const interviewDatesContainer = document.getElementById('interview-dates-container');
+const addInterviewDateBtn = document.getElementById('add-interview-date');
 const editIntervieweesInput = document.getElementById('edit-interviewees');
 const editGeneralCommentsInput = document.getElementById('edit-general-comments');
 const saveMetadataBtn = document.getElementById('save-metadata');
@@ -308,6 +309,11 @@ function setupEventListeners() {
         toggleMetadataBtn.addEventListener('click', toggleMetadataEditor);
     }
     
+    // Add interview date button
+    if (addInterviewDateBtn) {
+        addInterviewDateBtn.addEventListener('click', addInterviewDate);
+    }
+    
     // Save metadata
     if (saveMetadataBtn) {
         saveMetadataBtn.addEventListener('click', saveMetadata);
@@ -429,7 +435,7 @@ function startInterview() {
         interviewName: interviewName,
         profile: 'all', // Default to all, will be filtered in interview
         date: now.toISOString(), // Last modified timestamp
-        interviewDate: now.toISOString(), // Default interview date to now (editable)
+        interviewDates: [now.toISOString()], // Array of interview dates (editable, can add more)
         interviewees: interviewees,
         selectedProfiles: selectedProfiles,
         generalComments: '', // Initialize empty general comments
@@ -502,15 +508,43 @@ function handleProfileFilterChange() {
 
 // Toggle metadata editor visibility
 function toggleMetadataEditor() {
-    if (metadataEditor && toggleMetadataBtn) {
-        metadataEditor.classList.toggle('hidden');
-        toggleMetadataBtn.classList.toggle('expanded');
+    if (metadataSection && toggleMetadataBtn) {
+        metadataSection.classList.toggle('collapsed');
+        const toggleIcon = toggleMetadataBtn.querySelector('.toggle-icon');
+        const toggleText = toggleMetadataBtn.querySelector('.toggle-text');
         
-        if (!metadataEditor.classList.contains('hidden')) {
+        if (metadataSection.classList.contains('collapsed')) {
+            toggleIcon.textContent = '▶';
+            toggleText.textContent = 'Edit Interview Metadata';
+        } else {
+            toggleIcon.textContent = '▼';
+            toggleText.textContent = 'Hide Interview Metadata';
             // Populate with current values when opening
             populateMetadataEditor();
         }
     }
+}
+
+// Add a new interview date field
+function addInterviewDate() {
+    if (!interviewDatesContainer) return;
+    
+    const dateItem = document.createElement('div');
+    dateItem.className = 'interview-date-item';
+    
+    const dateInput = document.createElement('input');
+    dateInput.type = 'datetime-local';
+    dateInput.className = 'form-control';
+    
+    const removeBtn = document.createElement('button');
+    removeBtn.type = 'button';
+    removeBtn.className = 'remove-date-btn';
+    removeBtn.textContent = 'Remove';
+    removeBtn.onclick = () => dateItem.remove();
+    
+    dateItem.appendChild(dateInput);
+    dateItem.appendChild(removeBtn);
+    interviewDatesContainer.appendChild(dateItem);
 }
 
 // Populate metadata editor with current assessment values
@@ -523,18 +557,56 @@ function populateMetadataEditor() {
     if (editInterviewNameInput) {
         editInterviewNameInput.value = currentAssessment.interviewName || '';
     }
-    if (editInterviewDateInput) {
-        // Convert ISO string to datetime-local format (remove 'Z' and milliseconds)
-        const dateValue = currentAssessment.interviewDate || currentAssessment.date || '';
-        if (dateValue) {
-            const date = new Date(dateValue);
-            // Format as YYYY-MM-DDTHH:MM
-            const localDatetime = new Date(date.getTime() - date.getTimezoneOffset() * 60000)
-                .toISOString()
-                .slice(0, 16);
-            editInterviewDateInput.value = localDatetime;
+    
+    // Populate interview dates
+    if (interviewDatesContainer) {
+        interviewDatesContainer.innerHTML = ''; // Clear existing
+        
+        // Support both old single date and new multiple dates format
+        let dates = [];
+        if (currentAssessment.interviewDates && Array.isArray(currentAssessment.interviewDates)) {
+            dates = currentAssessment.interviewDates;
+        } else if (currentAssessment.interviewDate) {
+            dates = [currentAssessment.interviewDate];
+        } else if (currentAssessment.date) {
+            dates = [currentAssessment.date];
+        }
+        
+        // Add existing dates
+        dates.forEach(dateValue => {
+            const dateItem = document.createElement('div');
+            dateItem.className = 'interview-date-item';
+            
+            const dateInput = document.createElement('input');
+            dateInput.type = 'datetime-local';
+            dateInput.className = 'form-control';
+            
+            if (dateValue) {
+                const date = new Date(dateValue);
+                // Format as YYYY-MM-DDTHH:MM
+                const localDatetime = new Date(date.getTime() - date.getTimezoneOffset() * 60000)
+                    .toISOString()
+                    .slice(0, 16);
+                dateInput.value = localDatetime;
+            }
+            
+            const removeBtn = document.createElement('button');
+            removeBtn.type = 'button';
+            removeBtn.className = 'remove-date-btn';
+            removeBtn.textContent = 'Remove';
+            removeBtn.onclick = () => dateItem.remove();
+            
+            dateItem.appendChild(dateInput);
+            dateItem.appendChild(removeBtn);
+            interviewDatesContainer.appendChild(dateItem);
+        });
+        
+        // If no dates exist, add one empty field
+        if (dates.length === 0) {
+            addInterviewDate();
         }
     }
+    
     if (editIntervieweesInput) {
         const interviewees = currentAssessment.interviewees || [];
         editIntervieweesInput.value = interviewees.join('\n');
@@ -558,10 +630,24 @@ function saveMetadata() {
     if (editInterviewNameInput) {
         currentAssessment.interviewName = editInterviewNameInput.value.trim();
     }
-    if (editInterviewDateInput && editInterviewDateInput.value) {
-        // Convert datetime-local to ISO string
-        currentAssessment.interviewDate = new Date(editInterviewDateInput.value).toISOString();
+    
+    // Collect all interview dates
+    if (interviewDatesContainer) {
+        const dateInputs = interviewDatesContainer.querySelectorAll('input[type="datetime-local"]');
+        const dates = [];
+        dateInputs.forEach(input => {
+            if (input.value) {
+                dates.push(new Date(input.value).toISOString());
+            }
+        });
+        currentAssessment.interviewDates = dates.length > 0 ? dates : [new Date().toISOString()];
+        
+        // Also set interviewDate to first date for backward compatibility
+        if (dates.length > 0) {
+            currentAssessment.interviewDate = dates[0];
+        }
     }
+    
     if (editIntervieweesInput) {
         // Parse interviewees from textarea (line-separated)
         const intervieweesText = editIntervieweesInput.value.trim();
@@ -1367,9 +1453,21 @@ function loadAssessment(index) {
     if (!currentAssessment.generalComments) {
         currentAssessment.generalComments = '';
     }
-    if (!currentAssessment.interviewDate) {
-        // Default to date field for backward compatibility
-        currentAssessment.interviewDate = currentAssessment.date || '';
+    
+    // Handle interview dates - support both old and new format
+    if (!currentAssessment.interviewDates) {
+        // Migrate from old single date format to new array format
+        if (currentAssessment.interviewDate) {
+            currentAssessment.interviewDates = [currentAssessment.interviewDate];
+        } else if (currentAssessment.date) {
+            currentAssessment.interviewDates = [currentAssessment.date];
+        } else {
+            currentAssessment.interviewDates = [];
+        }
+    }
+    // Keep interviewDate for backward compatibility
+    if (!currentAssessment.interviewDate && currentAssessment.interviewDates && currentAssessment.interviewDates.length > 0) {
+        currentAssessment.interviewDate = currentAssessment.interviewDates[0];
     }
     
     appNameInput.value = currentAssessment.name || '';

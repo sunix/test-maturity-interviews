@@ -106,12 +106,15 @@
             <!-- Interview Controls (shown only on interview tab) -->
             <div id="interview-controls" class="interview-controls hidden">
                 <div class="interview-controls-content">
-                    <!-- Interview Metadata Editor Toggle Section -->
-                    <div class="metadata-editor-section">
-                        <button id="toggle-metadata-editor" class="btn btn-secondary" style="margin-bottom: 1rem; width: 100%;">
-                            ▼ Edit Interview Metadata
-                        </button>
-                        <div id="metadata-editor" class="metadata-editor hidden">
+                    <!-- Interview Metadata Editor Section -->
+                    <div class="metadata-section collapsed">
+                        <div class="metadata-header">
+                            <button id="toggle-metadata-editor" class="metadata-toggle">
+                                <span class="toggle-icon">▶</span>
+                                <span class="toggle-text">Edit Interview Metadata</span>
+                            </button>
+                        </div>
+                        <div class="metadata-content">
                             <div class="form-group">
                                 <label for="edit-app-name">Application Name:</label>
                                 <input type="text" id="edit-app-name" class="form-control">
@@ -121,9 +124,12 @@
                                 <input type="text" id="edit-interview-name" class="form-control" placeholder="Team name, profile name, or group">
                             </div>
                             <div class="form-group">
-                                <label for="edit-interview-date">Interview Date:</label>
-                                <input type="datetime-local" id="edit-interview-date" class="form-control">
-                                <small style="color: #64748b; display: block; margin-top: 0.25rem;">Independent from last modified timestamp</small>
+                                <label>Interview Dates:</label>
+                                <div id="interview-dates-container" class="interview-dates-container">
+                                    <!-- Dates will be added dynamically -->
+                                </div>
+                                <button id="add-interview-date" class="btn btn-secondary btn-small">+ Add Date</button>
+                                <small class="help-text">Add multiple dates if interview spans several sessions</small>
                             </div>
                             <div class="form-group">
                                 <label for="edit-interviewees">Interviewees:</label>
@@ -133,11 +139,11 @@
                                 <label for="edit-general-comments">General Interview Comments:</label>
                                 <textarea id="edit-general-comments" rows="4" class="form-control" placeholder="Add general notes, observations, or comments about this interview..."></textarea>
                             </div>
-                            <button id="save-metadata" class="btn btn-primary" style="width: 100%;">Save Metadata</button>
+                            <button id="save-metadata" class="btn btn-primary save-metadata-btn">Save Metadata</button>
                         </div>
                     </div>
                     
-                    <div class="form-group">
+                    <div class="form-group profile-filter-group">
                         <label>Filter by Profiles:</label>
                         <div id="profile-filter" class="profile-filter-checkboxes">
                             <label class="profile-filter-checkbox">
