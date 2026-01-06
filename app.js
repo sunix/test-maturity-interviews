@@ -2637,7 +2637,10 @@ async function syncToFolder() {
             
             // Update the file modification timestamp in memory for future comparison
             const savedFile = await fileHandle.getFile();
-            const assessmentIndex = assessments.findIndex(a => a.name === assessment.name && a.interviewName === assessment.interviewName);
+            const assessmentIndex = assessments.findIndex(a => 
+                a.name === assessment.name && 
+                (a.interviewName || '') === (assessment.interviewName || '')
+            );
             if (assessmentIndex >= 0) {
                 assessments[assessmentIndex]._fileLastModified = savedFile.lastModified;
             }
