@@ -1832,6 +1832,12 @@ header h1 {
     padding-bottom: 1rem;
 }
 
+/* When collapsed, reduce spacing */
+.metadata-section.collapsed {
+    margin-bottom: 0.5rem;
+    padding-bottom: 0.25rem;
+}
+
 .metadata-section.collapsed .metadata-content {
     display: none;
 }
@@ -1858,6 +1864,11 @@ header h1 {
     white-space: nowrap;
 }
 
+/* Compact padding when collapsed */
+.metadata-section.collapsed .metadata-toggle {
+    padding: 0.25rem 0.5rem;
+}
+
 .metadata-toggle:hover {
     background-color: var(--bg-color);
 }
@@ -1878,6 +1889,23 @@ header h1 {
 
 .metadata-content .form-group {
     margin-bottom: 1rem;
+}
+
+/* Horizontal layout for simple fields */
+.metadata-content .form-group.form-horizontal {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.metadata-content .form-group.form-horizontal label {
+    flex-shrink: 0;
+    width: 150px;
+    margin-bottom: 0;
+}
+
+.metadata-content .form-group.form-horizontal .form-control {
+    flex: 1;
 }
 
 .metadata-content label {
