@@ -1,11 +1,14 @@
 // Application version for compatibility tracking
-const APP_VERSION = '1.1.0'; // Version supporting attachments
+const APP_VERSION = '1.2.0'; // Version supporting per-interview metadata
 
 // Application state
 let currentAssessment = {
-    name: '',
+    name: '', // Application name
+    interviewName: '', // Interview name (team name, profile name, or group)
     profile: '',
     date: '',
+    interviewees: [], // List of people interviewed
+    selectedProfiles: [], // Profiles selected for this interview
     answers: {},
     comments: {},
     answeredBy: {}, // Track which profile answered each question
@@ -168,6 +171,8 @@ async function removeFolderHandleFromIndexedDB() {
 const tabs = document.querySelectorAll('.tab-button');
 const tabContents = document.querySelectorAll('.tab-content');
 const appNameInput = document.getElementById('app-name');
+const interviewNameInput = document.getElementById('interview-name');
+const intervieweesInput = document.getElementById('interviewees');
 const startInterviewBtn = document.getElementById('start-interview');
 const profileFilterContainer = document.getElementById('profile-filter');
 const questionsContainer = document.getElementById('questions-container');
@@ -363,17 +368,46 @@ function updateTabVisibility() {
 // Start Interview
 function startInterview() {
     const appName = appNameInput.value.trim();
+    const interviewName = interviewNameInput.value.trim();
+    const intervieweesText = intervieweesInput.value.trim();
 
     if (!appName) {
-        alert('Please enter an application/team name');
+        alert('Please enter an application name');
+        return;
+    }
+    
+    if (!interviewName) {
+        alert('Please enter an interview name (e.g., team name, profile name, or group identifier)');
         return;
     }
 
-    // Initialize current assessment without profile
+    // Parse interviewees from text input (comma-separated or line-separated)
+    let interviewees = [];
+    if (intervieweesText) {
+        // Split by comma or newline, trim whitespace, and filter empty values
+        interviewees = intervieweesText
+            .split(/[,\n]/)
+            .map(name => name.trim())
+            .filter(name => name.length > 0);
+    }
+
+    // Get selected profiles from checkboxes
+    const selectedProfiles = [];
+    if (profileFilterContainer) {
+        const profileCheckboxes = profileFilterContainer.querySelectorAll('input[type="checkbox"]:checked');
+        profileCheckboxes.forEach(checkbox => {
+            selectedProfiles.push(checkbox.value);
+        });
+    }
+
+    // Initialize current assessment with new metadata
     currentAssessment = {
         name: appName,
+        interviewName: interviewName,
         profile: 'all', // Default to all, will be filtered in interview
         date: new Date().toISOString(),
+        interviewees: interviewees,
+        selectedProfiles: selectedProfiles,
         answers: {},
         comments: {},
         answeredBy: {},
@@ -396,8 +430,8 @@ function startInterview() {
     renderQuestions();
     updateProgress();
     
-    // Update interview title
-    interviewTitle.textContent = `Interview: ${appName}`;
+    // Update interview title to include both app and interview name
+    interviewTitle.textContent = `Interview: ${appName} - ${interviewName}`;
 
     // Update tab visibility to show Interview tab
     updateTabVisibility();
@@ -1063,8 +1097,11 @@ function saveAssessment() {
         return;
     }
 
-    // Check if assessment with same name exists
-    const existingIndex = assessments.findIndex(a => a.name === currentAssessment.name);
+    // Check if assessment with same name and interviewName exists
+    const existingIndex = assessments.findIndex(a => 
+        a.name === currentAssessment.name && 
+        (a.interviewName || a.name) === (currentAssessment.interviewName || currentAssessment.name)
+    );
     
     // Ensure appVersion is set on the current assessment
     if (!currentAssessment.appVersion) {
@@ -1072,7 +1109,10 @@ function saveAssessment() {
     }
     
     if (existingIndex >= 0) {
-        if (confirm('An assessment with this name already exists. Do you want to overwrite it?')) {
+        const interviewDesc = currentAssessment.interviewName 
+            ? `${currentAssessment.name} - ${currentAssessment.interviewName}`
+            : currentAssessment.name;
+        if (confirm(`An assessment for "${interviewDesc}" already exists. Do you want to overwrite it?`)) {
             assessments[existingIndex] = JSON.parse(JSON.stringify(currentAssessment));
         } else {
             return;
@@ -1128,12 +1168,24 @@ function updateSavedAssessmentsList() {
         const date = new Date(assessment.date).toLocaleDateString();
         const answeredCount = Object.keys(assessment.answers).length;
         
+        // Build metadata display with interview information
+        let metaInfo = [`Date: ${date}`, `Answers: ${answeredCount}`];
+        
+        // Add interview name if it exists and is different from app name
+        if (assessment.interviewName && assessment.interviewName !== assessment.name) {
+            metaInfo.push(`Interview: ${assessment.interviewName}`);
+        }
+        
+        // Add interviewees count if available
+        if (assessment.interviewees && assessment.interviewees.length > 0) {
+            metaInfo.push(`Interviewees: ${assessment.interviewees.length}`);
+        }
+        
         div.innerHTML = `
             <div class="assessment-info">
-                <div class="assessment-name">${assessment.name}</div>
+                <div class="assessment-name">${assessment.name}${assessment.interviewName && assessment.interviewName !== assessment.name ? ' - ' + assessment.interviewName : ''}</div>
                 <div class="assessment-meta">
-                    Date: ${date} | 
-                    Answers: ${answeredCount}
+                    ${metaInfo.join(' | ')}
                 </div>
             </div>
             <div class="assessment-actions">
@@ -1156,7 +1208,7 @@ function updateSavedAssessmentsList() {
 function loadAssessment(index) {
     currentAssessment = JSON.parse(JSON.stringify(assessments[index]));
     
-    // Ensure all expected fields exist with defaults
+    // Ensure all expected fields exist with defaults for backward compatibility
     if (!currentAssessment.comments) {
         currentAssessment.comments = {};
     }
@@ -1169,8 +1221,21 @@ function loadAssessment(index) {
     if (!currentAssessment.appVersion) {
         currentAssessment.appVersion = APP_VERSION;
     }
+    // New fields for v1.2.0 - ensure backward compatibility
+    if (!currentAssessment.interviewName) {
+        // For old assessments, use the name as interviewName
+        currentAssessment.interviewName = currentAssessment.name || '';
+    }
+    if (!currentAssessment.interviewees) {
+        currentAssessment.interviewees = [];
+    }
+    if (!currentAssessment.selectedProfiles) {
+        currentAssessment.selectedProfiles = [];
+    }
     
-    appNameInput.value = currentAssessment.name;
+    appNameInput.value = currentAssessment.name || '';
+    interviewNameInput.value = currentAssessment.interviewName || '';
+    intervieweesInput.value = currentAssessment.interviewees ? currentAssessment.interviewees.join(', ') : '';
     
     // Reset profile filter checkboxes
     if (profileFilterContainer) {
@@ -1185,7 +1250,13 @@ function loadAssessment(index) {
     
     renderQuestions();
     updateProgress();
-    interviewTitle.textContent = `Interview: ${currentAssessment.name}`;
+    
+    // Update interview title to show both app and interview name
+    const titleParts = [currentAssessment.name];
+    if (currentAssessment.interviewName && currentAssessment.interviewName !== currentAssessment.name) {
+        titleParts.push(currentAssessment.interviewName);
+    }
+    interviewTitle.textContent = `Interview: ${titleParts.join(' - ')}`;
     
     updateTabVisibility(); // Update tab visibility when loading an assessment
     
@@ -1224,7 +1295,11 @@ function updateResultsSelect() {
     assessments.forEach((assessment, index) => {
         const option = document.createElement('option');
         option.value = index;
-        option.textContent = `${assessment.name} - ${new Date(assessment.date).toLocaleDateString()}`;
+        // Include interview name in the dropdown
+        const interviewName = assessment.interviewName && assessment.interviewName !== assessment.name 
+            ? ` - ${assessment.interviewName}` 
+            : '';
+        option.textContent = `${assessment.name}${interviewName} (${new Date(assessment.date).toLocaleDateString()})`;
         resultsSelect.appendChild(option);
     });
 }
@@ -1287,6 +1362,35 @@ function escapeHtml(text) {
 // Display detailed answers with comments
 function displayDetailedAnswers(assessment) {
     const themeScoresDiv = document.getElementById('theme-scores');
+    
+    // Add assessment metadata section
+    const metadataDiv = document.createElement('div');
+    metadataDiv.className = 'assessment-metadata';
+    metadataDiv.style.marginTop = '2rem';
+    metadataDiv.style.padding = '1rem';
+    metadataDiv.style.backgroundColor = '#f8fafc';
+    metadataDiv.style.borderRadius = '8px';
+    metadataDiv.style.marginBottom = '1rem';
+    
+    let metadataHtml = '<h3 style="margin-top: 0;">Assessment Information</h3>';
+    metadataHtml += `<p><strong>Application:</strong> ${escapeHtml(assessment.name)}</p>`;
+    
+    if (assessment.interviewName && assessment.interviewName !== assessment.name) {
+        metadataHtml += `<p><strong>Interview:</strong> ${escapeHtml(assessment.interviewName)}</p>`;
+    }
+    
+    metadataHtml += `<p><strong>Date:</strong> ${new Date(assessment.date).toLocaleString()}</p>`;
+    
+    if (assessment.interviewees && assessment.interviewees.length > 0) {
+        metadataHtml += `<p><strong>Interviewees:</strong> ${assessment.interviewees.map(name => escapeHtml(name)).join(', ')}</p>`;
+    }
+    
+    if (assessment.selectedProfiles && assessment.selectedProfiles.length > 0) {
+        metadataHtml += `<p><strong>Selected Profiles:</strong> ${assessment.selectedProfiles.join(', ')}</p>`;
+    }
+    
+    metadataDiv.innerHTML = metadataHtml;
+    themeScoresDiv.appendChild(metadataDiv);
     
     // Show only questions that were actually answered (not filtered by profile)
     // Since one assessment can have answers from multiple profiles
@@ -1531,9 +1635,23 @@ function importData(event) {
             }
 
             if (confirm('This will merge imported assessments with existing ones. Continue?')) {
-                // Merge assessments, avoiding duplicates by name
+                // Merge assessments, avoiding duplicates by name and interviewName
                 importedData.forEach(imported => {
-                    const existingIndex = assessments.findIndex(a => a.name === imported.name);
+                    // Ensure backward compatibility for imported data
+                    if (!imported.interviewName) {
+                        imported.interviewName = imported.name;
+                    }
+                    if (!imported.interviewees) {
+                        imported.interviewees = [];
+                    }
+                    if (!imported.selectedProfiles) {
+                        imported.selectedProfiles = [];
+                    }
+                    
+                    const existingIndex = assessments.findIndex(a => 
+                        a.name === imported.name && 
+                        (a.interviewName || a.name) === (imported.interviewName || imported.name)
+                    );
                     if (existingIndex >= 0) {
                         assessments[existingIndex] = imported;
                     } else {
@@ -1577,14 +1695,18 @@ function exportAssessmentsToExcel() {
         
         // Create summary sheet
         const summaryData = [
-            ['Assessment Name', 'Date', 'Total Questions', 'Answered Questions']
+            ['Application Name', 'Interview Name', 'Date', 'Interviewees', 'Total Questions', 'Answered Questions']
         ];
         
         assessments.forEach(assessment => {
             const totalQuestions = getActiveQuestionsCatalog().length;
             const answeredQuestions = Object.keys(assessment.answers).length;
             const date = new Date(assessment.date).toLocaleDateString();
-            summaryData.push([assessment.name, date, totalQuestions, answeredQuestions]);
+            const interviewName = assessment.interviewName || assessment.name;
+            const intervieweesList = assessment.interviewees && assessment.interviewees.length > 0 
+                ? assessment.interviewees.join(', ') 
+                : '';
+            summaryData.push([assessment.name, interviewName, date, intervieweesList, totalQuestions, answeredQuestions]);
         });
         
         const summarySheet = XLSX.utils.aoa_to_sheet(summaryData);
@@ -1594,9 +1716,12 @@ function exportAssessmentsToExcel() {
         assessments.forEach(assessment => {
             const assessmentData = [
                 ['Assessment Information'],
-                ['Name', assessment.name],
+                ['Application Name', assessment.name],
+                ['Interview Name', assessment.interviewName || assessment.name],
                 ['Date', new Date(assessment.date).toLocaleString()],
                 ['Profile', assessment.profile],
+                ['Interviewees', assessment.interviewees && assessment.interviewees.length > 0 ? assessment.interviewees.join(', ') : ''],
+                ['Selected Profiles', assessment.selectedProfiles && assessment.selectedProfiles.length > 0 ? assessment.selectedProfiles.join(', ') : ''],
                 [],
                 ['Question ID', 'Theme', 'Question', 'Answer', 'Answered By', 'Comment', 'Weight', 'Category']
             ];
@@ -1846,9 +1971,12 @@ function exportResultToExcel() {
         const detailsData = [
             ['Test Maturity Assessment Results'],
             [],
-            ['Assessment Name', assessment.name],
+            ['Application Name', assessment.name],
+            ['Interview Name', assessment.interviewName || assessment.name],
             ['Date', new Date(assessment.date).toLocaleString()],
             ['Profile', assessment.profile],
+            ['Interviewees', assessment.interviewees && assessment.interviewees.length > 0 ? assessment.interviewees.join(', ') : ''],
+            ['Selected Profiles', assessment.selectedProfiles && assessment.selectedProfiles.length > 0 ? assessment.selectedProfiles.join(', ') : ''],
             []
         ];
         
@@ -2487,10 +2615,12 @@ async function syncToFolder() {
         const expectedFiles = new Set();
         
         for (const assessment of assessments) {
-            // Create a safe filename
+            // Create a safe filename including both app name and interview name
             const safeName = assessment.name.replace(/[^a-z0-9_-]/gi, '_');
+            const safeInterviewName = (assessment.interviewName || assessment.name).replace(/[^a-z0-9_-]/gi, '_');
             const dateStr = new Date(assessment.date).toISOString().split('T')[0];
-            const filename = `assessment-${safeName}-${dateStr}.json`;
+            // Include interview name in filename for better organization
+            const filename = `assessment-${safeName}-${safeInterviewName}-${dateStr}.json`;
             
             expectedFiles.add(filename);
             
@@ -2507,7 +2637,7 @@ async function syncToFolder() {
             
             // Update the file modification timestamp in memory for future comparison
             const savedFile = await fileHandle.getFile();
-            const assessmentIndex = assessments.findIndex(a => a.name === assessment.name);
+            const assessmentIndex = assessments.findIndex(a => a.name === assessment.name && a.interviewName === assessment.interviewName);
             if (assessmentIndex >= 0) {
                 assessments[assessmentIndex]._fileLastModified = savedFile.lastModified;
             }
@@ -2557,12 +2687,22 @@ async function deleteAssessmentFile(assessment) {
     try {
         // Create the filename that would have been used for this assessment
         const safeName = assessment.name.replace(/[^a-z0-9_-]/gi, '_');
+        const safeInterviewName = (assessment.interviewName || assessment.name).replace(/[^a-z0-9_-]/gi, '_');
         const dateStr = new Date(assessment.date).toISOString().split('T')[0];
-        const filename = `assessment-${safeName}-${dateStr}.json`;
+        const filename = `assessment-${safeName}-${safeInterviewName}-${dateStr}.json`;
         
         // Try to remove the file using the directory handle's removeEntry method
         await syncFolderHandle.removeEntry(filename);
         console.log(`Deleted assessment file: ${filename}`);
+        
+        // Also try to delete old format files (for backward compatibility)
+        try {
+            const oldFilename = `assessment-${safeName}-${dateStr}.json`;
+            await syncFolderHandle.removeEntry(oldFilename);
+            console.log(`Deleted old format assessment file: ${oldFilename}`);
+        } catch (oldError) {
+            // Ignore if old format file doesn't exist
+        }
     } catch (error) {
         // File might not exist (NotFoundError) or permission error - log but don't fail
         if (error.name !== 'NotFoundError') {

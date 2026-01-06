@@ -137,10 +137,20 @@
         <!-- Setup Tab -->
         <div id="setup" class="tab-content active">
             <div class="card">
-                <h2>Application/Team Setup</h2>
+                <h2>Interview Setup</h2>
                 <div class="form-group">
-                    <label for="app-name">Application/Team Name:</label>
-                    <input type="text" id="app-name" placeholder="Enter application or team name">
+                    <label for="app-name">Application Name:</label>
+                    <input type="text" id="app-name" placeholder="Enter application name">
+                </div>
+                <div class="form-group">
+                    <label for="interview-name">Interview Name:</label>
+                    <input type="text" id="interview-name" placeholder="Team name, profile name, or group identifier">
+                    <small style="color: #64748b; display: block; margin-top: 0.25rem;">E.g., "Frontend Team", "Backend Developers", "QA Team Sprint 24"</small>
+                </div>
+                <div class="form-group">
+                    <label for="interviewees">Interviewees:</label>
+                    <textarea id="interviewees" rows="3" placeholder="Enter names of people interviewed (one per line or comma-separated)"></textarea>
+                    <small style="color: #64748b; display: block; margin-top: 0.25rem;">E.g., "John Doe, Jane Smith" or one name per line</small>
                 </div>
                 <button id="start-interview" class="btn btn-primary">Start Interview</button>
             </div>
