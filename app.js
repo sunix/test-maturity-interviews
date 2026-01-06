@@ -6,9 +6,11 @@ let currentAssessment = {
     name: '', // Application name
     interviewName: '', // Interview name (team name, profile name, or group)
     profile: '',
-    date: '',
+    date: '', // Last modified timestamp
+    interviewDate: '', // Actual interview date (editable, independent from date)
     interviewees: [], // List of people interviewed
     selectedProfiles: [], // Profiles selected for this interview
+    generalComments: '', // General comments about the interview
     answers: {},
     comments: {},
     answeredBy: {}, // Track which profile answered each question
@@ -176,6 +178,16 @@ const intervieweesInput = document.getElementById('interviewees');
 const startInterviewBtn = document.getElementById('start-interview');
 const profileFilterContainer = document.getElementById('profile-filter');
 const questionsContainer = document.getElementById('questions-container');
+
+// Metadata editor elements
+const toggleMetadataBtn = document.getElementById('toggle-metadata-editor');
+const metadataEditor = document.getElementById('metadata-editor');
+const editAppNameInput = document.getElementById('edit-app-name');
+const editInterviewNameInput = document.getElementById('edit-interview-name');
+const editInterviewDateInput = document.getElementById('edit-interview-date');
+const editIntervieweesInput = document.getElementById('edit-interviewees');
+const editGeneralCommentsInput = document.getElementById('edit-general-comments');
+const saveMetadataBtn = document.getElementById('save-metadata');
 const progressFill = document.getElementById('progress-fill');
 const progressText = document.getElementById('progress-text');
 const viewResultsBtn = document.getElementById('view-results');
@@ -290,6 +302,16 @@ function setupEventListeners() {
     if (headerSelectSyncFolderBtn) {
         headerSelectSyncFolderBtn.addEventListener('click', selectSyncFolder);
     }
+    
+    // Metadata editor toggle
+    if (toggleMetadataBtn) {
+        toggleMetadataBtn.addEventListener('click', toggleMetadataEditor);
+    }
+    
+    // Save metadata
+    if (saveMetadataBtn) {
+        saveMetadataBtn.addEventListener('click', saveMetadata);
+    }
 }
 
 // Close mobile menu
@@ -401,19 +423,25 @@ function startInterview() {
     }
 
     // Initialize current assessment with new metadata
+    const now = new Date();
     currentAssessment = {
         name: appName,
         interviewName: interviewName,
         profile: 'all', // Default to all, will be filtered in interview
-        date: new Date().toISOString(),
+        date: now.toISOString(), // Last modified timestamp
+        interviewDate: now.toISOString(), // Default interview date to now (editable)
         interviewees: interviewees,
         selectedProfiles: selectedProfiles,
+        generalComments: '', // Initialize empty general comments
         answers: {},
         comments: {},
         answeredBy: {},
         attachments: {},
         appVersion: APP_VERSION
     };
+    
+    // Populate metadata editor with current values
+    populateMetadataEditor();
 
     // Reset profile filter checkboxes
     if (profileFilterContainer) {
@@ -451,6 +479,12 @@ function handleProfileFilterChange() {
         });
     }
     
+    // Update current assessment's selected profiles for persistence
+    if (currentAssessment) {
+        currentAssessment.selectedProfiles = selectedProfiles;
+        saveAssessment(); // Auto-save when profile selection changes
+    }
+    
     if (selectedProfiles.length === 0) {
         // Show all questions if no profiles selected
         filteredQuestions = getActiveQuestionsCatalog();
@@ -464,6 +498,104 @@ function handleProfileFilterChange() {
     // Re-render questions
     renderQuestions();
     updateProgress();
+}
+
+// Toggle metadata editor visibility
+function toggleMetadataEditor() {
+    if (metadataEditor && toggleMetadataBtn) {
+        metadataEditor.classList.toggle('hidden');
+        toggleMetadataBtn.classList.toggle('expanded');
+        
+        if (!metadataEditor.classList.contains('hidden')) {
+            // Populate with current values when opening
+            populateMetadataEditor();
+        }
+    }
+}
+
+// Populate metadata editor with current assessment values
+function populateMetadataEditor() {
+    if (!currentAssessment) return;
+    
+    if (editAppNameInput) {
+        editAppNameInput.value = currentAssessment.name || '';
+    }
+    if (editInterviewNameInput) {
+        editInterviewNameInput.value = currentAssessment.interviewName || '';
+    }
+    if (editInterviewDateInput) {
+        // Convert ISO string to datetime-local format (remove 'Z' and milliseconds)
+        const dateValue = currentAssessment.interviewDate || currentAssessment.date || '';
+        if (dateValue) {
+            const date = new Date(dateValue);
+            // Format as YYYY-MM-DDTHH:MM
+            const localDatetime = new Date(date.getTime() - date.getTimezoneOffset() * 60000)
+                .toISOString()
+                .slice(0, 16);
+            editInterviewDateInput.value = localDatetime;
+        }
+    }
+    if (editIntervieweesInput) {
+        const interviewees = currentAssessment.interviewees || [];
+        editIntervieweesInput.value = interviewees.join('\n');
+    }
+    if (editGeneralCommentsInput) {
+        editGeneralCommentsInput.value = currentAssessment.generalComments || '';
+    }
+}
+
+// Save metadata changes
+function saveMetadata() {
+    if (!currentAssessment) {
+        alert('No active interview to update');
+        return;
+    }
+    
+    // Update current assessment with edited values
+    if (editAppNameInput) {
+        currentAssessment.name = editAppNameInput.value.trim();
+    }
+    if (editInterviewNameInput) {
+        currentAssessment.interviewName = editInterviewNameInput.value.trim();
+    }
+    if (editInterviewDateInput && editInterviewDateInput.value) {
+        // Convert datetime-local to ISO string
+        currentAssessment.interviewDate = new Date(editInterviewDateInput.value).toISOString();
+    }
+    if (editIntervieweesInput) {
+        // Parse interviewees from textarea (line-separated)
+        const intervieweesText = editIntervieweesInput.value.trim();
+        currentAssessment.interviewees = intervieweesText
+            .split('\n')
+            .map(name => name.trim())
+            .filter(name => name.length > 0);
+    }
+    if (editGeneralCommentsInput) {
+        currentAssessment.generalComments = editGeneralCommentsInput.value.trim();
+    }
+    
+    // Update the interview title
+    if (interviewTitle && currentAssessment.name && currentAssessment.interviewName) {
+        interviewTitle.textContent = `Interview: ${currentAssessment.name} - ${currentAssessment.interviewName}`;
+    }
+    
+    // Save the assessment
+    saveAssessment();
+    
+    // Show success message
+    if (autoSaveStatus) {
+        autoSaveStatus.textContent = '● Metadata updated';
+        autoSaveStatus.style.color = 'var(--success-color)';
+        setTimeout(() => {
+            autoSaveStatus.textContent = '● All changes saved';
+        }, 2000);
+    }
+    
+    // Close the editor
+    if (metadataEditor) {
+        metadataEditor.classList.add('hidden');
+        toggleMetadataBtn.classList.remove('expanded');
+    }
 }
 
 // Render Questions
@@ -1232,21 +1364,40 @@ function loadAssessment(index) {
     if (!currentAssessment.selectedProfiles) {
         currentAssessment.selectedProfiles = [];
     }
+    if (!currentAssessment.generalComments) {
+        currentAssessment.generalComments = '';
+    }
+    if (!currentAssessment.interviewDate) {
+        // Default to date field for backward compatibility
+        currentAssessment.interviewDate = currentAssessment.date || '';
+    }
     
     appNameInput.value = currentAssessment.name || '';
     interviewNameInput.value = currentAssessment.interviewName || '';
     intervieweesInput.value = currentAssessment.interviewees ? currentAssessment.interviewees.join(', ') : '';
     
-    // Reset profile filter checkboxes
+    // Restore profile filter checkboxes from saved state
     if (profileFilterContainer) {
         const profileCheckboxes = profileFilterContainer.querySelectorAll('input[type="checkbox"]');
         profileCheckboxes.forEach(checkbox => {
-            checkbox.checked = false;
+            // Check if this profile was selected in the saved assessment
+            checkbox.checked = currentAssessment.selectedProfiles && 
+                              currentAssessment.selectedProfiles.includes(checkbox.value);
         });
     }
     
-    // Show all questions (user can filter if needed)
-    filteredQuestions = getActiveQuestionsCatalog();
+    // Filter questions based on saved selected profiles
+    if (currentAssessment.selectedProfiles && currentAssessment.selectedProfiles.length > 0) {
+        filteredQuestions = getActiveQuestionsCatalog().filter(q => 
+            currentAssessment.selectedProfiles.some(profile => q.profiles.includes(profile))
+        );
+    } else {
+        // Show all questions if no profiles were selected
+        filteredQuestions = getActiveQuestionsCatalog();
+    }
+    
+    // Populate the metadata editor
+    populateMetadataEditor();
     
     renderQuestions();
     updateProgress();

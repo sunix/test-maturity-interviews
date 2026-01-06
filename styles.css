@@ -1817,3 +1817,73 @@ header h1 {
         max-height: 95vh;
     }
 }
+
+/* Metadata Editor Styles */
+.metadata-editor-section {
+    margin-bottom: 1.5rem;
+    border-bottom: 2px solid var(--border-color);
+    padding-bottom: 1rem;
+}
+
+.metadata-editor {
+    margin-top: 1rem;
+    padding: 1rem;
+    background-color: var(--bg-color);
+    border-radius: 0.5rem;
+    border: 1px solid var(--border-color);
+}
+
+.metadata-editor.hidden {
+    display: none;
+}
+
+.metadata-editor .form-group {
+    margin-bottom: 1rem;
+}
+
+.metadata-editor .form-group:last-of-type {
+    margin-bottom: 1rem;
+}
+
+.metadata-editor label {
+    display: block;
+    margin-bottom: 0.25rem;
+    font-weight: 500;
+    color: var(--text-primary);
+}
+
+.metadata-editor .form-control {
+    width: 100%;
+    padding: 0.5rem;
+    border: 1px solid var(--border-color);
+    border-radius: 0.375rem;
+    font-size: 0.875rem;
+    font-family: inherit;
+}
+
+.metadata-editor textarea.form-control {
+    resize: vertical;
+    min-height: 60px;
+}
+
+.metadata-editor #edit-general-comments {
+    min-height: 100px;
+    font-size: 0.875rem;
+}
+
+#toggle-metadata-editor {
+    text-align: left;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+#toggle-metadata-editor::before {
+    content: '▼';
+    display: inline-block;
+    transition: transform 0.2s;
+}
+
+#toggle-metadata-editor.expanded::before {
+    transform: rotate(-180deg);
+}
