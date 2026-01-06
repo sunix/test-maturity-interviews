@@ -664,6 +664,7 @@ function handleMetadataChange() {
                 dates.push(new Date(input.value).toISOString());
             }
         });
+        // Use current date as fallback to ensure at least one date is always set
         currentAssessment.interviewDates = dates.length > 0 ? dates : [new Date().toISOString()];
         
         // Also set interviewDate to first date for backward compatibility
@@ -2347,7 +2348,7 @@ function updateAutoSaveStatus(status, message = '') {
 
 // Trigger auto-save with debouncing
 function triggerAutoSave() {
-    if (!currentAssessment.name) {
+    if (!currentAssessment || !currentAssessment.name) {
         // No assessment to save yet
         return;
     }
