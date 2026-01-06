@@ -106,26 +106,65 @@
             <!-- Interview Controls (shown only on interview tab) -->
             <div id="interview-controls" class="interview-controls hidden">
                 <div class="interview-controls-content">
-                    <div class="form-group">
-                        <label>Filter by Profiles:</label>
-                        <div id="profile-filter" class="profile-filter-checkboxes">
-                            <label class="profile-filter-checkbox">
-                                <input type="checkbox" value="developer"> Developer
-                            </label>
-                            <label class="profile-filter-checkbox">
-                                <input type="checkbox" value="qa"> QA Engineer
-                            </label>
-                            <label class="profile-filter-checkbox">
-                                <input type="checkbox" value="devops"> DevOps
-                            </label>
-                            <label class="profile-filter-checkbox">
-                                <input type="checkbox" value="manager"> Manager
-                            </label>
+                    <!-- Interview Metadata Editor Section -->
+                    <div class="metadata-section collapsed">
+                        <div class="metadata-header">
+                            <button id="toggle-metadata-editor" class="metadata-toggle">
+                                <span class="toggle-icon">▶</span>
+                                <span class="toggle-text">Edit Interview Metadata</span>
+                            </button>
+                        </div>
+                        <div class="metadata-content">
+                            <div class="form-group form-horizontal">
+                                <label for="edit-app-name">Application Name:</label>
+                                <input type="text" id="edit-app-name" class="form-control">
+                            </div>
+                            <div class="form-group form-horizontal">
+                                <label for="edit-interview-name">Interview Name:</label>
+                                <input type="text" id="edit-interview-name" class="form-control" placeholder="Team name, profile name, or group">
+                            </div>
+                            <div class="form-group">
+                                <label>Interview Dates:</label>
+                                <div id="interview-dates-container" class="interview-dates-container">
+                                    <!-- Dates will be added dynamically -->
+                                </div>
+                                <button id="add-interview-date" class="btn btn-secondary btn-small">+ Add Date</button>
+                                <small class="help-text">Add multiple dates if interview spans several sessions</small>
+                            </div>
+                            <div class="form-group">
+                                <label for="edit-interviewees">Interviewees:</label>
+                                <textarea id="edit-interviewees" rows="2" class="form-control" placeholder="Names of people interviewed"></textarea>
+                            </div>
+                            <div class="form-group">
+                                <label for="edit-general-comments">General Interview Comments:</label>
+                                <textarea id="edit-general-comments" rows="4" class="form-control" placeholder="Add general notes, observations, or comments about this interview..."></textarea>
+                            </div>
+                            <button id="save-metadata" class="btn btn-primary save-metadata-btn">Save Metadata</button>
                         </div>
                     </div>
-                    <div class="progress-bar">
-                        <div class="progress-fill" id="progress-fill"></div>
-                        <span class="progress-text" id="progress-text">0 / 0</span>
+                    
+                    <div class="interview-controls-row">
+                        <div class="form-group profile-filter-group">
+                            <label>Filter by Profiles:</label>
+                            <div id="profile-filter" class="profile-filter-checkboxes">
+                                <label class="profile-filter-checkbox">
+                                    <input type="checkbox" value="developer"> Developer
+                                </label>
+                                <label class="profile-filter-checkbox">
+                                    <input type="checkbox" value="qa"> QA Engineer
+                                </label>
+                                <label class="profile-filter-checkbox">
+                                    <input type="checkbox" value="devops"> DevOps
+                                </label>
+                                <label class="profile-filter-checkbox">
+                                    <input type="checkbox" value="manager"> Manager
+                                </label>
+                            </div>
+                        </div>
+                        <div class="progress-bar">
+                            <div class="progress-fill" id="progress-fill"></div>
+                            <span class="progress-text" id="progress-text">0 / 0</span>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -137,10 +176,20 @@
         <!-- Setup Tab -->
         <div id="setup" class="tab-content active">
             <div class="card">
-                <h2>Application/Team Setup</h2>
+                <h2>Interview Setup</h2>
                 <div class="form-group">
-                    <label for="app-name">Application/Team Name:</label>
-                    <input type="text" id="app-name" placeholder="Enter application or team name">
+                    <label for="app-name">Application Name:</label>
+                    <input type="text" id="app-name" placeholder="Enter application name">
+                </div>
+                <div class="form-group">
+                    <label for="interview-name">Interview Name:</label>
+                    <input type="text" id="interview-name" placeholder="Team name, profile name, or group identifier">
+                    <small style="color: #64748b; display: block; margin-top: 0.25rem;">E.g., "Frontend Team", "Backend Developers", "QA Team Sprint 24"</small>
+                </div>
+                <div class="form-group">
+                    <label for="interviewees">Interviewees:</label>
+                    <textarea id="interviewees" rows="3" placeholder="Enter names of people interviewed (one per line or comma-separated)"></textarea>
+                    <small style="color: #64748b; display: block; margin-top: 0.25rem;">E.g., "John Doe, Jane Smith" or one name per line</small>
                 </div>
                 <button id="start-interview" class="btn btn-primary">Start Interview</button>
             </div>
