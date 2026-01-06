@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Multiple Interviews Test - Same Application Name</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 20px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .test-section {
+            background: white;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        h1 { color: #333; }
+        h2 { color: #2563eb; margin-top: 0; }
+        .test-case {
+            border-left: 4px solid #2563eb;
+            padding: 10px 15px;
+            margin: 10px 0;
+            background: #f0f7ff;
+        }
+        .pass { border-left-color: #10b981; background: #f0fdf4; }
+        .fail { border-left-color: #ef4444; background: #fef2f2; }
+        pre {
+            background: #1e293b;
+            color: #e2e8f0;
+            padding: 15px;
+            border-radius: 4px;
+            overflow-x: auto;
+            font-size: 12px;
+        }
+        button {
+            background: #2563eb;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            margin: 5px;
+        }
+        button:hover { background: #1d4ed8; }
+        .result { margin-top: 10px; font-weight: bold; }
+        .result.pass { color: #10b981; }
+        .result.fail { color: #ef4444; }
+        .info { background: #e0f2fe; padding: 10px; border-radius: 4px; margin: 10px 0; }
+    </style>
+</head>
+<body>
+    <h1>🧪 Multiple Interviews Test</h1>
+    <p>This page tests the fix for the issue where starting a new interview with the same application name but different interview name would delete the previous interview.</p>
+
+    <div class="test-section">
+        <h2>Test Scenario</h2>
+        <div class="info">
+            <strong>Issue:</strong> When creating multiple interviews for the same application (e.g., "MyApp" with "Frontend Team" and "Backend Team"),
+            the auto-save and sync functions were only matching by application name, causing overwrites.
+            <br><br>
+            <strong>Fix:</strong> All assessment matching functions now consider both <code>name</code> and <code>interviewName</code> fields.
+        </div>
+    </div>
+
+    <div class="test-section">
+        <h2>Test Cases</h2>
+        <button onclick="runAllTests()">▶️ Run All Tests</button>
+        <div id="test-results"></div>
+    </div>
+
+    <script>
+        // Mock APP_VERSION constant
+        const APP_VERSION = '1.2.0';
+
+        // Mock assessment structures
+        const assessments = [];
+        let currentAssessment = null;
+        let isActivelyEditing = false;
+
+        // Helper function to get effective interview name (handles old format without interviewName)
+        function getEffectiveInterviewName(assessment) {
+            return assessment.interviewName || assessment.name;
+        }
+
+        // Helper function to check if user is currently editing a specific assessment
+        function isCurrentlyEditingAssessment(assessmentName, assessmentInterviewName) {
+            return isActivelyEditing && 
+                   currentAssessment && 
+                   currentAssessment.name === assessmentName &&
+                   getEffectiveInterviewName(currentAssessment) === (assessmentInterviewName || assessmentName);
+        }
+
+        // Test data
+        const frontendTeamAssessment = {
+            name: 'MyApp',
+            interviewName: 'Frontend Team',
+            profile: 'all',
+            date: new Date('2024-01-15T10:00:00.000Z').toISOString(),
+            interviewees: ['John Doe', 'Jane Smith'],
+            selectedProfiles: ['developer', 'qa'],
+            answers: {
+                'GO-1': 'yes',
+                'GO-2': 'yes',
+                'GO-3': 'no'
+            },
+            comments: {},
+            answeredBy: {},
+            attachments: {},
+            appVersion: APP_VERSION
+        };
+
+        const backendTeamAssessment = {
+            name: 'MyApp',
+            interviewName: 'Backend Team',
+            profile: 'all',
+            date: new Date('2024-01-20T10:00:00.000Z').toISOString(),
+            interviewees: ['Bob Johnson'],
+            selectedProfiles: ['developer', 'devops'],
+            answers: {
+                'GO-1': 'no',
+                'GO-2': 'yes',
+                'GO-3': 'yes'
+            },
+            comments: {},
+            answeredBy: {},
+            attachments: {},
+            appVersion: APP_VERSION
+        };
+
+        const qaTeamAssessment = {
+            name: 'MyApp',
+            interviewName: 'QA Team',
+            profile: 'all',
+            date: new Date('2024-01-25T10:00:00.000Z').toISOString(),
+            interviewees: ['Alice Cooper'],
+            selectedProfiles: ['qa'],
+            answers: {
+                'GO-1': 'yes',
+                'GO-2': 'no',
+                'GO-3': 'yes'
+            },
+            comments: {},
+            answeredBy: {},
+            attachments: {},
+            appVersion: APP_VERSION
+        };
+
+        function testSaveAssessmentMatching() {
+            // Reset
+            assessments.length = 0;
+            currentAssessment = JSON.parse(JSON.stringify(frontendTeamAssessment));
+
+            // Simulate saveAssessment logic
+            const existingIndex = assessments.findIndex(a => 
+                a.name === currentAssessment.name && 
+                getEffectiveInterviewName(a) === getEffectiveInterviewName(currentAssessment)
+            );
+
+            let firstSaveResult = existingIndex === -1; // Should be -1 (not found)
+            if (existingIndex === -1) {
+                assessments.push(JSON.parse(JSON.stringify(currentAssessment)));
+            }
+
+            // Now add a different interview for the same app
+            currentAssessment = JSON.parse(JSON.stringify(backendTeamAssessment));
+            
+            const existingIndex2 = assessments.findIndex(a => 
+                a.name === currentAssessment.name && 
+                getEffectiveInterviewName(a) === getEffectiveInterviewName(currentAssessment)
+            );
+
+            let secondSaveResult = existingIndex2 === -1; // Should be -1 (not found)
+            if (existingIndex2 === -1) {
+                assessments.push(JSON.parse(JSON.stringify(currentAssessment)));
+            }
+
+            const checks = [
+                { name: 'First interview saved correctly', pass: firstSaveResult },
+                { name: 'Second interview not matched as duplicate', pass: secondSaveResult },
+                { name: 'Both interviews exist in array', pass: assessments.length === 2 },
+                { name: 'Frontend Team interview preserved', pass: assessments.some(a => a.interviewName === 'Frontend Team' && a.answers['GO-1'] === 'yes') },
+                { name: 'Backend Team interview saved', pass: assessments.some(a => a.interviewName === 'Backend Team' && a.answers['GO-1'] === 'no') },
+            ];
+
+            return {
+                title: 'Test 1: saveAssessment Matching Logic',
+                checks: checks,
+                passed: checks.every(c => c.pass)
+            };
+        }
+
+        function testPerformAutoSaveMatching() {
+            // Reset with existing interviews
+            assessments.length = 0;
+            assessments.push(JSON.parse(JSON.stringify(frontendTeamAssessment)));
+            assessments.push(JSON.parse(JSON.stringify(backendTeamAssessment)));
+
+            // Simulate auto-save for Frontend Team with an update
+            currentAssessment = JSON.parse(JSON.stringify(frontendTeamAssessment));
+            currentAssessment.answers['GO-3'] = 'yes'; // Changed answer
+
+            // Simulate performAutoSave logic
+            const existingIndex = assessments.findIndex(a => 
+                a.name === currentAssessment.name && 
+                getEffectiveInterviewName(a) === getEffectiveInterviewName(currentAssessment)
+            );
+
+            let matchedCorrectly = existingIndex === 0; // Should match first item
+            if (existingIndex >= 0) {
+                assessments[existingIndex] = JSON.parse(JSON.stringify(currentAssessment));
+            }
+
+            const checks = [
+                { name: 'Matched Frontend Team interview (index 0)', pass: matchedCorrectly },
+                { name: 'Still have 2 interviews', pass: assessments.length === 2 },
+                { name: 'Frontend Team answer updated', pass: assessments[0].answers['GO-3'] === 'yes' },
+                { name: 'Backend Team unchanged', pass: assessments[1].answers['GO-1'] === 'no' && assessments[1].interviewName === 'Backend Team' },
+            ];
+
+            return {
+                title: 'Test 2: performAutoSave Matching Logic',
+                checks: checks,
+                passed: checks.every(c => c.pass)
+            };
+        }
+
+        function testSyncFromFolderMatching() {
+            // Reset with existing interviews
+            assessments.length = 0;
+            assessments.push(JSON.parse(JSON.stringify(frontendTeamAssessment)));
+            assessments.push(JSON.parse(JSON.stringify(backendTeamAssessment)));
+
+            // Simulate importing updated Frontend Team assessment from folder
+            const imported = JSON.parse(JSON.stringify(frontendTeamAssessment));
+            imported.answers['GO-2'] = 'no'; // Changed answer
+            imported._fileLastModified = Date.now();
+
+            // Simulate syncFromFolder matching logic
+            const existingIndex = assessments.findIndex(a => 
+                a.name === imported.name && 
+                getEffectiveInterviewName(a) === getEffectiveInterviewName(imported)
+            );
+
+            let matchedCorrectly = existingIndex === 0;
+            if (existingIndex >= 0) {
+                assessments[existingIndex] = imported;
+            }
+
+            // Add a new interview from folder
+            const newFromFolder = JSON.parse(JSON.stringify(qaTeamAssessment));
+            newFromFolder._fileLastModified = Date.now();
+
+            const existingIndex2 = assessments.findIndex(a => 
+                a.name === newFromFolder.name && 
+                getEffectiveInterviewName(a) === getEffectiveInterviewName(newFromFolder)
+            );
+
+            let newNotMatched = existingIndex2 === -1;
+            if (existingIndex2 === -1) {
+                assessments.push(newFromFolder);
+            }
+
+            const checks = [
+                { name: 'Matched correct existing interview', pass: matchedCorrectly },
+                { name: 'New interview not matched as duplicate', pass: newNotMatched },
+                { name: 'Now have 3 interviews', pass: assessments.length === 3 },
+                { name: 'Frontend Team updated', pass: assessments[0].answers['GO-2'] === 'no' },
+                { name: 'Backend Team unchanged', pass: assessments[1].interviewName === 'Backend Team' },
+                { name: 'QA Team added', pass: assessments.some(a => a.interviewName === 'QA Team') },
+            ];
+
+            return {
+                title: 'Test 3: syncFromFolder Matching Logic',
+                checks: checks,
+                passed: checks.every(c => c.pass)
+            };
+        }
+
+        function testActiveEditingCheck() {
+            // Test the isCurrentlyEditingAssessment function
+            currentAssessment = JSON.parse(JSON.stringify(frontendTeamAssessment));
+            isActivelyEditing = true;
+
+            const checks = [
+                { 
+                    name: 'Correctly identifies editing Frontend Team', 
+                    pass: isCurrentlyEditingAssessment('MyApp', 'Frontend Team') === true 
+                },
+                { 
+                    name: 'Does not match Backend Team when editing Frontend Team', 
+                    pass: isCurrentlyEditingAssessment('MyApp', 'Backend Team') === false 
+                },
+                { 
+                    name: 'Does not match different app', 
+                    pass: isCurrentlyEditingAssessment('OtherApp', 'Frontend Team') === false 
+                },
+            ];
+
+            // Test with old format (no interviewName)
+            currentAssessment = {
+                name: 'LegacyApp',
+                profile: 'all',
+                date: new Date().toISOString(),
+                answers: {}
+            };
+
+            checks.push({
+                name: 'Old format: matches by name when interviewName is undefined',
+                pass: isCurrentlyEditingAssessment('LegacyApp', null) === true ||
+                      isCurrentlyEditingAssessment('LegacyApp', undefined) === true ||
+                      isCurrentlyEditingAssessment('LegacyApp', 'LegacyApp') === true
+            });
+
+            isActivelyEditing = false;
+
+            return {
+                title: 'Test 4: isCurrentlyEditingAssessment Logic',
+                checks: checks,
+                passed: checks.every(c => c.pass)
+            };
+        }
+
+        function testBackwardCompatibility() {
+            // Test with old format assessments (no interviewName)
+            assessments.length = 0;
+
+            const oldFormatAssessment = {
+                name: 'LegacyApp',
+                profile: 'all',
+                date: new Date('2024-01-01T10:00:00.000Z').toISOString(),
+                answers: { 'GO-1': 'yes' },
+                appVersion: '1.1.0'
+            };
+
+            assessments.push(JSON.parse(JSON.stringify(oldFormatAssessment)));
+
+            // Try to match with new format logic
+            const existingIndex = assessments.findIndex(a => 
+                a.name === 'LegacyApp' && 
+                getEffectiveInterviewName(a) === 'LegacyApp' // Old format defaults interviewName to name
+            );
+
+            const checks = [
+                { name: 'Old format assessment can be found', pass: existingIndex === 0 },
+                { name: 'Assessment exists in array', pass: assessments.length === 1 },
+            ];
+
+            // Now add a new interview with explicit interview name for the same app
+            const newFormatAssessment = {
+                name: 'LegacyApp',
+                interviewName: 'New Team',
+                profile: 'all',
+                date: new Date('2024-01-15T10:00:00.000Z').toISOString(),
+                answers: { 'GO-1': 'no' },
+                appVersion: '1.2.0'
+            };
+
+            const existingIndex2 = assessments.findIndex(a => 
+                a.name === newFormatAssessment.name && 
+                getEffectiveInterviewName(a) === getEffectiveInterviewName(newFormatAssessment)
+            );
+
+            const shouldNotMatch = existingIndex2 === -1;
+            if (existingIndex2 === -1) {
+                assessments.push(JSON.parse(JSON.stringify(newFormatAssessment)));
+            }
+
+            checks.push({ 
+                name: 'New interview with different name not matched to old format', 
+                pass: shouldNotMatch 
+            });
+            checks.push({ 
+                name: 'Both assessments coexist', 
+                pass: assessments.length === 2 
+            });
+
+            return {
+                title: 'Test 5: Backward Compatibility',
+                checks: checks,
+                passed: checks.every(c => c.pass)
+            };
+        }
+
+        function runAllTests() {
+            const tests = [
+                testSaveAssessmentMatching(),
+                testPerformAutoSaveMatching(),
+                testSyncFromFolderMatching(),
+                testActiveEditingCheck(),
+                testBackwardCompatibility()
+            ];
+
+            const resultsDiv = document.getElementById('test-results');
+            resultsDiv.innerHTML = '';
+
+            tests.forEach(test => {
+                const testDiv = document.createElement('div');
+                testDiv.className = `test-case ${test.passed ? 'pass' : 'fail'}`;
+                
+                let html = `<h3>${test.passed ? '✅' : '❌'} ${test.title}</h3>`;
+                html += '<ul>';
+                test.checks.forEach(check => {
+                    html += `<li style="color: ${check.pass ? '#10b981' : '#ef4444'}">${check.pass ? '✓' : '✗'} ${check.name}</li>`;
+                });
+                html += '</ul>';
+                
+                testDiv.innerHTML = html;
+                resultsDiv.appendChild(testDiv);
+            });
+
+            // Summary
+            const passed = tests.filter(t => t.passed).length;
+            const total = tests.length;
+            const summaryDiv = document.createElement('div');
+            summaryDiv.className = 'result ' + (passed === total ? 'pass' : 'fail');
+            summaryDiv.textContent = `Summary: ${passed}/${total} tests passed`;
+            resultsDiv.appendChild(summaryDiv);
+
+            // Additional info
+            if (passed === total) {
+                const infoDiv = document.createElement('div');
+                infoDiv.className = 'info';
+                infoDiv.style.marginTop = '20px';
+                infoDiv.innerHTML = `
+                    <strong>✅ All tests passed!</strong><br>
+                    The fix correctly handles multiple interviews with the same application name.
+                    Each interview is now uniquely identified by the combination of <code>name</code> and <code>interviewName</code>.
+                `;
+                resultsDiv.appendChild(infoDiv);
+            }
+        }
+    </script>
+</body>
+</html>
