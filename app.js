@@ -2481,7 +2481,7 @@ function markAsActivelyEditing() {
 }
 
 // Helper function to check if user is currently editing a specific assessment
-function isCurrentlyEditingAssessment(assessmentName, assessmentInterviewName) {
+function isCurrentlyEditingAssessment(assessmentName, assessmentInterviewName = null) {
     return isActivelyEditing && 
            currentAssessment && 
            currentAssessment.name === assessmentName &&

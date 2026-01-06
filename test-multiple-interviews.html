@@ -83,12 +83,17 @@
         let currentAssessment = null;
         let isActivelyEditing = false;
 
+        // Helper function to get effective interview name (handles old format without interviewName)
+        function getEffectiveInterviewName(assessment) {
+            return assessment.interviewName || assessment.name;
+        }
+
         // Helper function to check if user is currently editing a specific assessment
         function isCurrentlyEditingAssessment(assessmentName, assessmentInterviewName) {
             return isActivelyEditing && 
                    currentAssessment && 
                    currentAssessment.name === assessmentName &&
-                   (currentAssessment.interviewName || currentAssessment.name) === (assessmentInterviewName || assessmentName);
+                   getEffectiveInterviewName(currentAssessment) === (assessmentInterviewName || assessmentName);
         }
 
         // Test data
@@ -154,7 +159,7 @@
             // Simulate saveAssessment logic
             const existingIndex = assessments.findIndex(a => 
                 a.name === currentAssessment.name && 
-                (a.interviewName || a.name) === (currentAssessment.interviewName || currentAssessment.name)
+                getEffectiveInterviewName(a) === getEffectiveInterviewName(currentAssessment)
             );
 
             let firstSaveResult = existingIndex === -1; // Should be -1 (not found)
@@ -167,7 +172,7 @@
             
             const existingIndex2 = assessments.findIndex(a => 
                 a.name === currentAssessment.name && 
-                (a.interviewName || a.name) === (currentAssessment.interviewName || currentAssessment.name)
+                getEffectiveInterviewName(a) === getEffectiveInterviewName(currentAssessment)
             );
 
             let secondSaveResult = existingIndex2 === -1; // Should be -1 (not found)
@@ -203,7 +208,7 @@
             // Simulate performAutoSave logic
             const existingIndex = assessments.findIndex(a => 
                 a.name === currentAssessment.name && 
-                (a.interviewName || a.name) === (currentAssessment.interviewName || currentAssessment.name)
+                getEffectiveInterviewName(a) === getEffectiveInterviewName(currentAssessment)
             );
 
             let matchedCorrectly = existingIndex === 0; // Should match first item
@@ -239,7 +244,7 @@
             // Simulate syncFromFolder matching logic
             const existingIndex = assessments.findIndex(a => 
                 a.name === imported.name && 
-                (a.interviewName || a.name) === (imported.interviewName || imported.name)
+                getEffectiveInterviewName(a) === getEffectiveInterviewName(imported)
             );
 
             let matchedCorrectly = existingIndex === 0;
@@ -253,7 +258,7 @@
 
             const existingIndex2 = assessments.findIndex(a => 
                 a.name === newFromFolder.name && 
-                (a.interviewName || a.name) === (newFromFolder.interviewName || newFromFolder.name)
+                getEffectiveInterviewName(a) === getEffectiveInterviewName(newFromFolder)
             );
 
             let newNotMatched = existingIndex2 === -1;
@@ -338,7 +343,7 @@
             // Try to match with new format logic
             const existingIndex = assessments.findIndex(a => 
                 a.name === 'LegacyApp' && 
-                (a.interviewName || a.name) === ('LegacyApp') // Old format defaults interviewName to name
+                getEffectiveInterviewName(a) === 'LegacyApp' // Old format defaults interviewName to name
             );
 
             const checks = [
@@ -358,7 +363,7 @@
 
             const existingIndex2 = assessments.findIndex(a => 
                 a.name === newFormatAssessment.name && 
-                (a.interviewName || a.name) === (newFormatAssessment.interviewName || newFormatAssessment.name)
+                getEffectiveInterviewName(a) === getEffectiveInterviewName(newFormatAssessment)
             );
 
             const shouldNotMatch = existingIndex2 === -1;
