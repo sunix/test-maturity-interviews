@@ -1,5 +1,5 @@
 // Application version for compatibility tracking
-const APP_VERSION = '1.2.0'; // Version supporting per-interview metadata
+const APP_VERSION = '1.2.1'; // Version with fix for multiple interviews per application
 
 // Application state
 let currentAssessment = {
