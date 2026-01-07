@@ -198,19 +198,23 @@ The questionnaire includes:
 - **Interview Metadata**: Application name, interview name, dates, interviewees
 - **Questions**: All questions (filtered by profile if applicable)
 - **Editable Columns**:
-  - **Answer**: Fill with "yes" or "no" (case-insensitive)
-  - **Answered By**: Select profile (developer, qa, devops, manager)
+  - **Answer**: Fill with "Yes" or "No" (case-insensitive), or leave blank
+  - **Answered By**: Select profile (developer, qa, devops, manager) - pre-filled with first selected profile
   - **Comment**: Add notes, context, or observations
   - **Attachment Notes**: Reference external files (e.g., "screenshot.png, report.pdf")
-- **Reference Columns**: Question ID, Theme, Profiles, Question Text, Weight, Category
+- **Reference Columns**: Question ID, Question Text
+
+**Tip:** You can set up Excel dropdowns for easier data entry:
+- Answer column: Data → Data Validation → List → Enter: Yes,No
+- Answered By column: Data → Data Validation → List → Enter: developer,qa,devops,manager
 
 #### Filling the Questionnaire
 
 1. **Open the Excel file**
 2. **Read the Instructions sheet** for guidance
 3. **Fill the Questionnaire sheet**:
-   - Enter "yes" or "no" in the Answer column
-   - Optionally specify who answered in the "Answered By" column
+   - Enter "Yes" or "No" in the Answer column (or leave blank)
+   - The "Answered By" column is pre-filled but can be changed
    - Add comments for context
    - Note any attachment references
 4. **Save the file** when complete

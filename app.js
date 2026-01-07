@@ -2351,8 +2351,12 @@ function exportInterviewQuestionnaireToExcel() {
             ['Interview Questionnaire - Instructions'],
             [],
             ['How to use this questionnaire:'],
-            ['1. Fill in the "Answer" column with either "yes" or "no" (case-insensitive)'],
-            ['2. Optionally fill in "Answered By" with the profile: developer, qa, devops, or manager'],
+            ['1. Fill in the "Answer" column with "Yes", "No", or leave it blank'],
+            ['   Tip: In Excel, you can set up a dropdown by selecting cells in the Answer column,'],
+            ['   then go to Data > Data Validation > List, and enter: Yes,No'],
+            ['2. Fill in "Answered By" column with a profile: developer, qa, devops, or manager'],
+            ['   Tip: In Excel, you can set up a dropdown by selecting cells in the Answered By column,'],
+            ['   then go to Data > Data Validation > List, and enter: developer,qa,devops,manager'],
             ['3. Add any relevant comments in the "Comment" column'],
             ['4. For attachments: Add notes or descriptions in the "Attachment Notes" column'],
             ['   Note: Actual file attachments can only be added in the web application'],
@@ -2360,9 +2364,10 @@ function exportInterviewQuestionnaireToExcel() {
             ['6. Import this file back into the application using "Import Questionnaire" button'],
             [],
             ['Important Notes:'],
-            ['- Do NOT modify: Question ID, Theme, Question Text, Profiles, Weight, or Category columns'],
-            ['- Leave Answer blank if you want to skip a question'],
-            ['- Valid "Answered By" values: developer, qa, devops, manager (or leave blank)'],
+            ['- Do NOT modify the "Question ID" or "Question Text" columns'],
+            ['- Valid Answer values: Yes, No, or blank (case-insensitive)'],
+            ['- Valid Answered By values: developer, qa, devops, manager (case-insensitive)'],
+            ['- "Answered By" is pre-filled with the first selected profile when available'],
             ['- For attachments: You can note file names or references, but actual files must be attached in the web app'],
             [],
             ['Interview Information:'],
@@ -2380,15 +2385,21 @@ function exportInterviewQuestionnaireToExcel() {
         instructionsSheet['!cols'] = [{ wch: 25 }, { wch: 60 }];
         XLSX.utils.book_append_sheet(workbook, instructionsSheet, 'Instructions');
         
-        // Create questionnaire sheet with existing answers if any
+        // Create questionnaire sheet with simplified columns
         const questionnaireData = [
-            ['Question ID', 'Theme', 'Profiles', 'Question Text', 'Answer', 'Answered By', 'Comment', 'Attachment Notes', 'Weight', 'Category']
+            ['Question ID', 'Question Text', 'Answer', 'Answered By', 'Comment', 'Attachment Notes']
         ];
+        
+        // Determine default "Answered By" value (first selected profile)
+        let defaultAnsweredBy = '';
+        if (currentAssessment.selectedProfiles && currentAssessment.selectedProfiles.length > 0) {
+            defaultAnsweredBy = currentAssessment.selectedProfiles[0];
+        }
         
         questionsToExport.forEach(question => {
             // Get existing answer if any
             const existingAnswer = currentAssessment.answers[question.id] || '';
-            const existingAnsweredBy = currentAssessment.answeredBy?.[question.id] || '';
+            const existingAnsweredBy = currentAssessment.answeredBy?.[question.id] || defaultAnsweredBy;
             const existingComment = currentAssessment.comments?.[question.id] || '';
             
             // Get attachment info
@@ -2400,15 +2411,11 @@ function exportInterviewQuestionnaireToExcel() {
             
             questionnaireData.push([
                 question.id,
-                question.theme,
-                question.profiles.filter(p => p !== 'all').join(', '),
                 question.question,
                 existingAnswer,
                 existingAnsweredBy,
                 existingComment,
-                attachmentNotes,
-                question.weight,
-                question.category || ''
+                attachmentNotes
             ]);
         });
         
@@ -2417,15 +2424,11 @@ function exportInterviewQuestionnaireToExcel() {
         // Auto-size columns
         questionnaireSheet['!cols'] = [
             { wch: 12 },  // Question ID
-            { wch: 25 },  // Theme
-            { wch: 20 },  // Profiles
             { wch: 70 },  // Question Text
             { wch: 10 },  // Answer
             { wch: 15 },  // Answered By
             { wch: 40 },  // Comment
-            { wch: 30 },  // Attachment Notes
-            { wch: 8 },   // Weight
-            { wch: 20 }   // Category
+            { wch: 30 }   // Attachment Notes
         ];
         
         XLSX.utils.book_append_sheet(workbook, questionnaireSheet, 'Questionnaire');

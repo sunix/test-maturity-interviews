@@ -55,11 +55,13 @@ Interviewees: John Doe, Jane Smith
 
 #### Questionnaire Sheet
 
-| Question ID | Theme | Profiles | Question Text | Answer | Answered By | Comment | Attachment Notes | Weight | Category |
-|------------|-------|----------|---------------|--------|-------------|---------|------------------|--------|----------|
-| GO-1 | Gouvernance & Organisation | manager, all | Une stratégie de test est-elle formalisée... | | | | | 3 | Test strategy |
-| MS-3 | Méthodes & Standardisation | qa, all | Utilisez-vous des templates standardisés... | | | | | 2 | Test case design |
-| AC-1 | Automatisation & CI/CD | developer, all | Les tests unitaires sont-ils automatisés ? | | | | | 3 | Test automation |
+| Question ID | Question Text | Answer | Answered By | Comment | Attachment Notes |
+|------------|---------------|--------|-------------|---------|------------------|
+| GO-1 | Une stratégie de test est-elle formalisée... | | developer | | |
+| MS-3 | Utilisez-vous des templates standardisés... | | developer | | |
+| AC-1 | Les tests unitaires sont-ils automatisés ? | | developer | | |
+
+**Note:** The "Answered By" column is pre-filled with the first selected profile if available.
 
 ## ✏️ Filling the Questionnaire
 
@@ -72,19 +74,22 @@ Interviewees: John Doe, Jane Smith
 
 #### Example Filled Row:
 
-| Question ID | Theme | Profiles | Question Text | Answer | Answered By | Comment | Attachment Notes | Weight | Category |
-|------------|-------|----------|---------------|--------|-------------|---------|------------------|--------|----------|
-| GO-1 | Gouvernance & Organisation | manager, all | Une stratégie de test est-elle formalisée... | **yes** | **manager** | **Strategy document reviewed on 2024-01-15** | **strategy-v2.pdf** | 3 | Test strategy |
-| MS-3 | Méthodes & Standardisation | qa, all | Utilisez-vous des templates standardisés... | **no** | **qa** | **Templates need to be created** | | 2 | Test case design |
-| AC-1 | Automatisation & CI/CD | developer, all | Les tests unitaires sont-ils automatisés ? | **yes** | **developer** | **Using Jest, 85% coverage** | **coverage-report.html** | 3 | Test automation |
+| Question ID | Question Text | Answer | Answered By | Comment | Attachment Notes |
+|------------|---------------|--------|-------------|---------|------------------|
+| GO-1 | Une stratégie de test est-elle formalisée... | **Yes** | **manager** | **Strategy document reviewed on 2024-01-15** | **strategy-v2.pdf** |
+| MS-3 | Utilisez-vous des templates standardisés... | **No** | **qa** | **Templates need to be created** | |
+| AC-1 | Les tests unitaires sont-ils automatisés ? | **Yes** | **developer** | **Using Jest, 85% coverage** | **coverage-report.html** |
 
 ### Important Notes:
 
-- **Answer values**: Must be "yes" or "no" (case-insensitive: YES, Yes, NO, No all work)
-- **Answered By values**: Must be one of: developer, qa, devops, manager (or leave blank)
+- **Answer values**: Type "Yes" or "No" (case-insensitive: YES, yes, NO, no all work), or leave blank
+  - **Tip:** Set up Excel dropdown: Select Answer column cells → Data → Data Validation → List → Enter: Yes,No
+- **Answered By values**: Type one of: developer, qa, devops, manager (or leave blank)
+  - **Tip:** Set up Excel dropdown: Select Answered By column cells → Data → Data Validation → List → Enter: developer,qa,devops,manager
+  - Pre-filled with first selected profile when available
 - **Comments**: Any text you want
 - **Attachment Notes**: File names or references (actual files uploaded in web app)
-- **DO NOT MODIFY**: Question ID, Theme, Profiles, Question Text, Weight, Category columns
+- **DO NOT MODIFY**: Question ID, Question Text columns
 
 ### Step 4: Save the File
 
