@@ -427,6 +427,11 @@
                         registration = reg;
                         console.log('Service Worker registered successfully:', reg.scope);
                         
+                        // Check for updates immediately on load
+                        registration.update().then(() => {
+                            console.log('Initial update check completed');
+                        });
+                        
                         // Check for updates every 60 seconds when app is active
                         setInterval(() => {
                             registration.update();
@@ -442,15 +447,23 @@
                         // Listen for updates
                         registration.addEventListener('updatefound', () => {
                             const newWorker = registration.installing;
+                            console.log('Update found! New service worker installing...');
                             
                             newWorker.addEventListener('statechange', () => {
+                                console.log('Service worker state changed to:', newWorker.state);
                                 if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
                                     // New service worker available
-                                    console.log('New version available!');
+                                    console.log('New version available! Showing update banner...');
                                     showUpdateBanner(newWorker);
                                 }
                             });
                         });
+                        
+                        // Handle the case where there's already a waiting worker
+                        if (reg.waiting) {
+                            console.log('Service worker already waiting, showing banner immediately');
+                            showUpdateBanner(reg.waiting);
+                        }
                     })
                     .catch((error) => {
                         console.log('Service Worker registration failed:', error);

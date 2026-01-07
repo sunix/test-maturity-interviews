@@ -121,8 +121,12 @@ Transform the web app into a native Windows application:
 
 **How Updates Work:**
 - The app displays its version (e.g., v1.2.2) in the header
-- When a new version is deployed, the service worker detects it within 60 seconds
+- When a new version is deployed, the service worker detects it automatically:
+  - Checks immediately when you open/reload the page
+  - Checks every 60 seconds while the app is open
+  - Checks when you switch back to the app tab
 - An animated banner appears: "A new version is available!" with "Update Now" and "Dismiss" buttons
+- Click "Update Now" to instantly reload with the new version - **no more Ctrl+Shift+R needed!**
 - You control when to update - no forced reloads
 - To test: Open the [demo page](demo-update-banner.html) to see how the banner looks and works
 

@@ -76,10 +76,12 @@ Once installed:
   - **Update Detection**: When a new version is available, you'll see an animated banner with an "Update Now" button
   - **User Control**: You can choose to update immediately or dismiss the notification and continue working
   - **How It Works**: 
-    - Service worker checks for updates every 60 seconds
+    - Service worker checks for updates immediately on page load
+    - Continues checking every 60 seconds while the app is open
     - Also checks when you switch back to the app tab
     - Banner only appears when a new version is actually deployed
     - You won't see the banner if you're already on the latest version
+  - **No More Hard Refresh**: Click "Update Now" on the banner - **you no longer need Ctrl+Shift+R!**
   - **Demo**: See the [Update Banner Demo](demo-update-banner.html) for a live demonstration of how update notifications work
   - **Manual Check**: Open browser console and type `checkForUpdates()` to manually check for updates
 - **Uninstalling**: Right-click the app icon and select "Uninstall" or remove it from Windows Settings
@@ -123,9 +125,11 @@ The following features work offline after first load:
 ### Updates not showing?
 
 **Solution**:
-- Close and reopen the app
-- The service worker checks for updates every 60 seconds and when the app becomes visible
+- Close and reopen the app - it checks for updates immediately on load
+- The service worker checks for updates immediately when you open the app, then every 60 seconds, and when the app becomes visible
 - An animated update banner will appear when a new version is detected
+- Click "Update Now" on the banner - no need for Ctrl+Shift+R
+- If you still don't see the banner, check the browser console for "New version available!" message
 - Cache version is automatically managed
 - See the [Update Banner Demo](demo-update-banner.html) to understand how the notification system works
 
