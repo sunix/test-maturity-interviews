@@ -71,10 +71,17 @@ After installation, you can verify:
 Once installed:
 
 - **Opening**: Click the app icon from Start menu, taskbar, or desktop
+- **Version Display**: The current version is shown in the app header (e.g., v1.2.2)
 - **Updating**: The app automatically checks for updates when you open it
   - **Update Detection**: When a new version is available, you'll see an animated banner with an "Update Now" button
   - **User Control**: You can choose to update immediately or dismiss the notification and continue working
+  - **How It Works**: 
+    - Service worker checks for updates every 60 seconds
+    - Also checks when you switch back to the app tab
+    - Banner only appears when a new version is actually deployed
+    - You won't see the banner if you're already on the latest version
   - **Demo**: See the [Update Banner Demo](demo-update-banner.html) for a live demonstration of how update notifications work
+  - **Manual Check**: Open browser console and type `checkForUpdates()` to manually check for updates
 - **Uninstalling**: Right-click the app icon and select "Uninstall" or remove it from Windows Settings
 
 ## Features Available Offline

@@ -117,6 +117,14 @@ Transform the web app into a native Windows application:
 - ✅ Faster startup with cached resources
 - ✅ Professional, app-like experience
 - ✅ Automatic update notifications with user control (see [demo](demo-update-banner.html))
+- ✅ Version display in header (shows current app version)
+
+**How Updates Work:**
+- The app displays its version (e.g., v1.2.2) in the header
+- When a new version is deployed, the service worker detects it within 60 seconds
+- An animated banner appears: "A new version is available!" with "Update Now" and "Dismiss" buttons
+- You control when to update - no forced reloads
+- To test: Open the [demo page](demo-update-banner.html) to see how the banner looks and works
 
 ### Basic Setup (30 seconds)
 1. Open `index.html` in any modern browser (Chrome, Firefox, Edge, Safari)
