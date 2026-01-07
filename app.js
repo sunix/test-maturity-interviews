@@ -498,8 +498,49 @@ function startInterview() {
     // Update tab visibility to show Interview tab
     updateTabVisibility();
 
+    // Save the assessment immediately to create the interview file
+    // This ensures the file exists even before any answers are filled
+    saveInitialAssessment();
+
     // Switch to interview tab
     switchTab('interview');
+}
+
+// Save initial assessment when starting an interview (before any answers)
+async function saveInitialAssessment() {
+    try {
+        // Show saving status
+        updateAutoSaveStatus('saving');
+        
+        // Check if assessment with same name and interviewName exists
+        const existingIndex = assessments.findIndex(a => 
+            a.name === currentAssessment.name && 
+            (a.interviewName || a.name) === (currentAssessment.interviewName || currentAssessment.name)
+        );
+        
+        // Ensure appVersion is set on the current assessment
+        if (!currentAssessment.appVersion) {
+            currentAssessment.appVersion = APP_VERSION;
+        }
+        
+        if (existingIndex >= 0) {
+            assessments[existingIndex] = JSON.parse(JSON.stringify(currentAssessment));
+        } else {
+            assessments.push(JSON.parse(JSON.stringify(currentAssessment)));
+        }
+
+        await saveAssessments();
+        updateSavedAssessmentsList();
+        updateResultsSelect();
+        
+        // Show saved status
+        updateAutoSaveStatus('saved');
+        
+        console.log('Initial assessment saved successfully');
+    } catch (error) {
+        console.error('Error saving initial assessment:', error);
+        updateAutoSaveStatus('error', 'Failed to save');
+    }
 }
 
 // Handle profile filter change
@@ -2848,15 +2889,6 @@ function triggerAutoSave() {
 // Perform the actual auto-save
 async function performAutoSave() {
     try {
-        if (Object.keys(currentAssessment.answers).length === 0) {
-            // No answers yet, nothing to save
-            if (autoSaveStatus) {
-                autoSaveStatus.textContent = '';
-                autoSaveStatus.classList.remove('saving', 'saved', 'error');
-            }
-            return;
-        }
-
         // Check if assessment with same name and interviewName exists
         const existingIndex = assessments.findIndex(a => 
             a.name === currentAssessment.name && 
