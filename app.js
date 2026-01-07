@@ -1,11 +1,6 @@
 // Application version for compatibility tracking
 const APP_VERSION = '1.2.4'; // Version bump to test update banner detection
 
-// Storage constants
-const BASE64_ENCODING_OVERHEAD = 4/3; // Base64 encoding increases size by ~33% (4/3 ratio)
-const STORAGE_LIMIT = 5 * 1024 * 1024; // Conservative 5MB localStorage limit
-const STORAGE_WARNING_THRESHOLD = 0.8; // Warn at 80% capacity
-
 // Application state
 let currentAssessment = {
     name: '', // Application name
@@ -42,7 +37,6 @@ const MAX_FOLDER_NAME_LENGTH = 15;
 // Auto-save state
 let autoSaveTimeout = null;
 let autoSaveStatus = null;
-let refreshInterval = null;
 
 // Active editing state for smart sync
 let isActivelyEditing = false;
@@ -217,7 +211,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     setupEventListeners();
     checkFileSystemAccessSupport();
     initAutoSave();
-    startPeriodicRefresh();
     updateHeaderSyncStatus(); // Initialize header sync status
     updateTabVisibility(); // Initialize tab visibility
     
@@ -226,6 +219,19 @@ document.addEventListener('DOMContentLoaded', async () => {
     
     // Load sync settings asynchronously (doesn't block other initialization)
     await loadSyncSettings();
+    
+    // Clean up intervals when page unloads
+    window.addEventListener('beforeunload', () => {
+        if (autoSaveTimeout) {
+            clearTimeout(autoSaveTimeout);
+        }
+        if (editingIdleTimeout) {
+            clearTimeout(editingIdleTimeout);
+        }
+        if (syncInterval) {
+            clearInterval(syncInterval);
+        }
+    });
 });
 
 // Event Listeners
@@ -1064,36 +1070,9 @@ function handleComment(textarea) {
     triggerAutoSave();
 }
 
-// Helper function to check if localStorage should be skipped
-function shouldSkipLocalStorage() {
-    return syncEnabled && syncFolderHandle;
-}
+// localStorage is no longer used - all data is persisted to sync folder only
 
-// Estimate localStorage usage
-function getLocalStorageSize() {
-    let total = 0;
-    for (let key in localStorage) {
-        if (localStorage.hasOwnProperty(key)) {
-            total += localStorage[key].length + key.length;
-        }
-    }
-    return total;
-}
-
-// Check if storage has enough space (conservative estimate)
-function checkStorageSpace(additionalBytes) {
-    const currentSize = getLocalStorageSize();
-    const estimatedNewSize = currentSize + additionalBytes;
-    
-    if (estimatedNewSize > STORAGE_LIMIT) {
-        return { hasSpace: false, percentUsed: 100 };
-    }
-    
-    const percentUsed = (estimatedNewSize / STORAGE_LIMIT) * 100;
-    const hasSpace = estimatedNewSize < (STORAGE_LIMIT * STORAGE_WARNING_THRESHOLD);
-    
-    return { hasSpace, percentUsed, currentSize, estimatedNewSize };
-}
+// Storage quota checking removed - no longer needed with folder-only storage
 
 // Handle File Attachment
 async function handleFileAttachment(input, questionId) {
@@ -1108,35 +1087,6 @@ async function handleFileAttachment(input, questionId) {
     // Initialize array for this question if needed
     if (!currentAssessment.attachments[questionId]) {
         currentAssessment.attachments[questionId] = [];
-    }
-
-    // Calculate total size of files to be added
-    let totalSize = 0;
-    for (const file of files) {
-        totalSize += file.size * BASE64_ENCODING_OVERHEAD;
-    }
-    
-    // Check storage space before processing files (only if localStorage will be used)
-    if (!shouldSkipLocalStorage()) {
-        const storageCheck = checkStorageSpace(totalSize);
-        if (!storageCheck.hasSpace) {
-            const sizeMB = (totalSize / (1024 * 1024)).toFixed(2);
-            const currentMB = (storageCheck.currentSize / (1024 * 1024)).toFixed(2);
-            
-            const message = `⚠️ Storage Warning\n\n` +
-                `Adding these files (${sizeMB} MB) may exceed your browser's storage limit.\n` +
-                `Current usage: ${currentMB} MB (~${Math.round(storageCheck.percentUsed)}%)\n\n` +
-                `Recommendation: Enable Folder Sync for unlimited storage.\n\n` +
-                `With Folder Sync enabled, your data is saved to your file system\n` +
-                `instead of browser storage, avoiding quota issues entirely.\n\n` +
-                `Do you want to continue without Folder Sync?`;
-            
-            if (!confirm(message)) {
-                // Clear input
-                input.value = '';
-                return;
-            }
-        }
     }
 
     // Process each file
@@ -1488,69 +1438,18 @@ async function saveAssessment() {
 
 // Local Storage Functions
 async function saveAssessments(skipFolderSync = false) {
-    // When folder sync is enabled, skip localStorage entirely to avoid quota issues
-    if (shouldSkipLocalStorage() && !skipFolderSync) {
-        console.log('Folder sync enabled - saving to sync folder only, skipping localStorage');
+    // All data is now saved to sync folder only
+    if (!skipFolderSync) {
         await syncToFolder();
-        return;
-    }
-    
-    // Save to localStorage only when folder sync is not enabled
-    try {
-        localStorage.setItem('testMaturityAssessments', JSON.stringify(assessments));
-    } catch (error) {
-        if (error.name === 'QuotaExceededError') {
-            // Storage quota exceeded - provide helpful feedback
-            console.error('LocalStorage quota exceeded. Total assessments:', assessments.length);
-            
-            // Show error to user with suggestions
-            showStorageQuotaWarning(true);
-            throw error; // Re-throw to let caller handle it
-        } else {
-            // Other storage errors
-            console.error('Error saving to localStorage:', error);
-            throw error;
-        }
     }
 }
 
-// Show storage quota warning to user
-function showStorageQuotaWarning(isCritical) {
-    const message = isCritical 
-        ? '⚠️ Storage Quota Exceeded!\n\n' +
-          'Your browser\'s storage is full. To continue:\n\n' +
-          '1. Enable Folder Sync to save to your file system (unlimited storage)\n' +
-          '2. Delete old assessments you no longer need\n' +
-          '3. Reduce attachment sizes (try compressing images)\n\n' +
-          'Note: With Folder Sync enabled, localStorage is automatically disabled\n' +
-          'and all data is saved to your file system instead.\n\n' +
-          'Your changes could not be saved to browser storage.'
-        : '⚠️ Browser Storage Full\n\n' +
-          'Your browser\'s storage quota is exceeded, but your changes were saved to the sync folder.\n\n' +
-          'Recommendation: Delete old assessments from browser storage to prevent issues when offline.';
-    
-    alert(message);
-}
+// Storage quota warning removed - no longer needed with folder-only storage
 
 function loadAssessments() {
-    // Skip loading from localStorage if folder sync is enabled
-    // (folder sync will load assessments from the sync folder)
-    if (shouldSkipLocalStorage()) {
-        console.log('Folder sync is enabled - skipping localStorage load');
-        return;
-    }
-    
-    const saved = localStorage.getItem('testMaturityAssessments');
-    if (saved) {
-        try {
-            assessments = JSON.parse(saved);
-            updateResultsSelect();
-            updateTabVisibility(); // Update tab visibility after loading assessments
-        } catch (e) {
-            console.error('Error loading assessments:', e);
-            assessments = [];
-        }
-    }
+    // All data is loaded from sync folder only - no localStorage usage
+    // The syncFromFolder function will populate assessments array
+    console.log('Assessments will be loaded from sync folder');
 }
 
 // Update Saved Assessments List
@@ -2924,71 +2823,9 @@ async function performAutoSave() {
 }
 
 // Start periodic refresh from storage
-function startPeriodicRefresh() {
-    // Refresh every 10 seconds to pick up changes from other tabs/windows
-    refreshInterval = setInterval(() => {
-        refreshFromStorage();
-    }, 10000);
-    
-    // Clean up interval when page unloads
-    window.addEventListener('beforeunload', () => {
-        if (refreshInterval) {
-            clearInterval(refreshInterval);
-        }
-        if (autoSaveTimeout) {
-            clearTimeout(autoSaveTimeout);
-        }
-        if (editingIdleTimeout) {
-            clearTimeout(editingIdleTimeout);
-        }
-        if (syncInterval) {
-            clearInterval(syncInterval);
-        }
-    });
-}
+// Periodic refresh removed - sync folder handles all updates via syncFromFolder
 
-// Refresh assessments from localStorage (for multi-tab/window sync)
-function refreshFromStorage() {
-    // Skip refreshing from localStorage if folder sync is enabled
-    // (folder sync handles refreshing from the sync folder)
-    if (shouldSkipLocalStorage()) {
-        return;
-    }
-    
-    const saved = localStorage.getItem('testMaturityAssessments');
-    if (saved) {
-        try {
-            const loadedAssessments = JSON.parse(saved);
-            
-            // Simple length check first for efficiency
-            if (assessments.length !== loadedAssessments.length) {
-                assessments = loadedAssessments;
-                updateSavedAssessmentsList();
-                updateResultsSelect();
-                console.log('Refreshed assessments from storage');
-                return;
-            }
-            
-            // Check for updates by comparing dates
-            let hasChanges = false;
-            for (let i = 0; i < loadedAssessments.length; i++) {
-                if (!assessments[i] || assessments[i].date !== loadedAssessments[i].date) {
-                    hasChanges = true;
-                    break;
-                }
-            }
-            
-            if (hasChanges) {
-                assessments = loadedAssessments;
-                updateSavedAssessmentsList();
-                updateResultsSelect();
-                console.log('Refreshed assessments from storage');
-            }
-        } catch (e) {
-            console.error('Error refreshing assessments:', e);
-        }
-    }
-}
+// Refresh function removed - data is only in sync folder, periodic sync handles updates
 
 // Mark user as actively editing
 function markAsActivelyEditing() {
@@ -3028,18 +2865,35 @@ function isCurrentlyEditingAssessment(assessmentName, assessmentInterviewName = 
 // Check if File System Access API is supported
 function checkFileSystemAccessSupport() {
     if ('showDirectoryPicker' in window) {
-        if (syncStatusDiv) {
-            syncStatusDiv.innerHTML = '<p class="alert alert-info">📁 Filesystem sync available. Select a folder to enable automatic sync.</p>';
+        if (syncStatusDiv && !syncEnabled) {
+            syncStatusDiv.innerHTML = '<p class="alert alert-info">📁 Please select a sync folder to get started.</p>';
         }
         if (selectSyncFolderBtn) {
             selectSyncFolderBtn.style.display = 'inline-block';
         }
     } else {
         if (syncStatusDiv) {
-            syncStatusDiv.innerHTML = '<p class="alert alert-warning">⚠️ Filesystem sync not supported in this browser. Use Export/Import instead.</p>';
+            syncStatusDiv.innerHTML = '<p class="alert alert-error">⚠️ This browser does not support file system access. Please use Chrome 86+ or Edge 86+.</p>';
         }
         if (selectSyncFolderBtn) {
             selectSyncFolderBtn.style.display = 'none';
+        }
+    }
+}
+
+// Show prompt to select sync folder (for first-time users)
+function showSelectFolderPrompt() {
+    if (syncStatusDiv) {
+        syncStatusDiv.innerHTML = `
+            <div class="alert alert-info">
+                📁 <strong>Sync Folder Required</strong>
+                <br>Please select a folder to store your assessments and questions.
+                <button id="initial-select-sync-folder-btn" class="btn btn-primary" style="margin-top: 0.5rem;">Select Sync Folder</button>
+            </div>
+        `;
+        const initialSelectBtn = document.getElementById('initial-select-sync-folder-btn');
+        if (initialSelectBtn) {
+            initialSelectBtn.addEventListener('click', selectSyncFolder);
         }
     }
 }
@@ -3056,12 +2910,8 @@ async function selectSyncFolder() {
         syncFolderHandle = dirHandle;
         syncEnabled = true;
         
-        // Save folder handle to IndexedDB (proper way to persist FileSystemDirectoryHandle)
+        // Save folder handle to IndexedDB (this persists the folder handle and name)
         await saveFolderHandleToIndexedDB(dirHandle);
-        
-        // Also save folder name and enabled flag to localStorage for quick checks
-        localStorage.setItem('syncFolderName', dirHandle.name);
-        localStorage.setItem('syncEnabled', 'true');
         
         updateSyncStatus();
         
@@ -3092,15 +2942,9 @@ function updateSyncStatus() {
     if (syncEnabled && syncFolderHandle) {
         syncStatusDiv.innerHTML = `
             <div class="alert alert-success">
-                ✅ Sync enabled to folder: <strong>${syncFolderHandle.name}</strong>
-                <button id="disable-sync-btn" class="btn btn-small" style="margin-left: 1rem;">Disable Sync</button>
+                ✅ Syncing to folder: <strong>${syncFolderHandle.name}</strong>
             </div>
         `;
-        // Add event listener to the button
-        const disableSyncBtn = document.getElementById('disable-sync-btn');
-        if (disableSyncBtn) {
-            disableSyncBtn.addEventListener('click', disableSync);
-        }
     } else {
         checkFileSystemAccessSupport();
     }
@@ -3151,64 +2995,41 @@ function updateHeaderSyncStatus(status = null) {
     }
 }
 
-// Disable sync
-async function disableSync() {
-    syncEnabled = false;
-    syncFolderHandle = null;
-    
-    // Remove from IndexedDB
-    await removeFolderHandleFromIndexedDB();
-    
-    localStorage.removeItem('syncFolderName');
-    localStorage.removeItem('syncEnabled');
-    
-    if (syncInterval) {
-        clearInterval(syncInterval);
-        syncInterval = null;
-    }
-    
-    updateSyncStatus();
-    alert('Folder sync disabled');
-}
+// Disable sync functionality removed - sync folder is now required
 
-// Load sync settings from localStorage and IndexedDB
+// Load sync settings from IndexedDB
 async function loadSyncSettings() {
-    const syncEnabledStr = localStorage.getItem('syncEnabled');
-    const folderName = localStorage.getItem('syncFolderName');
+    // Try to restore the folder handle from IndexedDB
+    const handle = await loadFolderHandleFromIndexedDB();
     
-    if (syncEnabledStr === 'true' && folderName) {
-        // Try to restore the folder handle from IndexedDB
-        const handle = await loadFolderHandleFromIndexedDB();
+    if (handle) {
+        // Verify we still have permission to access the folder
+        const permission = await verifyFolderPermission(handle);
         
-        if (handle) {
-            // Verify we still have permission to access the folder
-            const permission = await verifyFolderPermission(handle);
+        if (permission) {
+            // Successfully restored folder handle with valid permissions
+            syncFolderHandle = handle;
+            syncEnabled = true;
             
-            if (permission) {
-                // Successfully restored folder handle with valid permissions
-                syncFolderHandle = handle;
-                syncEnabled = true;
-                
-                updateSyncStatus();
-                
-                // Initial sync from folder
-                await syncFromFolder();
-                
-                // Start periodic sync
-                startPeriodicSync();
-                
-                // Reload custom questions now that sync folder is available
-                await loadCustomQuestions();
-                
-                console.log(`Sync folder restored: ${folderName}`);
-            } else {
-                // Permission denied or expired
-                showReselectFolderMessage(folderName, 'warning', '⚠️ Sync folder permission expired');
-            }
+            updateSyncStatus();
+            
+            // Initial sync from folder
+            await syncFromFolder();
+            
+            // Start periodic sync
+            startPeriodicSync();
+            
+            // Reload custom questions now that sync folder is available
+            await loadCustomQuestions();
+            
+            console.log(`Sync folder restored: ${handle.name}`);
         } else {
-            // No handle found in IndexedDB (legacy or first load)
-            showReselectFolderMessage(folderName, 'info', '📁 Previous sync folder');
+            // Permission denied or expired
+            showReselectFolderMessage(handle.name, 'warning', '⚠️ Sync folder permission expired');
         }
+    } else {
+        // No folder handle found - user needs to select one
+        showSelectFolderPrompt();
     }
 }
 
@@ -3633,9 +3454,9 @@ function initQuestionEditor() {
     loadCustomQuestions();
 }
 
-// Load custom questions from localStorage or sync folder
+// Load custom questions from sync folder
 async function loadCustomQuestions() {
-    // First try to load from sync folder if enabled
+    // Load from sync folder only
     if (syncEnabled && syncFolderHandle) {
         const loaded = await loadQuestionsFromFolder();
         if (loaded) {
@@ -3647,21 +3468,8 @@ async function loadCustomQuestions() {
         }
     }
     
-    // Fallback to localStorage
-    const saved = localStorage.getItem('customQuestions');
-    if (saved) {
-        try {
-            customQuestions = JSON.parse(saved);
-            activeQuestions = customQuestions;
-        } catch (e) {
-            console.error('Error loading custom questions:', e);
-            customQuestions = null;
-            activeQuestions = QUESTIONS_CATALOG.questions;
-        }
-    } else {
-        activeQuestions = QUESTIONS_CATALOG.questions;
-    }
-    
+    // Use default questions if no custom questions in folder
+    activeQuestions = QUESTIONS_CATALOG.questions;
     updateQuestionsStatus();
     renderQuestionsList();
 }
@@ -3700,16 +3508,15 @@ async function loadQuestionsFromFolder() {
     return null;
 }
 
-// Save custom questions to localStorage and sync folder
+// Save custom questions to sync folder
 async function saveCustomQuestions() {
     if (!customQuestions) return;
     
-    // Save to localStorage
-    localStorage.setItem('customQuestions', JSON.stringify(customQuestions));
-    
-    // Save to sync folder if enabled
+    // Save to sync folder only
     if (syncEnabled && syncFolderHandle) {
         await saveQuestionsToFolder();
+    } else {
+        console.warn('Cannot save custom questions - no sync folder selected');
     }
     
     updateQuestionsStatus();
@@ -4190,10 +3997,7 @@ async function resetToDefaultQuestions() {
     customQuestions = null;
     activeQuestions = QUESTIONS_CATALOG.questions;
     
-    // Remove from localStorage
-    localStorage.removeItem('customQuestions');
-    
-    // Remove from sync folder if enabled
+    // Remove from sync folder if it exists
     if (syncEnabled && syncFolderHandle) {
         try {
             const fileHandle = await syncFolderHandle.getFileHandle(QUESTIONS_FILENAME);
