@@ -23,17 +23,28 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
     <script>
-        // Fallback if Chart.js fails to load
+        // Centralized initialization on page load
         window.addEventListener('load', function() {
+            // Check Chart.js availability
             if (typeof Chart === 'undefined') {
                 console.warn('Chart.js failed to load from CDN. Radar chart will not be available.');
-                // Hide chart container if Chart.js is not available
                 const chartContainer = document.querySelector('.chart-container');
                 if (chartContainer) {
                     chartContainer.innerHTML = '<p class="alert alert-warning">Chart visualization unavailable. Chart.js library could not be loaded.</p>';
                 }
             }
+            
+            // Display app version in header
+            displayAppVersion();
         });
+        
+        // Function to display app version
+        function displayAppVersion() {
+            const versionElement = document.getElementById('app-version');
+            if (versionElement && typeof APP_VERSION !== 'undefined') {
+                versionElement.textContent = `v${APP_VERSION}`;
+            }
+        }
     </script>
 </head>
 <body>
@@ -59,7 +70,10 @@
                     <div class="header-left">
                         <div class="header-title">
                             <h1>🎯 Test Maturity Assessment</h1>
-                            <p class="subtitle">Evaluate and track testing maturity across teams and applications</p>
+                            <p class="subtitle">
+                                Evaluate and track testing maturity across teams and applications
+                                <span id="app-version" class="app-version" title="Current application version"></span>
+                            </p>
                         </div>
                         <nav class="tabs tabs-desktop">
                             <button class="tab-button active" data-tab="setup">Setup</button>
@@ -397,6 +411,7 @@
         // Register service worker for PWA functionality with update detection
         if ('serviceWorker' in navigator) {
             let refreshing = false;
+            let registration = null;
             
             // Detect when service worker update is available
             navigator.serviceWorker.addEventListener('controllerchange', () => {
@@ -406,9 +421,20 @@
             });
             
             window.addEventListener('load', () => {
+                // Register service worker
                 navigator.serviceWorker.register('/test-maturity-interviews/service-worker.js')
-                    .then((registration) => {
-                        console.log('Service Worker registered successfully:', registration.scope);
+                    .then((reg) => {
+                        registration = reg;
+                        console.log('Service Worker registered successfully:', reg.scope);
+                        
+                        // Check for updates immediately on load
+                        registration.update()
+                            .then(() => {
+                                console.log('Initial update check completed');
+                            })
+                            .catch((error) => {
+                                console.error('Initial update check failed:', error);
+                            });
                         
                         // Check for updates every 60 seconds when app is active
                         setInterval(() => {
@@ -425,15 +451,25 @@
                         // Listen for updates
                         registration.addEventListener('updatefound', () => {
                             const newWorker = registration.installing;
+                            console.log('Update found! New service worker installing...');
                             
                             newWorker.addEventListener('statechange', () => {
+                                console.log('Service worker state changed to:', newWorker.state);
                                 if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
                                     // New service worker available
-                                    console.log('New version available!');
+                                    console.log('New version available! Showing update banner...');
                                     showUpdateBanner(newWorker);
                                 }
                             });
                         });
+                        
+                        // Check for already waiting worker after a brief delay to avoid race condition
+                        setTimeout(() => {
+                            if (reg.waiting) {
+                                console.log('Service worker already waiting, showing banner immediately');
+                                showUpdateBanner(reg.waiting);
+                            }
+                        }, 100);
                     })
                     .catch((error) => {
                         console.log('Service Worker registration failed:', error);
@@ -468,6 +504,22 @@
                     banner.classList.add('hidden');
                 });
             }
+            
+            // Make registration available globally for manual update checks
+            window.checkForUpdates = function() {
+                if (registration) {
+                    console.log('Checking for updates...');
+                    registration.update()
+                        .then(() => {
+                            console.log('Update check completed');
+                        })
+                        .catch((error) => {
+                            console.error('Update check failed:', error);
+                        });
+                } else {
+                    console.log('Service worker not registered yet');
+                }
+            };
         }
     </script>
 </body>

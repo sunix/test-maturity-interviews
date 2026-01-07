@@ -116,6 +116,19 @@ Transform the web app into a native Windows application:
 - ✅ Works offline after first load
 - ✅ Faster startup with cached resources
 - ✅ Professional, app-like experience
+- ✅ Automatic update notifications with user control (see [demo](demo-update-banner.html))
+- ✅ Version display in header (shows current app version)
+
+**How Updates Work:**
+- The app displays its version (e.g., v1.2.2) in the header
+- When a new version is deployed, the service worker detects it automatically:
+  - Checks immediately when you open/reload the page
+  - Checks every 60 seconds while the app is open
+  - Checks when you switch back to the app tab
+- An animated banner appears: "A new version is available!" with "Update Now" and "Dismiss" buttons
+- Click "Update Now" to instantly reload with the new version - **no more Ctrl+Shift+R needed!**
+- You control when to update - no forced reloads
+- To test: Open the [demo page](demo-update-banner.html) to see how the banner looks and works
 
 ### Basic Setup (30 seconds)
 1. Open `index.html` in any modern browser (Chrome, Firefox, Edge, Safari)
@@ -377,6 +390,27 @@ test-maturity-interviews/
 - Professional color scheme
 - Print-optimized styles
 - Accessibility features
+
+## 🧪 Demo & Test Pages
+
+The repository includes several demonstration and testing pages to showcase features:
+
+### [demo-update-banner.html](demo-update-banner.html)
+Interactive demonstration of the PWA automatic update detection system:
+- Live preview of the update notification banner
+- Explanation of how automatic updates work
+- Shows the user-controlled update flow
+- Code examples and technical details
+
+### Other Test Pages
+- **test-deep-merge.html**: Tests the deep merge functionality that preserves data across app versions
+- **fix-visualization.html**: Visual before/after comparison of the attachments preservation fix
+- **test-radar-chart.html**: Tests the radar chart visualization
+- **test-interview-metadata.html**: Tests interview metadata handling
+- **test-multiple-interviews.html**: Tests multiple interview management
+- **pwa-test.html**: PWA installation and functionality tests
+
+These pages are useful for understanding how features work and for development/testing purposes.
 
 ## 🤝 Contributing & Feedback
 

@@ -1,5 +1,5 @@
 // Application version for compatibility tracking
-const APP_VERSION = '1.2.2'; // Version bump to refresh PWA cache
+const APP_VERSION = '1.2.3'; // Version bump to test update banner detection
 
 // Application state
 let currentAssessment = {
