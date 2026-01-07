@@ -1,6 +1,11 @@
 // Application version for compatibility tracking
 const APP_VERSION = '1.2.3'; // Version bump to test update banner detection
 
+// Storage constants
+const BASE64_ENCODING_OVERHEAD = 4/3; // Base64 encoding increases size by ~33% (4/3 ratio)
+const STORAGE_LIMIT = 5 * 1024 * 1024; // Conservative 5MB localStorage limit
+const STORAGE_WARNING_THRESHOLD = 0.8; // Warn at 80% capacity
+
 // Application state
 let currentAssessment = {
     name: '', // Application name
@@ -1018,6 +1023,11 @@ function handleComment(textarea) {
     triggerAutoSave();
 }
 
+// Helper function to check if localStorage should be skipped
+function shouldSkipLocalStorage() {
+    return syncEnabled && syncFolderHandle;
+}
+
 // Estimate localStorage usage
 function getLocalStorageSize() {
     let total = 0;
@@ -1031,10 +1041,6 @@ function getLocalStorageSize() {
 
 // Check if storage has enough space (conservative estimate)
 function checkStorageSpace(additionalBytes) {
-    // Most browsers have 5-10MB limit, we'll use 5MB (5 * 1024 * 1024 bytes) as conservative estimate
-    const STORAGE_LIMIT = 5 * 1024 * 1024;
-    const STORAGE_WARNING_THRESHOLD = 0.8; // Warn at 80% capacity
-    
     const currentSize = getLocalStorageSize();
     const estimatedNewSize = currentSize + additionalBytes;
     
@@ -1066,11 +1072,11 @@ async function handleFileAttachment(input, questionId) {
     // Calculate total size of files to be added
     let totalSize = 0;
     for (const file of files) {
-        totalSize += file.size * 1.37; // Base64 encoding increases size by ~37%
+        totalSize += file.size * BASE64_ENCODING_OVERHEAD;
     }
     
-    // Check storage space before processing files (only if folder sync is not enabled)
-    if (!syncEnabled || !syncFolderHandle) {
+    // Check storage space before processing files (only if localStorage will be used)
+    if (!shouldSkipLocalStorage()) {
         const storageCheck = checkStorageSpace(totalSize);
         if (!storageCheck.hasSpace) {
             const sizeMB = (totalSize / (1024 * 1024)).toFixed(2);
@@ -1442,7 +1448,7 @@ async function saveAssessment() {
 // Local Storage Functions
 async function saveAssessments(skipFolderSync = false) {
     // When folder sync is enabled, skip localStorage entirely to avoid quota issues
-    if (syncEnabled && syncFolderHandle && !skipFolderSync) {
+    if (shouldSkipLocalStorage() && !skipFolderSync) {
         console.log('Folder sync enabled - saving to sync folder only, skipping localStorage');
         await syncToFolder();
         return;
@@ -1488,7 +1494,7 @@ function showStorageQuotaWarning(isCritical) {
 function loadAssessments() {
     // Skip loading from localStorage if folder sync is enabled
     // (folder sync will load assessments from the sync folder)
-    if (syncEnabled && syncFolderHandle) {
+    if (shouldSkipLocalStorage()) {
         console.log('Folder sync is enabled - skipping localStorage load');
         return;
     }
@@ -2913,7 +2919,7 @@ function startPeriodicRefresh() {
 function refreshFromStorage() {
     // Skip refreshing from localStorage if folder sync is enabled
     // (folder sync handles refreshing from the sync folder)
-    if (syncEnabled && syncFolderHandle) {
+    if (shouldSkipLocalStorage()) {
         return;
     }
     
