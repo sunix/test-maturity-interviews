@@ -23,17 +23,28 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
     <script>
-        // Fallback if Chart.js fails to load
+        // Centralized initialization on page load
         window.addEventListener('load', function() {
+            // Check Chart.js availability
             if (typeof Chart === 'undefined') {
                 console.warn('Chart.js failed to load from CDN. Radar chart will not be available.');
-                // Hide chart container if Chart.js is not available
                 const chartContainer = document.querySelector('.chart-container');
                 if (chartContainer) {
                     chartContainer.innerHTML = '<p class="alert alert-warning">Chart visualization unavailable. Chart.js library could not be loaded.</p>';
                 }
             }
+            
+            // Display app version in header
+            displayAppVersion();
         });
+        
+        // Function to display app version
+        function displayAppVersion() {
+            const versionElement = document.getElementById('app-version');
+            if (versionElement && typeof APP_VERSION !== 'undefined') {
+                versionElement.textContent = `v${APP_VERSION}`;
+            }
+        }
     </script>
 </head>
 <body>
@@ -410,12 +421,6 @@
             });
             
             window.addEventListener('load', () => {
-                // Display app version in the header
-                const versionElement = document.getElementById('app-version');
-                if (versionElement && typeof APP_VERSION !== 'undefined') {
-                    versionElement.textContent = `v${APP_VERSION}`;
-                }
-                
                 // Register service worker
                 navigator.serviceWorker.register('/test-maturity-interviews/service-worker.js')
                     .then((reg) => {
@@ -496,14 +501,6 @@
                     console.log('Service worker not registered yet');
                 }
             };
-        } else {
-            // Display version even if service worker not supported
-            window.addEventListener('load', () => {
-                const versionElement = document.getElementById('app-version');
-                if (versionElement && typeof APP_VERSION !== 'undefined') {
-                    versionElement.textContent = `v${APP_VERSION}`;
-                }
-            });
         }
     </script>
 </body>
