@@ -397,8 +397,8 @@
     
     <!-- Service Worker Registration -->
     <script>
-        // Display app version in the header
-        document.addEventListener('DOMContentLoaded', () => {
+        // Display app version in the header (waits for app.js to load)
+        window.addEventListener('load', () => {
             const versionElement = document.getElementById('app-version');
             if (versionElement && typeof APP_VERSION !== 'undefined') {
                 versionElement.textContent = `v${APP_VERSION}`;
@@ -421,7 +421,7 @@
                 navigator.serviceWorker.register('/test-maturity-interviews/service-worker.js')
                     .then((reg) => {
                         registration = reg;
-                        console.log('Service Worker registered successfully:', registration.scope);
+                        console.log('Service Worker registered successfully:', reg.scope);
                         
                         // Check for updates every 60 seconds when app is active
                         setInterval(() => {
