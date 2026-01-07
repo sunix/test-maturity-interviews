@@ -1069,25 +1069,26 @@ async function handleFileAttachment(input, questionId) {
         totalSize += file.size * 1.37; // Base64 encoding increases size by ~37%
     }
     
-    // Check storage space before processing files
-    const storageCheck = checkStorageSpace(totalSize);
-    if (!storageCheck.hasSpace) {
-        const sizeMB = (totalSize / (1024 * 1024)).toFixed(2);
-        const currentMB = (storageCheck.currentSize / (1024 * 1024)).toFixed(2);
-        
-        const message = `⚠️ Storage Warning\n\n` +
-            `Adding these files (${sizeMB} MB) may exceed your browser's storage limit.\n` +
-            `Current usage: ${currentMB} MB (~${Math.round(storageCheck.percentUsed)}%)\n\n` +
-            `Recommendations:\n` +
-            `1. Enable Folder Sync for unlimited storage\n` +
-            `2. Compress images before uploading\n` +
-            `3. Delete old assessments you no longer need\n\n` +
-            `Do you want to continue anyway?`;
-        
-        if (!confirm(message)) {
-            // Clear input
-            input.value = '';
-            return;
+    // Check storage space before processing files (only if folder sync is not enabled)
+    if (!syncEnabled || !syncFolderHandle) {
+        const storageCheck = checkStorageSpace(totalSize);
+        if (!storageCheck.hasSpace) {
+            const sizeMB = (totalSize / (1024 * 1024)).toFixed(2);
+            const currentMB = (storageCheck.currentSize / (1024 * 1024)).toFixed(2);
+            
+            const message = `⚠️ Storage Warning\n\n` +
+                `Adding these files (${sizeMB} MB) may exceed your browser's storage limit.\n` +
+                `Current usage: ${currentMB} MB (~${Math.round(storageCheck.percentUsed)}%)\n\n` +
+                `Recommendation: Enable Folder Sync for unlimited storage.\n\n` +
+                `With Folder Sync enabled, your data is saved to your file system\n` +
+                `instead of browser storage, avoiding quota issues entirely.\n\n` +
+                `Do you want to continue without Folder Sync?`;
+            
+            if (!confirm(message)) {
+                // Clear input
+                input.value = '';
+                return;
+            }
         }
     }
 
@@ -1440,25 +1441,20 @@ async function saveAssessment() {
 
 // Local Storage Functions
 async function saveAssessments(skipFolderSync = false) {
+    // When folder sync is enabled, skip localStorage entirely to avoid quota issues
+    if (syncEnabled && syncFolderHandle && !skipFolderSync) {
+        console.log('Folder sync enabled - saving to sync folder only, skipping localStorage');
+        await syncToFolder();
+        return;
+    }
+    
+    // Save to localStorage only when folder sync is not enabled
     try {
         localStorage.setItem('testMaturityAssessments', JSON.stringify(assessments));
     } catch (error) {
         if (error.name === 'QuotaExceededError') {
             // Storage quota exceeded - provide helpful feedback
             console.error('LocalStorage quota exceeded. Total assessments:', assessments.length);
-            
-            // If folder sync is available, use it as a fallback
-            if (syncEnabled && syncFolderHandle && !skipFolderSync) {
-                console.log('Attempting to save to sync folder as fallback...');
-                try {
-                    await syncToFolder();
-                    // Show warning but don't fail completely since folder sync worked
-                    showStorageQuotaWarning(false);
-                    return;
-                } catch (syncError) {
-                    console.error('Folder sync also failed:', syncError);
-                }
-            }
             
             // Show error to user with suggestions
             showStorageQuotaWarning(true);
@@ -1469,11 +1465,6 @@ async function saveAssessments(skipFolderSync = false) {
             throw error;
         }
     }
-    
-    // Also sync to folder if enabled (unless we're already syncing)
-    if (!skipFolderSync && syncEnabled && syncFolderHandle) {
-        await syncToFolder();
-    }
 }
 
 // Show storage quota warning to user
@@ -1481,9 +1472,11 @@ function showStorageQuotaWarning(isCritical) {
     const message = isCritical 
         ? '⚠️ Storage Quota Exceeded!\n\n' +
           'Your browser\'s storage is full. To continue:\n\n' +
-          '1. Enable Folder Sync to save to your file system\n' +
+          '1. Enable Folder Sync to save to your file system (unlimited storage)\n' +
           '2. Delete old assessments you no longer need\n' +
           '3. Reduce attachment sizes (try compressing images)\n\n' +
+          'Note: With Folder Sync enabled, localStorage is automatically disabled\n' +
+          'and all data is saved to your file system instead.\n\n' +
           'Your changes could not be saved to browser storage.'
         : '⚠️ Browser Storage Full\n\n' +
           'Your browser\'s storage quota is exceeded, but your changes were saved to the sync folder.\n\n' +
@@ -1493,6 +1486,13 @@ function showStorageQuotaWarning(isCritical) {
 }
 
 function loadAssessments() {
+    // Skip loading from localStorage if folder sync is enabled
+    // (folder sync will load assessments from the sync folder)
+    if (syncEnabled && syncFolderHandle) {
+        console.log('Folder sync is enabled - skipping localStorage load');
+        return;
+    }
+    
     const saved = localStorage.getItem('testMaturityAssessments');
     if (saved) {
         try {
@@ -2911,6 +2911,12 @@ function startPeriodicRefresh() {
 
 // Refresh assessments from localStorage (for multi-tab/window sync)
 function refreshFromStorage() {
+    // Skip refreshing from localStorage if folder sync is enabled
+    // (folder sync handles refreshing from the sync folder)
+    if (syncEnabled && syncFolderHandle) {
+        return;
+    }
+    
     const saved = localStorage.getItem('testMaturityAssessments');
     if (saved) {
         try {
