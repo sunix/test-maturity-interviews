@@ -72,6 +72,9 @@ Once installed:
 
 - **Opening**: Click the app icon from Start menu, taskbar, or desktop
 - **Updating**: The app automatically checks for updates when you open it
+  - **Update Detection**: When a new version is available, you'll see an animated banner with an "Update Now" button
+  - **User Control**: You can choose to update immediately or dismiss the notification and continue working
+  - **Demo**: See the [Update Banner Demo](demo-update-banner.html) for a live demonstration of how update notifications work
 - **Uninstalling**: Right-click the app icon and select "Uninstall" or remove it from Windows Settings
 
 ## Features Available Offline
@@ -114,8 +117,10 @@ The following features work offline after first load:
 
 **Solution**:
 - Close and reopen the app
-- The service worker checks for updates on each launch
+- The service worker checks for updates every 60 seconds and when the app becomes visible
+- An animated update banner will appear when a new version is detected
 - Cache version is automatically managed
+- See the [Update Banner Demo](demo-update-banner.html) to understand how the notification system works
 
 ### Want to reinstall?
 
@@ -140,8 +145,14 @@ The app's `manifest.json` defines:
 The service worker (`service-worker.js`) provides:
 - Offline functionality via caching
 - Fast loading with cache-first strategy
-- Automatic updates with cache versioning
+- Automatic update detection with visual notifications
+  - Checks for updates every 60 seconds
+  - Shows an animated banner when new version is available
+  - User-controlled updates (no forced reloads)
+- Automatic cache versioning (version-based cache names)
 - Resource precaching for instant startup
+
+**Live Demo**: See [demo-update-banner.html](demo-update-banner.html) for an interactive demonstration of the update detection system.
 
 ### Browser Support
 
