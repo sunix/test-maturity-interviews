@@ -2564,12 +2564,13 @@ function importInterviewQuestionnaireFromExcel(event) {
                 }
                 
                 // Handle comments and attachment notes together
+                // Note: We use the comment from Excel (not preserve existing) since this is an import/update operation
                 if (comment || attachmentNotes) {
                     if (!currentAssessment.comments) {
                         currentAssessment.comments = {};
                     }
                     
-                    // Build the final comment
+                    // Build the final comment from Excel data
                     let finalComment = comment || '';
                     
                     if (attachmentNotes) {
