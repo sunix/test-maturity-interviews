@@ -23,7 +23,7 @@ let filteredQuestions = [];
 
 // Custom questions state
 let customQuestions = null; // null = using default, otherwise array of custom questions
-let activeQuestions = null; // The actual questions being used (custom or default)
+let activeQuestions = QUESTIONS_CATALOG.questions; // The actual questions being used (custom or default), defaults to standard questions
 let editingQuestionId = null; // Track which question is being edited
 
 // Filesystem sync state
@@ -1449,6 +1449,10 @@ async function saveAssessments(skipFolderSync = false) {
 function loadAssessments() {
     // All data is loaded from sync folder only - no localStorage usage
     // The syncFromFolder function will populate assessments array
+    // Initialize as empty array to prevent undefined errors
+    if (!Array.isArray(assessments)) {
+        assessments = [];
+    }
     console.log('Assessments will be loaded from sync folder');
 }
 
@@ -3516,7 +3520,8 @@ async function saveCustomQuestions() {
     if (syncEnabled && syncFolderHandle) {
         await saveQuestionsToFolder();
     } else {
-        console.warn('Cannot save custom questions - no sync folder selected');
+        console.warn('Cannot save custom questions - please select a sync folder first');
+        alert('Please select a sync folder to save custom questions.');
     }
     
     updateQuestionsStatus();
