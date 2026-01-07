@@ -1,6 +1,11 @@
 // Application version for compatibility tracking
 const APP_VERSION = '1.2.3'; // Version bump to test update banner detection
 
+// Storage constants
+const BASE64_ENCODING_OVERHEAD = 4/3; // Base64 encoding increases size by ~33% (4/3 ratio)
+const STORAGE_LIMIT = 5 * 1024 * 1024; // Conservative 5MB localStorage limit
+const STORAGE_WARNING_THRESHOLD = 0.8; // Warn at 80% capacity
+
 // Application state
 let currentAssessment = {
     name: '', // Application name
@@ -1018,6 +1023,37 @@ function handleComment(textarea) {
     triggerAutoSave();
 }
 
+// Helper function to check if localStorage should be skipped
+function shouldSkipLocalStorage() {
+    return syncEnabled && syncFolderHandle;
+}
+
+// Estimate localStorage usage
+function getLocalStorageSize() {
+    let total = 0;
+    for (let key in localStorage) {
+        if (localStorage.hasOwnProperty(key)) {
+            total += localStorage[key].length + key.length;
+        }
+    }
+    return total;
+}
+
+// Check if storage has enough space (conservative estimate)
+function checkStorageSpace(additionalBytes) {
+    const currentSize = getLocalStorageSize();
+    const estimatedNewSize = currentSize + additionalBytes;
+    
+    if (estimatedNewSize > STORAGE_LIMIT) {
+        return { hasSpace: false, percentUsed: 100 };
+    }
+    
+    const percentUsed = (estimatedNewSize / STORAGE_LIMIT) * 100;
+    const hasSpace = estimatedNewSize < (STORAGE_LIMIT * STORAGE_WARNING_THRESHOLD);
+    
+    return { hasSpace, percentUsed, currentSize, estimatedNewSize };
+}
+
 // Handle File Attachment
 async function handleFileAttachment(input, questionId) {
     const files = input.files;
@@ -1031,6 +1067,35 @@ async function handleFileAttachment(input, questionId) {
     // Initialize array for this question if needed
     if (!currentAssessment.attachments[questionId]) {
         currentAssessment.attachments[questionId] = [];
+    }
+
+    // Calculate total size of files to be added
+    let totalSize = 0;
+    for (const file of files) {
+        totalSize += file.size * BASE64_ENCODING_OVERHEAD;
+    }
+    
+    // Check storage space before processing files (only if localStorage will be used)
+    if (!shouldSkipLocalStorage()) {
+        const storageCheck = checkStorageSpace(totalSize);
+        if (!storageCheck.hasSpace) {
+            const sizeMB = (totalSize / (1024 * 1024)).toFixed(2);
+            const currentMB = (storageCheck.currentSize / (1024 * 1024)).toFixed(2);
+            
+            const message = `⚠️ Storage Warning\n\n` +
+                `Adding these files (${sizeMB} MB) may exceed your browser's storage limit.\n` +
+                `Current usage: ${currentMB} MB (~${Math.round(storageCheck.percentUsed)}%)\n\n` +
+                `Recommendation: Enable Folder Sync for unlimited storage.\n\n` +
+                `With Folder Sync enabled, your data is saved to your file system\n` +
+                `instead of browser storage, avoiding quota issues entirely.\n\n` +
+                `Do you want to continue without Folder Sync?`;
+            
+            if (!confirm(message)) {
+                // Clear input
+                input.value = '';
+                return;
+            }
+        }
     }
 
     // Process each file
@@ -1337,7 +1402,7 @@ function calculateMaturityScores(assessment) {
 }
 
 // Save Assessment
-function saveAssessment() {
+async function saveAssessment() {
     if (Object.keys(currentAssessment.answers).length === 0) {
         alert('Please answer at least one question before saving');
         return;
@@ -1367,23 +1432,73 @@ function saveAssessment() {
         assessments.push(JSON.parse(JSON.stringify(currentAssessment)));
     }
 
-    saveAssessments();
-    updateSavedAssessmentsList();
-    updateResultsSelect();
-    
-    alert('Assessment saved successfully!');
+    try {
+        await saveAssessments();
+        updateSavedAssessmentsList();
+        updateResultsSelect();
+        
+        alert('Assessment saved successfully!');
+    } catch (error) {
+        // Error already shown to user in saveAssessments
+        console.error('Failed to save assessment:', error);
+        // Don't show success message on error
+    }
 }
 
 // Local Storage Functions
 async function saveAssessments(skipFolderSync = false) {
-    localStorage.setItem('testMaturityAssessments', JSON.stringify(assessments));
-    // Also sync to folder if enabled (unless we're already syncing)
-    if (!skipFolderSync && syncEnabled && syncFolderHandle) {
+    // When folder sync is enabled, skip localStorage entirely to avoid quota issues
+    if (shouldSkipLocalStorage() && !skipFolderSync) {
+        console.log('Folder sync enabled - saving to sync folder only, skipping localStorage');
         await syncToFolder();
+        return;
+    }
+    
+    // Save to localStorage only when folder sync is not enabled
+    try {
+        localStorage.setItem('testMaturityAssessments', JSON.stringify(assessments));
+    } catch (error) {
+        if (error.name === 'QuotaExceededError') {
+            // Storage quota exceeded - provide helpful feedback
+            console.error('LocalStorage quota exceeded. Total assessments:', assessments.length);
+            
+            // Show error to user with suggestions
+            showStorageQuotaWarning(true);
+            throw error; // Re-throw to let caller handle it
+        } else {
+            // Other storage errors
+            console.error('Error saving to localStorage:', error);
+            throw error;
+        }
     }
 }
 
+// Show storage quota warning to user
+function showStorageQuotaWarning(isCritical) {
+    const message = isCritical 
+        ? '⚠️ Storage Quota Exceeded!\n\n' +
+          'Your browser\'s storage is full. To continue:\n\n' +
+          '1. Enable Folder Sync to save to your file system (unlimited storage)\n' +
+          '2. Delete old assessments you no longer need\n' +
+          '3. Reduce attachment sizes (try compressing images)\n\n' +
+          'Note: With Folder Sync enabled, localStorage is automatically disabled\n' +
+          'and all data is saved to your file system instead.\n\n' +
+          'Your changes could not be saved to browser storage.'
+        : '⚠️ Browser Storage Full\n\n' +
+          'Your browser\'s storage quota is exceeded, but your changes were saved to the sync folder.\n\n' +
+          'Recommendation: Delete old assessments from browser storage to prevent issues when offline.';
+    
+    alert(message);
+}
+
 function loadAssessments() {
+    // Skip loading from localStorage if folder sync is enabled
+    // (folder sync will load assessments from the sync folder)
+    if (shouldSkipLocalStorage()) {
+        console.log('Folder sync is enabled - skipping localStorage load');
+        return;
+    }
+    
     const saved = localStorage.getItem('testMaturityAssessments');
     if (saved) {
         try {
@@ -2766,7 +2881,13 @@ async function performAutoSave() {
         updateAutoSaveStatus('saved');
     } catch (error) {
         console.error('Auto-save error:', error);
-        updateAutoSaveStatus('error', 'Failed to save');
+        
+        // Provide specific feedback for quota errors
+        if (error.name === 'QuotaExceededError') {
+            updateAutoSaveStatus('error', 'Storage full');
+        } else {
+            updateAutoSaveStatus('error', 'Failed to save');
+        }
     }
 }
 
@@ -2796,6 +2917,12 @@ function startPeriodicRefresh() {
 
 // Refresh assessments from localStorage (for multi-tab/window sync)
 function refreshFromStorage() {
+    // Skip refreshing from localStorage if folder sync is enabled
+    // (folder sync handles refreshing from the sync folder)
+    if (shouldSkipLocalStorage()) {
+        return;
+    }
+    
     const saved = localStorage.getItem('testMaturityAssessments');
     if (saved) {
         try {
