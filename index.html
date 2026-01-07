@@ -428,9 +428,13 @@
                         console.log('Service Worker registered successfully:', reg.scope);
                         
                         // Check for updates immediately on load
-                        registration.update().then(() => {
-                            console.log('Initial update check completed');
-                        });
+                        registration.update()
+                            .then(() => {
+                                console.log('Initial update check completed');
+                            })
+                            .catch((error) => {
+                                console.error('Initial update check failed:', error);
+                            });
                         
                         // Check for updates every 60 seconds when app is active
                         setInterval(() => {
@@ -459,11 +463,13 @@
                             });
                         });
                         
-                        // Handle the case where there's already a waiting worker
-                        if (reg.waiting) {
-                            console.log('Service worker already waiting, showing banner immediately');
-                            showUpdateBanner(reg.waiting);
-                        }
+                        // Check for already waiting worker after a brief delay to avoid race condition
+                        setTimeout(() => {
+                            if (reg.waiting) {
+                                console.log('Service worker already waiting, showing banner immediately');
+                                showUpdateBanner(reg.waiting);
+                            }
+                        }, 100);
                     })
                     .catch((error) => {
                         console.log('Service Worker registration failed:', error);
