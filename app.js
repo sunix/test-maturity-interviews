@@ -504,6 +504,9 @@ function startInterview() {
 // Save initial assessment when starting an interview (before any answers)
 async function saveInitialAssessment() {
     try {
+        // Show saving status
+        updateAutoSaveStatus('saving');
+        
         // Check if assessment with same name and interviewName exists
         const existingIndex = assessments.findIndex(a => 
             a.name === currentAssessment.name && 
@@ -525,9 +528,13 @@ async function saveInitialAssessment() {
         updateSavedAssessmentsList();
         updateResultsSelect();
         
+        // Show saved status
+        updateAutoSaveStatus('saved');
+        
         console.log('Initial assessment saved successfully');
     } catch (error) {
         console.error('Error saving initial assessment:', error);
+        updateAutoSaveStatus('error', 'Failed to save');
     }
 }
 
