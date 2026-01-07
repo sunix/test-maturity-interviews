@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Questionnaire Export/Import</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 20px auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .test-section {
+            background: white;
+            padding: 20px;
+            margin-bottom: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #2563eb;
+        }
+        h2 {
+            color: #1e40af;
+            margin-top: 0;
+        }
+        .status {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+        }
+        .success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .info {
+            background-color: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+        button {
+            padding: 10px 20px;
+            margin: 5px;
+            cursor: pointer;
+            background-color: #2563eb;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        button:hover {
+            background-color: #1e40af;
+        }
+        .test-list {
+            list-style-type: none;
+            padding-left: 0;
+        }
+        .test-list li {
+            padding: 8px;
+            margin: 4px 0;
+            background-color: #f8f9fa;
+            border-left: 4px solid #2563eb;
+        }
+        .test-list li.pass {
+            border-left-color: #28a745;
+        }
+        .test-list li.fail {
+            border-left-color: #dc3545;
+        }
+        pre {
+            background-color: #f8f9fa;
+            padding: 10px;
+            border-radius: 4px;
+            overflow-x: auto;
+        }
+    </style>
+</head>
+<body>
+    <h1>🧪 Questionnaire Export/Import Feature Test</h1>
+    
+    <div class="test-section">
+        <h2>📋 Test Overview</h2>
+        <p>This page tests the new questionnaire export/import functionality:</p>
+        <ul>
+            <li><strong>Export Questionnaire:</strong> Export current interview as blank Excel form</li>
+            <li><strong>Import Questionnaire:</strong> Import filled Excel form to update answers</li>
+            <li><strong>Attachment Handling:</strong> Verify attachment notes are exported/imported</li>
+        </ul>
+    </div>
+
+    <div class="test-section">
+        <h2>✅ Manual Test Checklist</h2>
+        <ul class="test-list">
+            <li>🔲 Open the main application (index.html)</li>
+            <li>🔲 Start a new interview with test data</li>
+            <li>🔲 Answer a few questions (some yes, some no)</li>
+            <li>🔲 Add comments to some questions</li>
+            <li>🔲 Add attachments to some questions (if possible)</li>
+            <li>🔲 Click "Export Questionnaire to Excel" button</li>
+            <li>🔲 Verify the Excel file downloads</li>
+            <li>🔲 Open the Excel file and verify structure:
+                <ul>
+                    <li>Instructions sheet present</li>
+                    <li>Questionnaire sheet present</li>
+                    <li>Interview metadata shown</li>
+                    <li>All questions listed</li>
+                    <li>Existing answers populated</li>
+                    <li>Column headers correct</li>
+                </ul>
+            </li>
+            <li>🔲 Fill in/modify some answers in Excel</li>
+            <li>🔲 Add "Answered By" values (developer, qa, etc.)</li>
+            <li>🔲 Add/modify comments</li>
+            <li>🔲 Add attachment notes</li>
+            <li>🔲 Save the Excel file</li>
+            <li>🔲 Click "Import Filled Questionnaire" button in the app</li>
+            <li>🔲 Select the filled Excel file</li>
+            <li>🔲 Verify import success message shows counts</li>
+            <li>🔲 Verify questions are updated in the UI</li>
+            <li>🔲 Verify answers, comments, and "Answered By" are correct</li>
+            <li>🔲 Verify attachment notes appear in comments</li>
+            <li>🔲 Test round-trip: Export again and verify data consistency</li>
+        </ul>
+    </div>
+
+    <div class="test-section">
+        <h2>🧪 Expected Excel Structure</h2>
+        <h3>Instructions Sheet:</h3>
+        <ul>
+            <li>Clear instructions for filling the questionnaire</li>
+            <li>Interview metadata displayed</li>
+            <li>Notes about attachment handling</li>
+        </ul>
+        
+        <h3>Questionnaire Sheet Columns:</h3>
+        <ol>
+            <li><strong>Question ID:</strong> Unique identifier (e.g., GO-1, MS-5)</li>
+            <li><strong>Theme:</strong> The maturity theme</li>
+            <li><strong>Profiles:</strong> Who can answer (developer, qa, devops, manager)</li>
+            <li><strong>Question Text:</strong> The actual question</li>
+            <li><strong>Answer:</strong> yes/no (editable)</li>
+            <li><strong>Answered By:</strong> Profile who answered (editable)</li>
+            <li><strong>Comment:</strong> Additional notes (editable)</li>
+            <li><strong>Attachment Notes:</strong> References to attachments (editable)</li>
+            <li><strong>Weight:</strong> Question importance (1-5)</li>
+            <li><strong>Category:</strong> Test category (optional)</li>
+        </ol>
+    </div>
+
+    <div class="test-section">
+        <h2>📝 Test Data Suggestions</h2>
+        <p>When filling the Excel questionnaire for testing:</p>
+        <pre>
+Valid Answer values: yes, no, YES, NO, Yes, No (case-insensitive)
+Valid Answered By values: developer, qa, devops, manager
+Comments: Any text
+Attachment Notes: File names or descriptions (e.g., "screenshot1.png, diagram.pdf")
+        </pre>
+        
+        <h3>Sample Test Rows:</h3>
+        <pre>
+Question ID: GO-1
+Answer: yes
+Answered By: manager
+Comment: Strategy document reviewed on 2024-01-15
+Attachment Notes: strategy-doc-v2.pdf
+
+Question ID: MS-3
+Answer: no
+Answered By: qa
+Comment: Templates need to be created
+Attachment Notes: 
+
+Question ID: AC-1
+Answer: yes
+Answered By: developer
+Comment: Using Jest for unit tests
+Attachment Notes: test-report.html, coverage-screenshot.png
+        </pre>
+    </div>
+
+    <div class="test-section">
+        <h2>🚨 Error Cases to Test</h2>
+        <ul class="test-list">
+            <li>Try importing with invalid answer values (should show error)</li>
+            <li>Try importing with invalid "Answered By" values (should show error)</li>
+            <li>Try importing file with wrong sheet name (should show error)</li>
+            <li>Try importing before starting interview (should show error)</li>
+            <li>Try exporting before starting interview (should show error)</li>
+            <li>Leave some answers blank (should skip those rows)</li>
+            <li>Try modifying question IDs (should show error for unknown IDs)</li>
+        </ul>
+    </div>
+
+    <div class="test-section">
+        <h2>📌 Attachment Handling Notes</h2>
+        <div class="info">
+            <strong>Important:</strong> Excel cannot embed actual binary files easily, so the feature handles attachments as follows:
+            <ul>
+                <li><strong>Export:</strong> Attachment filenames are listed in "Attachment Notes" column</li>
+                <li><strong>Import:</strong> Attachment notes are imported but actual files remain in the web app</li>
+                <li><strong>Recommendation:</strong> Use the web app to add actual file attachments</li>
+                <li><strong>Workflow:</strong> Export → Fill questionnaire → Import → Add attachments in web app</li>
+            </ul>
+        </div>
+    </div>
+
+    <div class="test-section">
+        <h2>🔗 Quick Links</h2>
+        <button onclick="window.location.href='index.html'">Open Main Application</button>
+        <button onclick="window.location.href='README.md'">View Documentation</button>
+    </div>
+
+    <div class="test-section">
+        <h2>✨ Success Criteria</h2>
+        <p>The feature is working correctly if:</p>
+        <ul class="test-list">
+            <li class="pass">✓ Excel file exports with correct structure and data</li>
+            <li class="pass">✓ Instructions sheet is clear and helpful</li>
+            <li class="pass">✓ Existing answers are pre-filled in the export</li>
+            <li class="pass">✓ Excel file can be filled and saved</li>
+            <li class="pass">✓ Import updates all answers correctly</li>
+            <li class="pass">✓ Import validates data and shows clear errors</li>
+            <li class="pass">✓ Comments and "Answered By" are preserved</li>
+            <li class="pass">✓ Attachment notes are handled appropriately</li>
+            <li class="pass">✓ Progress bar updates after import</li>
+            <li class="pass">✓ Auto-save triggers after import</li>
+            <li class="pass">✓ Round-trip (export → fill → import) works perfectly</li>
+        </ul>
+    </div>
+
+</body>
+</html>

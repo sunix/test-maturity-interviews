@@ -291,6 +291,21 @@ function setupEventListeners() {
     if (exportResultsExcelBtn) {
         exportResultsExcelBtn.addEventListener('click', exportResultToExcel);
     }
+    
+    // Excel Export/Import for interview questionnaire
+    const exportQuestionnaireBtn = document.getElementById('export-questionnaire');
+    const importQuestionnaireBtn = document.getElementById('import-questionnaire');
+    const importQuestionnaireFileInput = document.getElementById('import-questionnaire-file');
+    
+    if (exportQuestionnaireBtn) {
+        exportQuestionnaireBtn.addEventListener('click', exportInterviewQuestionnaireToExcel);
+    }
+    if (importQuestionnaireBtn) {
+        importQuestionnaireBtn.addEventListener('click', () => importQuestionnaireFileInput.click());
+    }
+    if (importQuestionnaireFileInput) {
+        importQuestionnaireFileInput.addEventListener('change', importInterviewQuestionnaireFromExcel);
+    }
 
     // Results select
     resultsSelect.addEventListener('change', displayResults);
@@ -2305,6 +2320,307 @@ function exportResultToExcel() {
         console.error('Error exporting result to Excel:', error);
         alert('Error exporting result to Excel: ' + error.message);
     }
+}
+
+// Export current interview questionnaire to Excel (blank form to be filled)
+function exportInterviewQuestionnaireToExcel() {
+    if (!currentAssessment || !currentAssessment.name) {
+        alert('No active interview. Please start an interview first.');
+        return;
+    }
+    
+    // Check if XLSX library is available
+    if (typeof XLSX === 'undefined') {
+        alert('Excel library not loaded. Please refresh the page and try again.');
+        return;
+    }
+    
+    try {
+        const workbook = XLSX.utils.book_new();
+        
+        // Get the questions to export (filtered or all)
+        const questionsToExport = filteredQuestions.length > 0 ? filteredQuestions : getActiveQuestionsCatalog();
+        
+        if (questionsToExport.length === 0) {
+            alert('No questions available to export. Please start an interview first.');
+            return;
+        }
+        
+        // Create instructions sheet
+        const instructionsData = [
+            ['Interview Questionnaire - Instructions'],
+            [],
+            ['How to use this questionnaire:'],
+            ['1. Fill in the "Answer" column with either "yes" or "no" (case-insensitive)'],
+            ['2. Optionally fill in "Answered By" with the profile: developer, qa, devops, or manager'],
+            ['3. Add any relevant comments in the "Comment" column'],
+            ['4. For attachments: Add notes or descriptions in the "Attachment Notes" column'],
+            ['   Note: Actual file attachments can only be added in the web application'],
+            ['5. Save the file when complete'],
+            ['6. Import this file back into the application using "Import Questionnaire" button'],
+            [],
+            ['Important Notes:'],
+            ['- Do NOT modify: Question ID, Theme, Question Text, Profiles, Weight, or Category columns'],
+            ['- Leave Answer blank if you want to skip a question'],
+            ['- Valid "Answered By" values: developer, qa, devops, manager (or leave blank)'],
+            ['- For attachments: You can note file names or references, but actual files must be attached in the web app'],
+            [],
+            ['Interview Information:'],
+            ['Application Name:', currentAssessment.name],
+            ['Interview Name:', currentAssessment.interviewName || ''],
+            ['Interview Date:', currentAssessment.interviewDates && currentAssessment.interviewDates.length > 0 
+                ? new Date(currentAssessment.interviewDates[0]).toLocaleString() 
+                : new Date().toLocaleString()],
+            ['Interviewees:', currentAssessment.interviewees ? currentAssessment.interviewees.join(', ') : ''],
+            ['Selected Profiles:', currentAssessment.selectedProfiles ? currentAssessment.selectedProfiles.join(', ') : ''],
+            ['General Comments:', currentAssessment.generalComments || '']
+        ];
+        
+        const instructionsSheet = XLSX.utils.aoa_to_sheet(instructionsData);
+        instructionsSheet['!cols'] = [{ wch: 25 }, { wch: 60 }];
+        XLSX.utils.book_append_sheet(workbook, instructionsSheet, 'Instructions');
+        
+        // Create questionnaire sheet with existing answers if any
+        const questionnaireData = [
+            ['Question ID', 'Theme', 'Profiles', 'Question Text', 'Answer', 'Answered By', 'Comment', 'Attachment Notes', 'Weight', 'Category']
+        ];
+        
+        questionsToExport.forEach(question => {
+            // Get existing answer if any
+            const existingAnswer = currentAssessment.answers[question.id] || '';
+            const existingAnsweredBy = currentAssessment.answeredBy?.[question.id] || '';
+            const existingComment = currentAssessment.comments?.[question.id] || '';
+            
+            // Get attachment info
+            let attachmentNotes = '';
+            if (currentAssessment.attachments && currentAssessment.attachments[question.id]) {
+                const attachments = currentAssessment.attachments[question.id];
+                attachmentNotes = attachments.map(att => att.name).join(', ');
+            }
+            
+            questionnaireData.push([
+                question.id,
+                question.theme,
+                question.profiles.filter(p => p !== 'all').join(', '),
+                question.question,
+                existingAnswer,
+                existingAnsweredBy,
+                existingComment,
+                attachmentNotes,
+                question.weight,
+                question.category || ''
+            ]);
+        });
+        
+        const questionnaireSheet = XLSX.utils.aoa_to_sheet(questionnaireData);
+        
+        // Auto-size columns
+        questionnaireSheet['!cols'] = [
+            { wch: 12 },  // Question ID
+            { wch: 25 },  // Theme
+            { wch: 20 },  // Profiles
+            { wch: 70 },  // Question Text
+            { wch: 10 },  // Answer
+            { wch: 15 },  // Answered By
+            { wch: 40 },  // Comment
+            { wch: 30 },  // Attachment Notes
+            { wch: 8 },   // Weight
+            { wch: 20 }   // Category
+        ];
+        
+        XLSX.utils.book_append_sheet(workbook, questionnaireSheet, 'Questionnaire');
+        
+        // Generate filename
+        const safeName = (currentAssessment.name || 'interview').replace(/[^a-z0-9_-]/gi, '_');
+        const safeInterviewName = (currentAssessment.interviewName || '').replace(/[^a-z0-9_-]/gi, '_');
+        const dateStr = new Date().toISOString().split('T')[0];
+        const filename = safeInterviewName 
+            ? `questionnaire-${safeName}-${safeInterviewName}-${dateStr}.xlsx`
+            : `questionnaire-${safeName}-${dateStr}.xlsx`;
+        
+        XLSX.writeFile(workbook, filename);
+        
+        alert('Interview questionnaire exported to Excel successfully!\n\nFill in the "Answer" column with yes/no, and optionally add comments and answered-by information.\n\nImport the filled questionnaire back using the "Import Questionnaire" button.');
+    } catch (error) {
+        console.error('Error exporting questionnaire to Excel:', error);
+        alert('Error exporting questionnaire to Excel: ' + error.message);
+    }
+}
+
+// Import filled questionnaire from Excel
+function importInterviewQuestionnaireFromExcel(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+    
+    if (!currentAssessment || !currentAssessment.name) {
+        alert('No active interview. Please start an interview first before importing a questionnaire.');
+        event.target.value = '';
+        return;
+    }
+    
+    // Check if XLSX library is available
+    if (typeof XLSX === 'undefined') {
+        alert('Excel library not loaded. Please refresh the page and try again.');
+        event.target.value = '';
+        return;
+    }
+    
+    const reader = new FileReader();
+    
+    reader.onload = function(e) {
+        try {
+            const data = new Uint8Array(e.target.result);
+            const workbook = XLSX.read(data, { type: 'array' });
+            
+            // Look for the Questionnaire sheet
+            if (!workbook.SheetNames.includes('Questionnaire')) {
+                alert('Invalid questionnaire file: Missing "Questionnaire" sheet');
+                return;
+            }
+            
+            const sheet = workbook.Sheets['Questionnaire'];
+            const jsonData = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: '' });
+            
+            if (jsonData.length < 2) {
+                alert('Invalid questionnaire file: No data found');
+                return;
+            }
+            
+            // Validate header row
+            const expectedHeaders = ['Question ID', 'Theme', 'Profiles', 'Question Text', 'Answer', 'Answered By', 'Comment', 'Attachment Notes', 'Weight', 'Category'];
+            const actualHeaders = jsonData[0];
+            
+            // Check if key columns exist (allow for some flexibility in order)
+            const requiredColumns = ['Question ID', 'Answer'];
+            const missingColumns = requiredColumns.filter(col => !actualHeaders.includes(col));
+            if (missingColumns.length > 0) {
+                alert(`Invalid questionnaire file: Missing required columns: ${missingColumns.join(', ')}`);
+                return;
+            }
+            
+            // Get column indices
+            const columnIndices = {};
+            actualHeaders.forEach((header, index) => {
+                columnIndices[header] = index;
+            });
+            
+            // Process each row
+            let importedCount = 0;
+            let updatedCount = 0;
+            let skippedCount = 0;
+            const errors = [];
+            
+            for (let i = 1; i < jsonData.length; i++) {
+                const row = jsonData[i];
+                if (!row || row.length === 0) continue;
+                
+                const questionId = (row[columnIndices['Question ID']] || '').toString().trim();
+                const answer = (row[columnIndices['Answer']] || '').toString().trim().toLowerCase();
+                const answeredBy = (row[columnIndices['Answered By']] || '').toString().trim().toLowerCase();
+                const comment = (row[columnIndices['Comment']] || '').toString().trim();
+                const attachmentNotes = (row[columnIndices['Attachment Notes']] || '').toString().trim();
+                
+                // Skip rows without question ID or answer
+                if (!questionId || !answer) {
+                    skippedCount++;
+                    continue;
+                }
+                
+                // Validate answer
+                if (answer !== 'yes' && answer !== 'no') {
+                    errors.push(`Row ${i + 1}: Invalid answer "${answer}" for question ${questionId}. Must be "yes" or "no".`);
+                    skippedCount++;
+                    continue;
+                }
+                
+                // Validate answered by if provided
+                if (answeredBy && !['developer', 'qa', 'devops', 'manager'].includes(answeredBy)) {
+                    errors.push(`Row ${i + 1}: Invalid "Answered By" value "${answeredBy}" for question ${questionId}. Must be one of: developer, qa, devops, manager.`);
+                    skippedCount++;
+                    continue;
+                }
+                
+                // Check if question exists in the current assessment's question set
+                const question = getActiveQuestionsCatalog().find(q => q.id === questionId);
+                if (!question) {
+                    errors.push(`Row ${i + 1}: Question ID "${questionId}" not found in the current question set.`);
+                    skippedCount++;
+                    continue;
+                }
+                
+                // Check if we're updating an existing answer
+                const isUpdate = currentAssessment.answers[questionId] !== undefined;
+                if (isUpdate) {
+                    updatedCount++;
+                } else {
+                    importedCount++;
+                }
+                
+                // Update the assessment
+                currentAssessment.answers[questionId] = answer;
+                
+                if (answeredBy) {
+                    if (!currentAssessment.answeredBy) {
+                        currentAssessment.answeredBy = {};
+                    }
+                    currentAssessment.answeredBy[questionId] = answeredBy;
+                }
+                
+                if (comment) {
+                    if (!currentAssessment.comments) {
+                        currentAssessment.comments = {};
+                    }
+                    currentAssessment.comments[questionId] = comment;
+                }
+                
+                // Note: Attachment notes are imported but actual file uploads must be done in the web app
+                // We could store the notes in comments if there's no existing comment
+                if (attachmentNotes && !comment) {
+                    if (!currentAssessment.comments) {
+                        currentAssessment.comments = {};
+                    }
+                    currentAssessment.comments[questionId] = `Attachment notes: ${attachmentNotes}`;
+                }
+            }
+            
+            // Show results
+            let message = `Import completed:\n`;
+            message += `- ${importedCount} new answer(s) imported\n`;
+            message += `- ${updatedCount} existing answer(s) updated\n`;
+            if (skippedCount > 0) {
+                message += `- ${skippedCount} row(s) skipped\n`;
+            }
+            if (errors.length > 0) {
+                message += `\nErrors:\n${errors.slice(0, 5).join('\n')}`;
+                if (errors.length > 5) {
+                    message += `\n... and ${errors.length - 5} more error(s)`;
+                }
+            }
+            
+            if (importedCount > 0 || updatedCount > 0) {
+                // Re-render questions to show updated answers
+                renderQuestions();
+                updateProgress();
+                
+                // Mark as actively editing and trigger auto-save
+                markAsActivelyEditing();
+                triggerAutoSave();
+                
+                message += '\n\nNote: Attachment notes were imported as comments. Please add actual file attachments in the web application if needed.';
+            }
+            
+            alert(message);
+            
+        } catch (error) {
+            console.error('Error importing questionnaire from Excel:', error);
+            alert('Error importing questionnaire from Excel: ' + error.message);
+        }
+    };
+    
+    reader.readAsArrayBuffer(file);
+    
+    // Reset file input
+    event.target.value = '';
 }
 
 // Auto-save Functions

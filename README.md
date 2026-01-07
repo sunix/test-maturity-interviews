@@ -30,6 +30,12 @@ A modern, browser-based web application designed to assess and track testing mat
 ### 💾 **Flexible Data Management**
 - **Local Storage**: All data saved in your browser—no server, no privacy concerns
 - **Export/Import**: Download assessments as JSON files for backup or sharing
+- **📊 Excel Questionnaire Export/Import**: 
+  - Export interviews as Excel questionnaires for offline completion
+  - Fill questionnaires in Excel (yes/no answers, comments, metadata)
+  - Import filled questionnaires back to update the assessment
+  - Perfect for email distribution, offline work, or bulk data entry
+  - Smart validation ensures data integrity during import
 - **📁 Advanced Folder Sync**: 
   - Automatically sync to OneDrive, Google Drive, or any local folder
   - Real-time collaboration through shared cloud folders
@@ -173,6 +179,88 @@ Perfect for teams using OneDrive, Google Drive, or Dropbox:
    - Progress bar shows completion in real-time
    - Auto-save ensures no data loss
    - Edit assessments anytime—just click "Edit" from the list
+
+### Excel Questionnaire Workflow (Offline Completion)
+
+Perfect for situations where you need to fill questionnaires offline or distribute them to multiple people:
+
+#### Exporting a Questionnaire
+
+1. **Start an Interview** in the Interview tab
+2. Click **"📝 Export Questionnaire to Excel"**
+3. An Excel file downloads with two sheets:
+   - **Instructions**: How to fill the questionnaire
+   - **Questionnaire**: All questions with columns to fill
+
+#### What's in the Excel File
+
+The questionnaire includes:
+- **Interview Metadata**: Application name, interview name, dates, interviewees
+- **Questions**: All questions (filtered by profile if applicable)
+- **Editable Columns**:
+  - **Answer**: Fill with "yes" or "no" (case-insensitive)
+  - **Answered By**: Select profile (developer, qa, devops, manager)
+  - **Comment**: Add notes, context, or observations
+  - **Attachment Notes**: Reference external files (e.g., "screenshot.png, report.pdf")
+- **Reference Columns**: Question ID, Theme, Profiles, Question Text, Weight, Category
+
+#### Filling the Questionnaire
+
+1. **Open the Excel file**
+2. **Read the Instructions sheet** for guidance
+3. **Fill the Questionnaire sheet**:
+   - Enter "yes" or "no" in the Answer column
+   - Optionally specify who answered in the "Answered By" column
+   - Add comments for context
+   - Note any attachment references
+4. **Save the file** when complete
+
+#### Importing Filled Questionnaire
+
+1. Return to the **Interview tab** in the web application
+2. Click **"📥 Import Filled Questionnaire"**
+3. Select the filled Excel file
+4. The application will:
+   - Validate all answers and data
+   - Import new answers
+   - Update existing answers
+   - Add comments and "Answered By" information
+   - Show a summary of what was imported
+5. Review and add any file attachments directly in the web app
+
+#### Handling Attachments
+
+**Important Note**: Excel cannot easily embed binary files, so attachments are handled as follows:
+
+- **During Export**: Existing attachment filenames are listed in "Attachment Notes"
+- **During Filling**: You can add notes or references to files (e.g., "See report.pdf in shared folder")
+- **After Import**: Attachment notes appear in comments; add actual files in the web app
+- **Best Practice**: 
+  1. Export and fill questionnaire
+  2. Import filled questionnaire
+  3. Add actual file attachments in the web app using the "Attach Files" feature
+
+#### Use Cases
+
+✅ **Offline Completion**: Fill questionnaires without internet access
+✅ **Email Distribution**: Send Excel files to team members for their input
+✅ **Bulk Entry**: Easier to fill many questions at once in Excel
+✅ **Data Collection**: Gather responses from multiple people then consolidate
+✅ **Review and Edit**: Review questions in Excel before submitting
+✅ **Template Reuse**: Keep filled questionnaires as templates for similar assessments
+
+#### Validation and Error Handling
+
+The import process validates:
+- ✓ Answer values must be "yes" or "no"
+- ✓ "Answered By" must be: developer, qa, devops, or manager
+- ✓ Question IDs must match current question set
+- ✓ Excel file must have correct structure
+
+Invalid data is skipped with clear error messages showing:
+- Which rows had issues
+- What the problem was
+- How many rows were successfully imported
 
 ### Viewing Results
 
