@@ -2346,17 +2346,38 @@ function exportInterviewQuestionnaireToExcel() {
             return;
         }
         
+        // Create options sheet with dropdown lists
+        const optionsData = [
+            ['Answer Options', 'Profile Options'],
+            ['Yes', 'developer'],
+            ['No', 'qa'],
+            ['', 'devops'],
+            ['', 'manager']
+        ];
+        
+        const optionsSheet = XLSX.utils.aoa_to_sheet(optionsData);
+        optionsSheet['!cols'] = [{ wch: 15 }, { wch: 15 }];
+        XLSX.utils.book_append_sheet(workbook, optionsSheet, 'Options');
+        
         // Create instructions sheet
         const instructionsData = [
             ['Interview Questionnaire - Instructions'],
             [],
             ['How to use this questionnaire:'],
             ['1. Fill in the "Answer" column with "Yes", "No", or leave it blank'],
-            ['   Tip: In Excel, you can set up a dropdown by selecting cells in the Answer column,'],
-            ['   then go to Data > Data Validation > List, and enter: Yes,No'],
+            ['   To set up dropdown in Excel:'],
+            ['   a) Select all cells in the Answer column (C2:C' + (questionsToExport.length + 1) + ')'],
+            ['   b) Go to Data > Data Validation > List'],
+            ['   c) In "Source", enter: =Options!$A$2:$A$3'],
+            ['   d) Click OK'],
+            [],
             ['2. Fill in "Answered By" column with a profile: developer, qa, devops, or manager'],
-            ['   Tip: In Excel, you can set up a dropdown by selecting cells in the Answered By column,'],
-            ['   then go to Data > Data Validation > List, and enter: developer,qa,devops,manager'],
+            ['   To set up dropdown in Excel:'],
+            ['   a) Select all cells in the Answered By column (D2:D' + (questionsToExport.length + 1) + ')'],
+            ['   b) Go to Data > Data Validation > List'],
+            ['   c) In "Source", enter: =Options!$B$2:$B$5'],
+            ['   d) Click OK'],
+            [],
             ['3. Add any relevant comments in the "Comment" column'],
             ['4. For attachments: Add notes or descriptions in the "Attachment Notes" column'],
             ['   Note: Actual file attachments can only be added in the web application'],
@@ -2368,6 +2389,7 @@ function exportInterviewQuestionnaireToExcel() {
             ['- Valid Answer values: Yes, No, or blank (case-insensitive)'],
             ['- Valid Answered By values: developer, qa, devops, manager (case-insensitive)'],
             ['- "Answered By" is pre-filled with the first selected profile when available'],
+            ['- The "Options" sheet contains the lists for dropdowns - do not delete it'],
             ['- For attachments: You can note file names or references, but actual files must be attached in the web app'],
             [],
             ['Interview Information:'],
@@ -2382,7 +2404,7 @@ function exportInterviewQuestionnaireToExcel() {
         ];
         
         const instructionsSheet = XLSX.utils.aoa_to_sheet(instructionsData);
-        instructionsSheet['!cols'] = [{ wch: 25 }, { wch: 60 }];
+        instructionsSheet['!cols'] = [{ wch: 25 }, { wch: 80 }];
         XLSX.utils.book_append_sheet(workbook, instructionsSheet, 'Instructions');
         
         // Create questionnaire sheet with simplified columns

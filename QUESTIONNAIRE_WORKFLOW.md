@@ -31,15 +31,17 @@ The Excel Questionnaire feature allows you to export interviews as Excel files, 
 
 ### What You Get
 
-The Excel file contains two sheets:
+The Excel file contains three sheets:
 
 #### Instructions Sheet
 ```
 Interview Questionnaire - Instructions
 
 How to use this questionnaire:
-1. Fill in the "Answer" column with "yes" or "no"
-2. Optionally fill "Answered By" with: developer, qa, devops, or manager
+1. Fill in the "Answer" column with "Yes" or "No"
+   To set up dropdown: Select Answer column → Data Validation → List → Source: =Options!$A$2:$A$3
+2. Fill in "Answered By" column with a profile
+   To set up dropdown: Select Answered By column → Data Validation → List → Source: =Options!$B$2:$B$5
 3. Add comments in the "Comment" column
 4. For attachments: Add notes in "Attachment Notes" column
 5. Save the file when complete
@@ -63,13 +65,29 @@ Interviewees: John Doe, Jane Smith
 
 **Note:** The "Answered By" column is pre-filled with the first selected profile if available.
 
+#### Options Sheet
+
+| Answer Options | Profile Options |
+|----------------|-----------------|
+| Yes            | developer       |
+| No             | qa              |
+|                | devops          |
+|                | manager         |
+
+This sheet contains the dropdown lists referenced in the Instructions.
+
 ## ✏️ Filling the Questionnaire
 
 ### Step 3: Open and Fill the Excel File
 
 1. **Open the downloaded Excel file**
-2. **Read the Instructions sheet** for guidance
-3. **Go to the Questionnaire sheet**
+2. **Read the Instructions sheet** for detailed guidance
+3. **Set up dropdowns** (recommended):
+   - Select all Answer column cells (C2:C[last row])
+   - Go to Data → Data Validation → List
+   - In "Source", enter: =Options!$A$2:$A$3
+   - Click OK
+   - Repeat for Answered By column (D2:D[last row]) with Source: =Options!$B$2:$B$5
 4. **Fill in the editable columns:**
 
 #### Example Filled Row:
@@ -82,10 +100,10 @@ Interviewees: John Doe, Jane Smith
 
 ### Important Notes:
 
-- **Answer values**: Type "Yes" or "No" (case-insensitive: YES, yes, NO, no all work), or leave blank
-  - **Tip:** Set up Excel dropdown: Select Answer column cells → Data → Data Validation → List → Enter: Yes,No
-- **Answered By values**: Type one of: developer, qa, devops, manager (or leave blank)
-  - **Tip:** Set up Excel dropdown: Select Answered By column cells → Data → Data Validation → List → Enter: developer,qa,devops,manager
+- **Answer values**: Select "Yes" or "No" from dropdown (case-insensitive: YES, yes, NO, no all work), or leave blank
+  - **Dropdown setup**: Select cells → Data Validation → List → Source: =Options!$A$2:$A$3
+- **Answered By values**: Select one of: developer, qa, devops, manager from dropdown (or leave blank)
+  - **Dropdown setup**: Select cells → Data Validation → List → Source: =Options!$B$2:$B$5
   - Pre-filled with first selected profile when available
 - **Comments**: Any text you want
 - **Attachment Notes**: File names or references (actual files uploaded in web app)

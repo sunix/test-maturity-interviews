@@ -194,9 +194,13 @@ Perfect for situations where you need to fill questionnaires offline or distribu
 
 #### What's in the Excel File
 
-The questionnaire includes:
-- **Interview Metadata**: Application name, interview name, dates, interviewees
-- **Questions**: All questions (filtered by profile if applicable)
+The questionnaire includes three sheets:
+
+1. **Instructions Sheet**: Detailed guidance with interview metadata
+2. **Questionnaire Sheet**: All questions with editable columns
+3. **Options Sheet**: Dropdown lists for Answer and Answered By columns
+
+**Questionnaire Columns**:
 - **Editable Columns**:
   - **Answer**: Fill with "Yes" or "No" (case-insensitive), or leave blank
   - **Answered By**: Select profile (developer, qa, devops, manager) - pre-filled with first selected profile
@@ -204,20 +208,23 @@ The questionnaire includes:
   - **Attachment Notes**: Reference external files (e.g., "screenshot.png, report.pdf")
 - **Reference Columns**: Question ID, Question Text
 
-**Tip:** You can set up Excel dropdowns for easier data entry:
-- Answer column: Data → Data Validation → List → Enter: Yes,No
-- Answered By column: Data → Data Validation → List → Enter: developer,qa,devops,manager
+**Setting Up Excel Dropdowns** (detailed in Instructions sheet):
+- **Answer column**: Data → Data Validation → List → Source: =Options!$A$2:$A$3
+- **Answered By column**: Data → Data Validation → List → Source: =Options!$B$2:$B$5
 
 #### Filling the Questionnaire
 
 1. **Open the Excel file**
-2. **Read the Instructions sheet** for guidance
-3. **Fill the Questionnaire sheet**:
-   - Enter "Yes" or "No" in the Answer column (or leave blank)
-   - The "Answered By" column is pre-filled but can be changed
+2. **Read the Instructions sheet** for detailed guidance on setting up dropdowns
+3. **Set up dropdowns** (optional but recommended):
+   - Select Answer column cells → Data Validation → List → Source: =Options!$A$2:$A$3
+   - Select Answered By column cells → Data Validation → List → Source: =Options!$B$2:$B$5
+4. **Fill the Questionnaire sheet**:
+   - Select "Yes" or "No" from dropdown in Answer column (or leave blank)
+   - Select profile from dropdown in "Answered By" column (pre-filled but can be changed)
    - Add comments for context
    - Note any attachment references
-4. **Save the file** when complete
+5. **Save the file** when complete
 
 #### Importing Filled Questionnaire
 
