@@ -429,6 +429,12 @@ function updateTabVisibility() {
 
 // Start Interview
 function startInterview() {
+    // Check if sync folder is selected
+    if (!syncEnabled || !syncFolderHandle) {
+        alert('⚠️ Sync Folder Required\n\nPlease select a sync folder before starting an interview.\nAll data must be saved to a folder to prevent data loss.\n\nClick "📁 Select Sync Folder" in the Setup tab.');
+        return;
+    }
+    
     const appName = appNameInput.value.trim();
     const interviewName = interviewNameInput.value.trim();
     const intervieweesText = intervieweesInput.value.trim();
