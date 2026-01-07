@@ -182,6 +182,19 @@ header h1 {
     font-size: 0.875rem;
 }
 
+.app-version {
+    display: inline-block;
+    margin-left: 0.5rem;
+    padding: 0.125rem 0.5rem;
+    background-color: var(--bg-color);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    font-family: 'Courier New', monospace;
+}
+
 /* Sync Status Indicator */
 .header-sync-status {
     display: flex;

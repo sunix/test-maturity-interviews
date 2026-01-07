@@ -59,7 +59,10 @@
                     <div class="header-left">
                         <div class="header-title">
                             <h1>🎯 Test Maturity Assessment</h1>
-                            <p class="subtitle">Evaluate and track testing maturity across teams and applications</p>
+                            <p class="subtitle">
+                                Evaluate and track testing maturity across teams and applications
+                                <span id="app-version" class="app-version" title="Current application version"></span>
+                            </p>
                         </div>
                         <nav class="tabs tabs-desktop">
                             <button class="tab-button active" data-tab="setup">Setup</button>
@@ -394,9 +397,18 @@
     
     <!-- Service Worker Registration -->
     <script>
+        // Display app version in the header
+        document.addEventListener('DOMContentLoaded', () => {
+            const versionElement = document.getElementById('app-version');
+            if (versionElement && typeof APP_VERSION !== 'undefined') {
+                versionElement.textContent = `v${APP_VERSION}`;
+            }
+        });
+        
         // Register service worker for PWA functionality with update detection
         if ('serviceWorker' in navigator) {
             let refreshing = false;
+            let registration = null;
             
             // Detect when service worker update is available
             navigator.serviceWorker.addEventListener('controllerchange', () => {
@@ -407,7 +419,8 @@
             
             window.addEventListener('load', () => {
                 navigator.serviceWorker.register('/test-maturity-interviews/service-worker.js')
-                    .then((registration) => {
+                    .then((reg) => {
+                        registration = reg;
                         console.log('Service Worker registered successfully:', registration.scope);
                         
                         // Check for updates every 60 seconds when app is active
@@ -468,6 +481,18 @@
                     banner.classList.add('hidden');
                 });
             }
+            
+            // Make registration available globally for manual update checks
+            window.checkForUpdates = function() {
+                if (registration) {
+                    console.log('Checking for updates...');
+                    registration.update().then(() => {
+                        console.log('Update check completed');
+                    });
+                } else {
+                    console.log('Service worker not registered yet');
+                }
+            };
         }
     </script>
 </body>
