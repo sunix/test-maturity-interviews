@@ -2542,14 +2542,20 @@ function importInterviewQuestionnaireFromExcel(event) {
                 const comment = (row[columnIndices['Comment']] || '').toString().trim();
                 const attachmentNotes = (row[columnIndices['Attachment Notes']] || '').toString().trim();
                 
-                // Skip rows without question ID or answer
-                if (!questionId || !answer) {
+                // Skip rows without question ID
+                if (!questionId) {
                     skippedCount++;
                     continue;
                 }
                 
-                // Validate answer
-                if (answer !== 'yes' && answer !== 'no') {
+                // Skip rows with no meaningful data (no answer, comment, or attachment notes)
+                if (!answer && !comment && !attachmentNotes) {
+                    skippedCount++;
+                    continue;
+                }
+                
+                // Validate answer if provided
+                if (answer && answer !== 'yes' && answer !== 'no') {
                     errors.push(`Row ${i + 1}: Invalid answer "${answer}" for question ${questionId}. Must be "yes" or "no".`);
                     skippedCount++;
                     continue;
@@ -2570,22 +2576,28 @@ function importInterviewQuestionnaireFromExcel(event) {
                     continue;
                 }
                 
-                // Check if we're updating an existing answer
-                const isUpdate = questionId in currentAssessment.answers;
-                if (isUpdate) {
-                    updatedCount++;
-                } else {
-                    importedCount++;
+                // Track if we're updating existing data
+                let hasChanges = false;
+                
+                // Update answer if provided
+                if (answer) {
+                    const isUpdate = questionId in currentAssessment.answers;
+                    if (isUpdate) {
+                        updatedCount++;
+                    } else {
+                        importedCount++;
+                    }
+                    currentAssessment.answers[questionId] = answer;
+                    hasChanges = true;
                 }
                 
-                // Update the assessment
-                currentAssessment.answers[questionId] = answer;
-                
+                // Update answeredBy if provided
                 if (answeredBy) {
                     if (!currentAssessment.answeredBy) {
                         currentAssessment.answeredBy = {};
                     }
                     currentAssessment.answeredBy[questionId] = answeredBy;
+                    hasChanges = true;
                 }
                 
                 // Handle comments and attachment notes together
@@ -2609,12 +2621,18 @@ function importInterviewQuestionnaireFromExcel(event) {
                     }
                     
                     currentAssessment.comments[questionId] = finalComment;
+                    hasChanges = true;
+                }
+                
+                // If no answer was provided but we have comments/metadata, count as imported
+                if (!answer && hasChanges) {
+                    importedCount++;
                 }
             }
             
             // Show results
             let message = `Import completed:\n`;
-            message += `- ${importedCount} new answer(s) imported\n`;
+            message += `- ${importedCount} new answer(s) or comment(s) imported\n`;
             message += `- ${updatedCount} existing answer(s) updated\n`;
             if (skippedCount > 0) {
                 message += `- ${skippedCount} row(s) skipped\n`;
