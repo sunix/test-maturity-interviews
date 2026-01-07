@@ -2346,19 +2346,6 @@ function exportInterviewQuestionnaireToExcel() {
             return;
         }
         
-        // Create options sheet with dropdown lists
-        const optionsData = [
-            ['Answer Options', 'Profile Options'],
-            ['Yes', 'developer'],
-            ['No', 'qa'],
-            ['', 'devops'],
-            ['', 'manager']
-        ];
-        
-        const optionsSheet = XLSX.utils.aoa_to_sheet(optionsData);
-        optionsSheet['!cols'] = [{ wch: 15 }, { wch: 15 }];
-        XLSX.utils.book_append_sheet(workbook, optionsSheet, 'Options');
-        
         // Create instructions sheet
         const instructionsData = [
             ['Interview Questionnaire - Instructions'],
@@ -2454,6 +2441,19 @@ function exportInterviewQuestionnaireToExcel() {
         ];
         
         XLSX.utils.book_append_sheet(workbook, questionnaireSheet, 'Questionnaire');
+        
+        // Create options sheet with dropdown lists (added last for better user experience)
+        const optionsData = [
+            ['Answer Options', 'Profile Options'],
+            ['Yes', 'developer'],
+            ['No', 'qa'],
+            ['', 'devops'],
+            ['', 'manager']
+        ];
+        
+        const optionsSheet = XLSX.utils.aoa_to_sheet(optionsData);
+        optionsSheet['!cols'] = [{ wch: 15 }, { wch: 15 }];
+        XLSX.utils.book_append_sheet(workbook, optionsSheet, 'Options');
         
         // Generate filename
         const safeName = (currentAssessment.name || 'interview').replace(/[^a-z0-9_-]/gi, '_');
