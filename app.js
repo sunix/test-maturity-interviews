@@ -2563,26 +2563,26 @@ function importInterviewQuestionnaireFromExcel(event) {
                     currentAssessment.answeredBy[questionId] = answeredBy;
                 }
                 
-                if (comment) {
+                // Handle comments and attachment notes together
+                if (comment || attachmentNotes) {
                     if (!currentAssessment.comments) {
                         currentAssessment.comments = {};
                     }
-                    currentAssessment.comments[questionId] = comment;
-                }
-                
-                // Handle attachment notes - append to existing comments or create new comment
-                if (attachmentNotes) {
-                    if (!currentAssessment.comments) {
-                        currentAssessment.comments = {};
+                    
+                    // Build the final comment
+                    let finalComment = comment || '';
+                    
+                    if (attachmentNotes) {
+                        // If we have both comment and attachment notes, combine them
+                        if (finalComment) {
+                            finalComment += `\n\nAttachment notes: ${attachmentNotes}`;
+                        } else {
+                            // Only attachment notes, no comment
+                            finalComment = `Attachment notes: ${attachmentNotes}`;
+                        }
                     }
-                    const existingComment = currentAssessment.comments[questionId] || '';
-                    if (existingComment) {
-                        // Append attachment notes to existing comment
-                        currentAssessment.comments[questionId] = `${existingComment}\n\nAttachment notes: ${attachmentNotes}`;
-                    } else {
-                        // Create new comment with attachment notes
-                        currentAssessment.comments[questionId] = `Attachment notes: ${attachmentNotes}`;
-                    }
+                    
+                    currentAssessment.comments[questionId] = finalComment;
                 }
             }
             
