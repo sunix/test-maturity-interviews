@@ -2774,15 +2774,6 @@ function triggerAutoSave() {
 // Perform the actual auto-save
 async function performAutoSave() {
     try {
-        if (Object.keys(currentAssessment.answers).length === 0) {
-            // No answers yet, nothing to save
-            if (autoSaveStatus) {
-                autoSaveStatus.textContent = '';
-                autoSaveStatus.classList.remove('saving', 'saved', 'error');
-            }
-            return;
-        }
-
         // Check if assessment with same name and interviewName exists
         const existingIndex = assessments.findIndex(a => 
             a.name === currentAssessment.name && 
