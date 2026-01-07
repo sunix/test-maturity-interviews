@@ -2486,11 +2486,8 @@ function importInterviewQuestionnaireFromExcel(event) {
                 return;
             }
             
-            // Validate header row
-            const expectedHeaders = ['Question ID', 'Theme', 'Profiles', 'Question Text', 'Answer', 'Answered By', 'Comment', 'Attachment Notes', 'Weight', 'Category'];
+            // Validate header row - check if required columns exist
             const actualHeaders = jsonData[0];
-            
-            // Check if key columns exist (allow for some flexibility in order)
             const requiredColumns = ['Question ID', 'Answer'];
             const missingColumns = requiredColumns.filter(col => !actualHeaders.includes(col));
             if (missingColumns.length > 0) {
@@ -2549,7 +2546,7 @@ function importInterviewQuestionnaireFromExcel(event) {
                 }
                 
                 // Check if we're updating an existing answer
-                const isUpdate = currentAssessment.answers[questionId] !== undefined;
+                const isUpdate = questionId in currentAssessment.answers;
                 if (isUpdate) {
                     updatedCount++;
                 } else {
@@ -2573,13 +2570,19 @@ function importInterviewQuestionnaireFromExcel(event) {
                     currentAssessment.comments[questionId] = comment;
                 }
                 
-                // Note: Attachment notes are imported but actual file uploads must be done in the web app
-                // We could store the notes in comments if there's no existing comment
-                if (attachmentNotes && !comment) {
+                // Handle attachment notes - append to existing comments or create new comment
+                if (attachmentNotes) {
                     if (!currentAssessment.comments) {
                         currentAssessment.comments = {};
                     }
-                    currentAssessment.comments[questionId] = `Attachment notes: ${attachmentNotes}`;
+                    const existingComment = currentAssessment.comments[questionId] || '';
+                    if (existingComment) {
+                        // Append attachment notes to existing comment
+                        currentAssessment.comments[questionId] = `${existingComment}\n\nAttachment notes: ${attachmentNotes}`;
+                    } else {
+                        // Create new comment with attachment notes
+                        currentAssessment.comments[questionId] = `Attachment notes: ${attachmentNotes}`;
+                    }
                 }
             }
             
