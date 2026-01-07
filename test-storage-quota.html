@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Storage Quota Handling Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 20px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .test-section {
+            background: white;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        h1 { color: #333; }
+        h2 { color: #2563eb; margin-top: 0; }
+        .test-case {
+            border-left: 4px solid #2563eb;
+            padding: 10px 15px;
+            margin: 10px 0;
+            background: #f0f7ff;
+        }
+        .pass { border-left-color: #10b981; background: #f0fdf4; }
+        .fail { border-left-color: #ef4444; background: #fef2f2; }
+        pre {
+            background: #1e293b;
+            color: #e2e8f0;
+            padding: 15px;
+            border-radius: 4px;
+            overflow-x: auto;
+            font-size: 12px;
+        }
+        button {
+            background: #2563eb;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            margin: 5px;
+        }
+        button:hover { background: #1d4ed8; }
+        .result { margin-top: 10px; font-weight: bold; }
+        .result.pass { color: #10b981; }
+        .result.fail { color: #ef4444; }
+        .info {
+            background: #eff6ff;
+            border: 1px solid #3b82f6;
+            padding: 15px;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <h1>🧪 Storage Quota Handling Test</h1>
+    <p>This page tests the localStorage quota error handling and storage space warning functionality.</p>
+
+    <div class="test-section">
+        <h2>Current Storage Status</h2>
+        <div id="storage-info" class="info"></div>
+        <button onclick="updateStorageInfo()">🔄 Refresh Storage Info</button>
+    </div>
+
+    <div class="test-section">
+        <h2>Test Cases</h2>
+        <button onclick="runAllTests()">▶️ Run All Tests</button>
+        <button onclick="clearTestData()">🗑️ Clear Test Data</button>
+        <div id="test-results"></div>
+    </div>
+
+    <script>
+        // Copy the storage functions from app.js
+        function getLocalStorageSize() {
+            let total = 0;
+            for (let key in localStorage) {
+                if (localStorage.hasOwnProperty(key)) {
+                    total += localStorage[key].length + key.length;
+                }
+            }
+            return total;
+        }
+
+        function checkStorageSpace(additionalBytes) {
+            const STORAGE_LIMIT = 5 * 1024 * 1024;
+            const STORAGE_WARNING_THRESHOLD = 0.8;
+            
+            const currentSize = getLocalStorageSize();
+            const estimatedNewSize = currentSize + additionalBytes;
+            
+            if (estimatedNewSize > STORAGE_LIMIT) {
+                return { hasSpace: false, percentUsed: 100 };
+            }
+            
+            const percentUsed = (estimatedNewSize / STORAGE_LIMIT) * 100;
+            const hasSpace = estimatedNewSize < (STORAGE_LIMIT * STORAGE_WARNING_THRESHOLD);
+            
+            return { hasSpace, percentUsed, currentSize, estimatedNewSize };
+        }
+
+        function updateStorageInfo() {
+            const currentSize = getLocalStorageSize();
+            const sizeMB = (currentSize / (1024 * 1024)).toFixed(2);
+            const percentUsed = (currentSize / (5 * 1024 * 1024) * 100).toFixed(1);
+            
+            const infoDiv = document.getElementById('storage-info');
+            infoDiv.innerHTML = `
+                <strong>Current localStorage Usage:</strong><br>
+                Size: ${sizeMB} MB (${percentUsed}% of estimated 5MB limit)<br>
+                Bytes: ${currentSize.toLocaleString()}<br>
+                Keys: ${Object.keys(localStorage).length}
+            `;
+        }
+
+        function runAllTests() {
+            const resultsDiv = document.getElementById('test-results');
+            resultsDiv.innerHTML = '<h3>Test Results</h3>';
+            
+            const tests = [
+                testGetLocalStorageSize,
+                testCheckStorageSpace,
+                testStorageSpaceWithLargeData,
+                testStorageWarningThreshold
+            ];
+            
+            let passed = 0;
+            let failed = 0;
+            
+            tests.forEach(test => {
+                const result = test();
+                const testDiv = document.createElement('div');
+                testDiv.className = `test-case ${result.passed ? 'pass' : 'fail'}`;
+                testDiv.innerHTML = `
+                    <strong>${result.passed ? '✅' : '❌'} ${result.name}</strong><br>
+                    ${result.message}
+                    ${result.details ? `<pre>${result.details}</pre>` : ''}
+                `;
+                resultsDiv.appendChild(testDiv);
+                
+                if (result.passed) passed++;
+                else failed++;
+            });
+            
+            const summaryDiv = document.createElement('div');
+            summaryDiv.className = 'result ' + (failed === 0 ? 'pass' : 'fail');
+            summaryDiv.innerHTML = `<br>Summary: ${passed} passed, ${failed} failed`;
+            resultsDiv.appendChild(summaryDiv);
+            
+            updateStorageInfo();
+        }
+
+        function testGetLocalStorageSize() {
+            try {
+                const size = getLocalStorageSize();
+                
+                if (typeof size !== 'number') {
+                    return {
+                        name: 'getLocalStorageSize returns number',
+                        passed: false,
+                        message: `Expected number, got ${typeof size}`
+                    };
+                }
+                
+                if (size < 0) {
+                    return {
+                        name: 'getLocalStorageSize returns non-negative',
+                        passed: false,
+                        message: `Size should be non-negative, got ${size}`
+                    };
+                }
+                
+                return {
+                    name: 'getLocalStorageSize returns valid size',
+                    passed: true,
+                    message: `Current size: ${(size / 1024).toFixed(2)} KB`
+                };
+            } catch (error) {
+                return {
+                    name: 'getLocalStorageSize function',
+                    passed: false,
+                    message: error.message
+                };
+            }
+        }
+
+        function testCheckStorageSpace() {
+            try {
+                const result = checkStorageSpace(1024); // 1KB
+                
+                if (!result.hasOwnProperty('hasSpace') || 
+                    !result.hasOwnProperty('percentUsed') || 
+                    !result.hasOwnProperty('currentSize') || 
+                    !result.hasOwnProperty('estimatedNewSize')) {
+                    return {
+                        name: 'checkStorageSpace returns required fields',
+                        passed: false,
+                        message: 'Missing required fields in result object',
+                        details: JSON.stringify(result, null, 2)
+                    };
+                }
+                
+                return {
+                    name: 'checkStorageSpace returns correct structure',
+                    passed: true,
+                    message: `hasSpace: ${result.hasSpace}, percentUsed: ${result.percentUsed.toFixed(1)}%`
+                };
+            } catch (error) {
+                return {
+                    name: 'checkStorageSpace function',
+                    passed: false,
+                    message: error.message
+                };
+            }
+        }
+
+        function testStorageSpaceWithLargeData() {
+            try {
+                // Test with 6MB of data (should exceed limit)
+                const largeDataSize = 6 * 1024 * 1024;
+                const result = checkStorageSpace(largeDataSize);
+                
+                if (result.hasSpace) {
+                    return {
+                        name: 'checkStorageSpace detects when limit exceeded',
+                        passed: false,
+                        message: 'Should detect when adding 6MB exceeds 5MB limit'
+                    };
+                }
+                
+                if (result.percentUsed < 100) {
+                    return {
+                        name: 'checkStorageSpace reports 100% when exceeded',
+                        passed: false,
+                        message: `Expected 100% when exceeded, got ${result.percentUsed}%`
+                    };
+                }
+                
+                return {
+                    name: 'checkStorageSpace correctly detects quota exceeded',
+                    passed: true,
+                    message: 'Correctly identified that 6MB would exceed 5MB limit'
+                };
+            } catch (error) {
+                return {
+                    name: 'checkStorageSpace with large data',
+                    passed: false,
+                    message: error.message
+                };
+            }
+        }
+
+        function testStorageWarningThreshold() {
+            try {
+                const currentSize = getLocalStorageSize();
+                const limit = 5 * 1024 * 1024;
+                
+                // Test at 79% - should have space
+                const size79 = (limit * 0.79) - currentSize;
+                const result79 = checkStorageSpace(size79);
+                
+                // Test at 81% - should not have space (warning threshold)
+                const size81 = (limit * 0.81) - currentSize;
+                const result81 = checkStorageSpace(size81);
+                
+                if (result79.hasSpace && !result81.hasSpace) {
+                    return {
+                        name: 'checkStorageSpace warning threshold at 80%',
+                        passed: true,
+                        message: 'Correctly warns at 80% threshold'
+                    };
+                } else {
+                    return {
+                        name: 'checkStorageSpace warning threshold at 80%',
+                        passed: false,
+                        message: `79% hasSpace: ${result79.hasSpace}, 81% hasSpace: ${result81.hasSpace}`,
+                        details: `79%: ${JSON.stringify(result79, null, 2)}\n81%: ${JSON.stringify(result81, null, 2)}`
+                    };
+                }
+            } catch (error) {
+                return {
+                    name: 'checkStorageSpace warning threshold',
+                    passed: false,
+                    message: error.message
+                };
+            }
+        }
+
+        function clearTestData() {
+            if (confirm('Clear all test data from localStorage? (This will not affect your actual assessments)')) {
+                // Only clear test data, not actual app data
+                const keysToKeep = ['testMaturityAssessments', 'customQuestions', 'syncFolderName', 'syncEnabled'];
+                const keysToDelete = [];
+                
+                for (let key in localStorage) {
+                    if (localStorage.hasOwnProperty(key) && !keysToKeep.includes(key)) {
+                        keysToDelete.push(key);
+                    }
+                }
+                
+                keysToDelete.forEach(key => localStorage.removeItem(key));
+                
+                alert(`Cleared ${keysToDelete.length} test items from localStorage`);
+                updateStorageInfo();
+            }
+        }
+
+        // Initialize on load
+        updateStorageInfo();
+    </script>
+</body>
+</html>
