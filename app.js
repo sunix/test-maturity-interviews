@@ -1,5 +1,5 @@
 // Application version for compatibility tracking
-const APP_VERSION = '1.2.4'; // Version bump to test update banner detection
+const APP_VERSION = '2.0.0'; // Major version bump: removed localStorage, folder sync now required
 
 // Application state
 let currentAssessment = {
