@@ -1,5 +1,5 @@
 // Application version for compatibility tracking
-const APP_VERSION = '1.2.3'; // Version bump to test update banner detection
+const APP_VERSION = '1.2.4'; // Version bump to test update banner detection
 
 // Storage constants
 const BASE64_ENCODING_OVERHEAD = 4/3; // Base64 encoding increases size by ~33% (4/3 ratio)
