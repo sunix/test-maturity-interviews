@@ -23,7 +23,7 @@ let filteredQuestions = [];
 
 // Custom questions state
 let customQuestions = null; // null = using default, otherwise array of custom questions
-let activeQuestions = QUESTIONS_CATALOG.questions; // The actual questions being used (custom or default), defaults to standard questions
+let activeQuestions = QUESTIONS_CATALOG.questions; // The actual questions being used (custom or default), defaults to catalog questions
 let editingQuestionId = null; // Track which question is being edited
 
 // Filesystem sync state
@@ -3468,11 +3468,13 @@ async function loadCustomQuestions() {
             activeQuestions = customQuestions;
             updateQuestionsStatus();
             renderQuestionsList();
-            return;
+            return; // Early return - custom questions loaded successfully
         }
     }
     
-    // Use default questions if no custom questions in folder
+    // Use default questions if:
+    // - No sync folder selected yet, OR
+    // - No custom questions file exists in the folder
     activeQuestions = QUESTIONS_CATALOG.questions;
     updateQuestionsStatus();
     renderQuestionsList();
