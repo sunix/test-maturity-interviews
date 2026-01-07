@@ -397,14 +397,6 @@
     
     <!-- Service Worker Registration -->
     <script>
-        // Display app version in the header (waits for app.js to load)
-        window.addEventListener('load', () => {
-            const versionElement = document.getElementById('app-version');
-            if (versionElement && typeof APP_VERSION !== 'undefined') {
-                versionElement.textContent = `v${APP_VERSION}`;
-            }
-        });
-        
         // Register service worker for PWA functionality with update detection
         if ('serviceWorker' in navigator) {
             let refreshing = false;
@@ -418,6 +410,13 @@
             });
             
             window.addEventListener('load', () => {
+                // Display app version in the header
+                const versionElement = document.getElementById('app-version');
+                if (versionElement && typeof APP_VERSION !== 'undefined') {
+                    versionElement.textContent = `v${APP_VERSION}`;
+                }
+                
+                // Register service worker
                 navigator.serviceWorker.register('/test-maturity-interviews/service-worker.js')
                     .then((reg) => {
                         registration = reg;
@@ -486,13 +485,25 @@
             window.checkForUpdates = function() {
                 if (registration) {
                     console.log('Checking for updates...');
-                    registration.update().then(() => {
-                        console.log('Update check completed');
-                    });
+                    registration.update()
+                        .then(() => {
+                            console.log('Update check completed');
+                        })
+                        .catch((error) => {
+                            console.error('Update check failed:', error);
+                        });
                 } else {
                     console.log('Service worker not registered yet');
                 }
             };
+        } else {
+            // Display version even if service worker not supported
+            window.addEventListener('load', () => {
+                const versionElement = document.getElementById('app-version');
+                if (versionElement && typeof APP_VERSION !== 'undefined') {
+                    versionElement.textContent = `v${APP_VERSION}`;
+                }
+            });
         }
     </script>
 </body>
