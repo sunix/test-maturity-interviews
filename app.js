@@ -3692,6 +3692,12 @@ function handleDragEnd(e) {
 
 // Open question modal for add or edit
 function openQuestionModal(questionId = null) {
+    // Check if sync folder is selected before allowing question editing
+    if (!syncEnabled || !syncFolderHandle) {
+        alert('⚠️ Sync Folder Required\n\nPlease select a sync folder before editing questions.\nAll custom questions must be saved to a folder.\n\nClick "📁 Select Sync Folder" in the Setup tab.');
+        return;
+    }
+    
     const modal = document.getElementById('question-modal');
     const modalTitle = document.getElementById('modal-title');
     const form = document.getElementById('question-form');
@@ -3899,6 +3905,12 @@ function saveQuestion() {
 
 // Edit question
 function editQuestion(questionId) {
+    // Check if sync folder is selected before allowing editing
+    if (!syncEnabled || !syncFolderHandle) {
+        alert('⚠️ Sync Folder Required\n\nPlease select a sync folder before editing questions.\nAll custom questions must be saved to a folder.\n\nClick "📁 Select Sync Folder" in the Setup tab.');
+        return;
+    }
+    
     // If not using custom questions, clone default questions first
     if (!customQuestions) {
         if (confirm('Editing a question will create a custom question set. Continue?')) {
@@ -3918,6 +3930,12 @@ function editQuestion(questionId) {
 function deleteQuestion(questionId) {
     if (!customQuestions) return;
     
+    // Check if sync folder is selected before allowing deletion
+    if (!syncEnabled || !syncFolderHandle) {
+        alert('⚠️ Sync Folder Required\n\nPlease select a sync folder before deleting questions.\nAll custom questions must be saved to a folder.\n\nClick "📁 Select Sync Folder" in the Setup tab.');
+        return;
+    }
+    
     if (confirm('Are you sure you want to delete this question?')) {
         const index = customQuestions.findIndex(q => q.id === questionId);
         if (index !== -1) {
@@ -3931,6 +3949,12 @@ function deleteQuestion(questionId) {
 
 // Duplicate question
 function duplicateQuestion(questionId) {
+    // Check if sync folder is selected before allowing duplication
+    if (!syncEnabled || !syncFolderHandle) {
+        alert('⚠️ Sync Folder Required\n\nPlease select a sync folder before duplicating questions.\nAll custom questions must be saved to a folder.\n\nClick "📁 Select Sync Folder" in the Setup tab.');
+        return;
+    }
+    
     // If not using custom questions, clone default questions first
     if (!customQuestions) {
         if (!confirm('Duplicating a question will create a custom question set. Continue?')) {
@@ -4003,6 +4027,12 @@ function generateDuplicateId(originalId, questionsArray) {
 
 // Reset to default questions
 async function resetToDefaultQuestions() {
+    // Check if sync folder is selected before allowing reset
+    if (!syncEnabled || !syncFolderHandle) {
+        alert('⚠️ Sync Folder Required\n\nPlease select a sync folder before resetting questions.\nThe default questions need to be synced to your folder.\n\nClick "📁 Select Sync Folder" in the Setup tab.');
+        return;
+    }
+    
     if (!confirm('This will delete all custom questions and restore the default question set. Are you sure?')) {
         return;
     }
