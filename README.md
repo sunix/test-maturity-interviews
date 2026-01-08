@@ -27,8 +27,9 @@ A modern, browser-based web application designed to assess and track testing mat
 - **Detailed Breakdowns**: View theme-by-theme scores with maturity level indicators
 - **Answer History**: Review all answers with comments and metadata for comprehensive analysis
 
-### 💾 **Flexible Data Management**
-- **Local Storage**: All data saved in your browser—no server, no privacy concerns
+### 💾 **Folder-Based Data Management**
+- **Sync Folder Required**: All data is persisted to a selected folder (OneDrive, Google Drive, or local folder)
+- **No Browser Storage**: Data is stored in your file system, not browser storage—unlimited space and full control
 - **Export/Import**: Download assessments as JSON files for backup or sharing
 - **📊 Excel Questionnaire Export/Import**: 
   - Export interviews as Excel questionnaires for offline completion
@@ -36,7 +37,7 @@ A modern, browser-based web application designed to assess and track testing mat
   - Import filled questionnaires back to update the assessment
   - Perfect for email distribution, offline work, or bulk data entry
   - Smart validation ensures data integrity during import
-- **📁 Advanced Folder Sync**: 
+- **📁 Automatic Folder Sync**: 
   - Automatically sync to OneDrive, Google Drive, or any local folder
   - Real-time collaboration through shared cloud folders
   - Persistent folder selection—automatically restores your sync folder on reload
@@ -70,7 +71,7 @@ A modern, browser-based web application designed to assess and track testing mat
 | ❌ **Limited Filtering** - Complex formulas needed to view role-specific questions | ✅ **Smart Filtering** - One-click filtering by role; see only relevant questions |
 | ❌ **No History** - Previous assessments overwritten or saved as separate files | ✅ **Assessment History** - All assessments saved with timestamps, easily editable |
 | ❌ **Setup Required** - Need Excel installed; compatibility issues across versions | ✅ **Zero Installation** - Works in any modern browser; no software needed |
-| ❌ **Security Concerns** - Macros, file sharing risks, version tracking issues | ✅ **Privacy-First** - Data stays in your browser; sync only what you choose |
+| ❌ **Security Concerns** - Macros, file sharing risks, version tracking issues | ✅ **Privacy-First** - Data stays in your chosen folder; you control where it's stored |
 
 ### **Real-World Advantages**
 
@@ -136,27 +137,28 @@ Transform the web app into a native Windows application:
 - You control when to update - no forced reloads
 - To test: Open the [demo page](demo-update-banner.html) to see how the banner looks and works
 
-### Basic Setup (30 seconds)
-1. Open `index.html` in any modern browser (Chrome, Firefox, Edge, Safari)
-2. Enter your application/team name
-3. Select a profile or choose "All profiles"
-4. Click **"Start Interview"**
-5. Answer questions with Yes/No (add comments for context)
-6. Save when complete—results appear instantly!
+### Basic Setup (1 minute)
+1. Open `index.html` in Chrome 86+ or Edge 86+ (required for folder sync)
+2. Click **"📁 Select Sync Folder"** in the Setup tab
+3. Choose a folder (local or cloud storage like OneDrive, Google Drive)
+4. Grant browser permissions
+5. Enter your application/team name
+6. Select a profile or choose "All profiles"
+7. Click **"Start Interview"**
+8. Answer questions with Yes/No (add comments for context)
+9. Save when complete—results appear instantly!
 
-### Advanced: Enable Folder Sync (Team Collaboration)
-Perfect for teams using OneDrive, Google Drive, or Dropbox:
-
-1. Click **"📁 Select Sync Folder"** in the Setup tab
-2. Choose a folder (local or cloud storage)
-3. Grant browser permissions
-4. **Done!** Assessments now sync automatically
+**Important:** 
+- A sync folder is required to use the application
+- Your folder selection is remembered—no need to re-select after reload
+- All data is stored in your chosen folder, not in browser storage
 
 **Benefits:**
-- Share assessments with your team instantly
+- Share assessments with your team instantly via shared cloud folders
 - Automatic backup to cloud storage
 - Changes sync across all devices
-- Folder selection persists—no need to re-select after reload
+- Unlimited storage (no browser storage limits)
+- Full control over where your data is stored
 
 ## 📖 How to Use
 
@@ -352,37 +354,36 @@ Shared OneDrive folder → Team updates monthly → Management views trends
 - **Backend**: None required—fully client-side
 - **Framework**: Vanilla JavaScript (no build step needed)
 - **Visualization**: Chart.js (loaded via CDN)
-- **Storage**: Browser LocalStorage + IndexedDB (for folder handles)
+- **Storage**: Folder-based storage using File System Access API + IndexedDB (for folder handle persistence)
 - **File Format**: JSON (human-readable, git-friendly)
 - **PWA Features**: Service Worker, Web App Manifest, offline support
 
 ### Browser Requirements
-- **Basic Features**: Any modern browser with localStorage
-  - Chrome 60+, Firefox 55+, Safari 11+, Edge 79+
+- **Required**: Chrome 86+ or Edge 86+ (for File System Access API)
+  - File System Access API is required for folder sync
+  - Not supported: Firefox, Safari (as of Dec 2023)
 - **PWA Installation**: Windows app installation support
   - Chrome 86+, Edge 86+ (Windows 10+)
   - Offline functionality via Service Worker
-- **Folder Sync**: File System Access API support
-  - Chrome 86+, Edge 86+ (as of Dec 2023)
-  - Not supported: Firefox, Safari (use Export/Import instead)
 
 ### Data Storage
-- **Local Storage**: Assessments stored in browser (private, offline-capable)
-- **IndexedDB**: Folder handle persistence for automatic sync restoration
+- **Folder Storage**: All assessments and custom questions stored in your selected folder
+- **IndexedDB**: Only used for folder handle persistence (to remember folder location)
 - **File Sync**: Individual JSON files per assessment
   - Format: `assessment-{name}-{date}.json`
+  - Custom questions: `custom-questions.json`
   - Easy to read, edit manually, or version control with Git
 
 ### Security & Privacy
 - ✅ No data sent to external servers
 - ✅ No tracking or analytics
-- ✅ Data stays in your browser or your chosen folder
+- ✅ Data stays in your chosen folder—you have full control
 - ✅ No login or authentication required
 - ✅ Works offline after first load
 
-## 📁 Advanced: Folder Sync Deep Dive
+## 📁 Folder Sync Deep Dive
 
-Folder sync is the killer feature that makes team collaboration seamless:
+Folder sync is the core feature that enables seamless team collaboration:
 
 ### How It Works
 
@@ -421,7 +422,7 @@ Folder sync is the killer feature that makes team collaboration seamless:
 |-------|----------|
 | Permission expired | Click "Re-select Folder" button |
 | Not syncing | Check browser console for errors; ensure folder permissions granted |
-| Browser not supported | Use Chrome 86+ or Edge 86+; fallback to Export/Import |
+| Browser not supported | Use Chrome 86+ or Edge 86+ (required) |
 | Lost folder connection | App will prompt to re-select folder on next load |
 | Attachments missing after sync | Ensure all team members use v1.1.0+; older versions may not display attachments but won't delete them |
 ## 🎨 Customization: Question Editor
