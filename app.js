@@ -1,5 +1,5 @@
 // Application version for compatibility tracking
-const APP_VERSION = '2.0.0'; // Major version bump: removed localStorage, folder sync now required
+const APP_VERSION = '2.1.0'; // Minor version bump: cache refresh
 
 // Application state
 let currentAssessment = {

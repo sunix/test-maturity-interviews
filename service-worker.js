@@ -1,6 +1,6 @@
 // Service Worker for Test Maturity Assessment PWA
 // IMPORTANT: Increment this version number when deploying updates to force cache refresh
-const APP_VERSION = '2.0.0';
+const APP_VERSION = '2.1.0';
 const CACHE_NAME = `test-maturity-v${APP_VERSION}`;
 const BASE_PATH = '/test-maturity-interviews';
 const urlsToCache = [
