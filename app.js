@@ -345,10 +345,12 @@ function setupEventListeners() {
         addInterviewDateBtn.addEventListener('click', addInterviewDate);
     }
     
-    // Rename assessment button
-    const renameAssessmentBtn = document.getElementById('rename-assessment-btn');
-    if (renameAssessmentBtn) {
-        renameAssessmentBtn.addEventListener('click', openRenameModal);
+    // Open rename modal when clicking on app name or interview name input fields
+    if (editAppNameInput) {
+        editAppNameInput.addEventListener('click', openRenameModal);
+    }
+    if (editInterviewNameInput) {
+        editInterviewNameInput.addEventListener('click', openRenameModal);
     }
     
     // Rename modal controls
@@ -478,6 +480,9 @@ function showDefaultInterviewView() {
     
     // Update body class for padding
     document.body.classList.remove('interview-active');
+    
+    // Refresh the assessments list to show updated names
+    updateSavedAssessmentsList();
 }
 
 // Start Interview
