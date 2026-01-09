@@ -345,13 +345,28 @@ function setupEventListeners() {
         addInterviewDateBtn.addEventListener('click', addInterviewDate);
     }
     
-    // Auto-save metadata on input changes
-    if (editAppNameInput) {
-        editAppNameInput.addEventListener('input', handleMetadataChange);
+    // Rename assessment button
+    const renameAssessmentBtn = document.getElementById('rename-assessment-btn');
+    if (renameAssessmentBtn) {
+        renameAssessmentBtn.addEventListener('click', openRenameModal);
     }
-    if (editInterviewNameInput) {
-        editInterviewNameInput.addEventListener('input', handleMetadataChange);
+    
+    // Rename modal controls
+    const closeRenameModalBtn = document.getElementById('close-rename-modal');
+    const cancelRenameModalBtn = document.getElementById('cancel-rename-modal');
+    const proceedRenameBtn = document.getElementById('proceed-rename');
+    
+    if (closeRenameModalBtn) {
+        closeRenameModalBtn.addEventListener('click', closeRenameModal);
     }
+    if (cancelRenameModalBtn) {
+        cancelRenameModalBtn.addEventListener('click', closeRenameModal);
+    }
+    if (proceedRenameBtn) {
+        proceedRenameBtn.addEventListener('click', proceedRename);
+    }
+    
+    // Auto-save metadata on input changes (but NOT for app/interview name)
     if (editIntervieweesInput) {
         editIntervieweesInput.addEventListener('input', handleMetadataChange);
     }
@@ -755,18 +770,14 @@ function populateMetadataEditor() {
 }
 
 // Handle metadata field changes with auto-save
+// Note: App name and interview name are NOT updated here - use the rename dialog instead
 function handleMetadataChange() {
     if (!currentAssessment) {
         return;
     }
     
-    // Update current assessment with edited values
-    if (editAppNameInput) {
-        currentAssessment.name = editAppNameInput.value.trim();
-    }
-    if (editInterviewNameInput) {
-        currentAssessment.interviewName = editInterviewNameInput.value.trim();
-    }
+    // DO NOT update app name or interview name here - they are read-only
+    // Use the rename dialog to change them
     
     // Collect all interview dates
     if (interviewDatesContainer) {
@@ -798,16 +809,151 @@ function handleMetadataChange() {
         currentAssessment.generalComments = editGeneralCommentsInput.value.trim();
     }
     
-    // Update the interview title
-    if (interviewTitle && currentAssessment.name && currentAssessment.interviewName) {
-        interviewTitle.textContent = `Interview: ${currentAssessment.name} - ${currentAssessment.interviewName}`;
-    }
+    // Note: Interview title is NOT updated here since names are read-only
+    // It will be updated after a successful rename
     
     // Mark as actively editing
     markAsActivelyEditing();
     
     // Trigger auto-save
     triggerAutoSave();
+}
+
+// Open rename assessment modal
+function openRenameModal() {
+    if (!currentAssessment) {
+        return;
+    }
+    
+    const modal = document.getElementById('rename-modal');
+    const renameAppNameInput = document.getElementById('rename-app-name');
+    const renameInterviewNameInput = document.getElementById('rename-interview-name');
+    
+    // Pre-fill with current values
+    if (renameAppNameInput) {
+        renameAppNameInput.value = currentAssessment.name || '';
+    }
+    if (renameInterviewNameInput) {
+        renameInterviewNameInput.value = currentAssessment.interviewName || '';
+    }
+    
+    if (modal) {
+        modal.style.display = 'flex';
+    }
+}
+
+// Close rename assessment modal
+function closeRenameModal() {
+    const modal = document.getElementById('rename-modal');
+    if (modal) {
+        modal.style.display = 'none';
+    }
+}
+
+// Proceed with rename operation
+async function proceedRename() {
+    if (!currentAssessment) {
+        return;
+    }
+    
+    const renameAppNameInput = document.getElementById('rename-app-name');
+    const renameInterviewNameInput = document.getElementById('rename-interview-name');
+    
+    const newAppName = renameAppNameInput?.value.trim();
+    const newInterviewName = renameInterviewNameInput?.value.trim();
+    
+    // Validation
+    if (!newAppName) {
+        alert('Please enter an application name');
+        return;
+    }
+    
+    if (!newInterviewName) {
+        alert('Please enter an interview name');
+        return;
+    }
+    
+    // Check if names have actually changed
+    if (newAppName === currentAssessment.name && newInterviewName === currentAssessment.interviewName) {
+        alert('No changes detected. The names are the same.');
+        closeRenameModal();
+        return;
+    }
+    
+    // Store the old names to find and delete the old file
+    const oldName = currentAssessment.name;
+    const oldInterviewName = currentAssessment.interviewName || currentAssessment.name;
+    const oldDate = currentAssessment.date;
+    
+    // Update the assessment with new names
+    currentAssessment.name = newAppName;
+    currentAssessment.interviewName = newInterviewName;
+    
+    // Update the assessment in the assessments array
+    const existingIndex = assessments.findIndex(a => 
+        a.name === oldName && 
+        (a.interviewName || a.name) === oldInterviewName &&
+        a.date === oldDate
+    );
+    
+    if (existingIndex >= 0) {
+        assessments[existingIndex] = JSON.parse(JSON.stringify(currentAssessment));
+    }
+    
+    try {
+        // Show saving status
+        updateAutoSaveStatus('saving');
+        
+        // Create the old file path to delete it
+        const oldAssessment = {
+            name: oldName,
+            interviewName: oldInterviewName,
+            date: oldDate
+        };
+        
+        // Delete the old file first
+        await deleteAssessmentFile(oldAssessment);
+        
+        // Save the renamed assessment (creates new file)
+        await saveAssessments();
+        
+        // Update UI
+        updateSavedAssessmentsList();
+        updateResultsSelect();
+        
+        // Update the interview title
+        if (interviewTitle) {
+            interviewTitle.textContent = `Interview: ${newAppName} - ${newInterviewName}`;
+        }
+        
+        // Update the read-only fields in metadata editor
+        if (editAppNameInput) {
+            editAppNameInput.value = newAppName;
+        }
+        if (editInterviewNameInput) {
+            editInterviewNameInput.value = newInterviewName;
+        }
+        
+        // Show saved status
+        updateAutoSaveStatus('saved');
+        
+        // Close the modal
+        closeRenameModal();
+        
+        alert('Assessment renamed successfully!');
+    } catch (error) {
+        console.error('Error renaming assessment:', error);
+        updateAutoSaveStatus('error', 'Failed to rename');
+        alert('Error renaming assessment: ' + error.message);
+        
+        // Revert the changes on error
+        currentAssessment.name = oldName;
+        currentAssessment.interviewName = oldInterviewName;
+        
+        if (existingIndex >= 0) {
+            assessments[existingIndex] = JSON.parse(JSON.stringify(currentAssessment));
+        }
+    }
 }
 
 // Render Questions
