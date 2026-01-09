@@ -3153,6 +3153,11 @@ async function syncFromFolder() {
         // Iterate through files in the directory
         for await (const entry of syncFolderHandle.values()) {
             if (entry.kind === 'file' && entry.name.endsWith('.json')) {
+                // Skip custom-questions.json as it's not an assessment file
+                if (entry.name === 'custom-questions.json') {
+                    continue;
+                }
+                
                 try {
                     const file = await entry.getFile();
                     const content = await file.text();
