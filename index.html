@@ -76,8 +76,9 @@
                             </p>
                         </div>
                         <nav class="tabs tabs-desktop">
-                            <button class="tab-button active" data-tab="setup">Setup</button>
-                            <button class="tab-button" data-tab="interview">Interview</button>
+                            <button class="tab-button active" data-tab="interview">Interview</button>
+                            <button class="tab-button" data-tab="data">Data</button>
+                            <button class="tab-button" data-tab="question-editor">Question editor</button>
                             <button class="tab-button" data-tab="results">Results</button>
                         </nav>
                     </div>
@@ -102,8 +103,9 @@
             </header>
 
             <nav class="tabs tabs-mobile">
-                <button class="tab-button active" data-tab="setup">Setup</button>
-                <button class="tab-button" data-tab="interview">Interview</button>
+                <button class="tab-button active" data-tab="interview">Interview</button>
+                <button class="tab-button" data-tab="data">Data</button>
+                <button class="tab-button" data-tab="question-editor">Question editor</button>
                 <button class="tab-button" data-tab="results">Results</button>
             </nav>
 
@@ -178,6 +180,7 @@
                             <div class="progress-fill" id="progress-fill"></div>
                             <span class="progress-text" id="progress-text">0 / 0</span>
                         </div>
+                        <button id="back-to-interviews" class="btn btn-secondary">← Back to Interviews</button>
                     </div>
                 </div>
             </div>
@@ -186,27 +189,55 @@
 
     <div class="container">
 
-        <!-- Setup Tab -->
-        <div id="setup" class="tab-content active">
-            <div class="card">
-                <h2>Interview Setup</h2>
-                <div class="form-group">
-                    <label for="app-name">Application Name:</label>
-                    <input type="text" id="app-name" placeholder="Enter application name">
+        <!-- Interview Tab -->
+        <div id="interview" class="tab-content active">
+            <!-- Interview Default View -->
+            <div id="interview-default-view">
+                <div class="card">
+                    <h2>Start New Interview</h2>
+                    <div class="form-group">
+                        <label for="app-name">Application Name:</label>
+                        <input type="text" id="app-name" placeholder="Enter application name">
+                    </div>
+                    <div class="form-group">
+                        <label for="interview-name">Interview Name:</label>
+                        <input type="text" id="interview-name" placeholder="Team name, profile name, or group identifier">
+                        <small style="color: #64748b; display: block; margin-top: 0.25rem;">E.g., "Frontend Team", "Backend Developers", "QA Team Sprint 24"</small>
+                    </div>
+                    <div class="form-group">
+                        <label for="interviewees">Interviewees:</label>
+                        <textarea id="interviewees" rows="3" placeholder="Enter names of people interviewed (one per line or comma-separated)"></textarea>
+                        <small style="color: #64748b; display: block; margin-top: 0.25rem;">E.g., "John Doe, Jane Smith" or one name per line</small>
+                    </div>
+                    <button id="start-interview" class="btn btn-primary">Start Interview</button>
                 </div>
-                <div class="form-group">
-                    <label for="interview-name">Interview Name:</label>
-                    <input type="text" id="interview-name" placeholder="Team name, profile name, or group identifier">
-                    <small style="color: #64748b; display: block; margin-top: 0.25rem;">E.g., "Frontend Team", "Backend Developers", "QA Team Sprint 24"</small>
+
+                <div class="card">
+                    <h2>Existing Interviews</h2>
+                    <div id="saved-assessments"></div>
                 </div>
-                <div class="form-group">
-                    <label for="interviewees">Interviewees:</label>
-                    <textarea id="interviewees" rows="3" placeholder="Enter names of people interviewed (one per line or comma-separated)"></textarea>
-                    <small style="color: #64748b; display: block; margin-top: 0.25rem;">E.g., "John Doe, Jane Smith" or one name per line</small>
-                </div>
-                <button id="start-interview" class="btn btn-primary">Start Interview</button>
             </div>
 
+            <!-- Interview Questionnaire View -->
+            <div id="interview-questionnaire-view" style="display: none;">
+                <div class="card">
+                    <h2 id="interview-title" style="margin-bottom: 1.5rem;">Interview Questions</h2>
+                    
+                    <div id="questions-container"></div>
+                    
+                    <div class="interview-actions">
+                        <div id="auto-save-status" class="auto-save-status"></div>
+                        <button id="export-questionnaire" class="btn btn-secondary">📝 Export Questionnaire to Excel</button>
+                        <button id="import-questionnaire" class="btn btn-secondary">📥 Import Filled Questionnaire</button>
+                        <input type="file" id="import-questionnaire-file" accept=".xlsx,.xls" style="display: none;">
+                        <button id="view-results" class="btn btn-secondary">📊 View Results</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Data Tab -->
+        <div id="data" class="tab-content">
             <div class="card">
                 <h2>Data Management</h2>
                 <div class="data-actions">
@@ -217,9 +248,11 @@
                     <input type="file" id="import-file" accept=".json" style="display: none;">
                 </div>
                 <div id="sync-status" style="margin-top: 1rem;"></div>
-                <div id="saved-assessments"></div>
             </div>
+        </div>
 
+        <!-- Question Editor Tab -->
+        <div id="question-editor" class="tab-content">
             <div class="card">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
                     <h2>Question Editor</h2>
@@ -235,23 +268,6 @@
                     Using default questions. Click "Add Question" or edit existing questions to create a custom question set.
                 </div>
                 <div id="questions-list-container"></div>
-            </div>
-        </div>
-
-        <!-- Interview Tab -->
-        <div id="interview" class="tab-content">
-            <div class="card">
-                <h2 id="interview-title">Interview Questions</h2>
-                
-                <div id="questions-container"></div>
-                
-                <div class="interview-actions">
-                    <div id="auto-save-status" class="auto-save-status"></div>
-                    <button id="export-questionnaire" class="btn btn-secondary">📝 Export Questionnaire to Excel</button>
-                    <button id="import-questionnaire" class="btn btn-secondary">📥 Import Filled Questionnaire</button>
-                    <input type="file" id="import-questionnaire-file" accept=".xlsx,.xls" style="display: none;">
-                    <button id="view-results" class="btn btn-secondary">📊 View Results</button>
-                </div>
             </div>
         </div>
 

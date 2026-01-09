@@ -76,6 +76,12 @@ body.interview-active {
     width: 100%;
 }
 
+.interview-controls-row #back-to-interviews {
+    flex-shrink: 0;
+    white-space: nowrap;
+    margin-left: auto;
+}
+
 .interview-controls .form-group {
     margin-bottom: 0;
     flex: 0 0 auto;
