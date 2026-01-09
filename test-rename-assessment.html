@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rename Assessment Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 20px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .test-section {
+            background: white;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        h1 { color: #333; }
+        h2 { color: #2563eb; margin-top: 0; }
+        .test-case {
+            border-left: 4px solid #2563eb;
+            padding: 10px 15px;
+            margin: 10px 0;
+            background: #f0f7ff;
+        }
+        .pass { border-left-color: #10b981; background: #f0fdf4; }
+        .fail { border-left-color: #ef4444; background: #fef2f2; }
+        pre {
+            background: #1e293b;
+            color: #e2e8f0;
+            padding: 15px;
+            border-radius: 4px;
+            overflow-x: auto;
+        }
+        button {
+            background: #2563eb;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            margin: 5px;
+        }
+        button:hover { background: #1d4ed8; }
+        .result { margin-top: 10px; font-weight: bold; }
+        .result.pass { color: #10b981; }
+        .result.fail { color: #ef4444; }
+    </style>
+</head>
+<body>
+    <h1>🧪 Rename Assessment Test</h1>
+    <p>This page tests the new rename assessment functionality to ensure it prevents file duplication.</p>
+
+    <div class="test-section">
+        <h2>Test Overview</h2>
+        <p>The rename functionality should:</p>
+        <ol>
+            <li>Make app name and interview name fields read-only in the metadata editor</li>
+            <li>Provide a dedicated "Rename" button to trigger the rename dialog</li>
+            <li>Show a warning modal before renaming</li>
+            <li>Delete the old file after creating the new file with updated names</li>
+            <li>Prevent accidental file duplication</li>
+        </ol>
+    </div>
+
+    <div class="test-section">
+        <h2>Test Cases</h2>
+        <button onclick="runAllTests()">▶️ Run All Tests</button>
+        <div id="test-results"></div>
+    </div>
+
+    <script>
+        function runAllTests() {
+            const results = document.getElementById('test-results');
+            results.innerHTML = '';
+            
+            let passCount = 0;
+            let failCount = 0;
+
+            // Test 1: Check if app name field is read-only
+            const test1 = document.createElement('div');
+            test1.className = 'test-case';
+            const appNameInput = document.getElementById('edit-app-name');
+            const isReadOnly1 = appNameInput && appNameInput.hasAttribute('readonly');
+            if (isReadOnly1) {
+                test1.classList.add('pass');
+                test1.innerHTML = '<strong>✓ Test 1: App Name Field is Read-Only</strong><div class="result pass">PASS</div>';
+                passCount++;
+            } else {
+                test1.classList.add('fail');
+                test1.innerHTML = '<strong>✗ Test 1: App Name Field is Read-Only</strong><div class="result fail">FAIL - Field is editable</div>';
+                failCount++;
+            }
+            results.appendChild(test1);
+
+            // Test 2: Check if interview name field is read-only
+            const test2 = document.createElement('div');
+            test2.className = 'test-case';
+            const interviewNameInput = document.getElementById('edit-interview-name');
+            const isReadOnly2 = interviewNameInput && interviewNameInput.hasAttribute('readonly');
+            if (isReadOnly2) {
+                test2.classList.add('pass');
+                test2.innerHTML = '<strong>✓ Test 2: Interview Name Field is Read-Only</strong><div class="result pass">PASS</div>';
+                passCount++;
+            } else {
+                test2.classList.add('fail');
+                test2.innerHTML = '<strong>✗ Test 2: Interview Name Field is Read-Only</strong><div class="result fail">FAIL - Field is editable</div>';
+                failCount++;
+            }
+            results.appendChild(test2);
+
+            // Test 3: Check if rename button exists
+            const test3 = document.createElement('div');
+            test3.className = 'test-case';
+            const renameBtn = document.getElementById('rename-assessment-btn');
+            if (renameBtn) {
+                test3.classList.add('pass');
+                test3.innerHTML = '<strong>✓ Test 3: Rename Button Exists</strong><div class="result pass">PASS</div>';
+                passCount++;
+            } else {
+                test3.classList.add('fail');
+                test3.innerHTML = '<strong>✗ Test 3: Rename Button Exists</strong><div class="result fail">FAIL - Button not found</div>';
+                failCount++;
+            }
+            results.appendChild(test3);
+
+            // Test 4: Check if rename modal exists
+            const test4 = document.createElement('div');
+            test4.className = 'test-case';
+            const renameModal = document.getElementById('rename-modal');
+            if (renameModal) {
+                test4.classList.add('pass');
+                test4.innerHTML = '<strong>✓ Test 4: Rename Modal Exists</strong><div class="result pass">PASS</div>';
+                passCount++;
+            } else {
+                test4.classList.add('fail');
+                test4.innerHTML = '<strong>✗ Test 4: Rename Modal Exists</strong><div class="result fail">FAIL - Modal not found</div>';
+                failCount++;
+            }
+            results.appendChild(test4);
+
+            // Test 5: Check if proceedRename function exists
+            const test5 = document.createElement('div');
+            test5.className = 'test-case';
+            if (typeof proceedRename === 'function') {
+                test5.classList.add('pass');
+                test5.innerHTML = '<strong>✓ Test 5: Rename Function Exists</strong><div class="result pass">PASS</div>';
+                passCount++;
+            } else {
+                test5.classList.add('fail');
+                test5.innerHTML = '<strong>✗ Test 5: Rename Function Exists</strong><div class="result fail">FAIL - Function not found</div>';
+                failCount++;
+            }
+            results.appendChild(test5);
+
+            // Test 6: Check if handleMetadataChange no longer updates names
+            const test6 = document.createElement('div');
+            test6.className = 'test-case';
+            // This is a code inspection test - we check the function source
+            const handleMetadataChangeSource = handleMetadataChange.toString();
+            const doesNotUpdateNames = !handleMetadataChangeSource.includes('currentAssessment.name = editAppNameInput') &&
+                                       !handleMetadataChangeSource.includes('currentAssessment.interviewName = editInterviewNameInput');
+            if (doesNotUpdateNames) {
+                test6.classList.add('pass');
+                test6.innerHTML = '<strong>✓ Test 6: Metadata Change Does Not Update Names</strong><div class="result pass">PASS - Names are not updated in handleMetadataChange</div>';
+                passCount++;
+            } else {
+                test6.classList.add('fail');
+                test6.innerHTML = '<strong>✗ Test 6: Metadata Change Does Not Update Names</strong><div class="result fail">FAIL - Names still being updated</div>';
+                failCount++;
+            }
+            results.appendChild(test6);
+
+            // Summary
+            const summary = document.createElement('div');
+            summary.className = 'test-case';
+            summary.style.borderLeft = '4px solid #64748b';
+            summary.style.background = '#f8fafc';
+            summary.innerHTML = `<strong>Test Summary</strong><div style="margin-top: 10px;">Total: ${passCount + failCount} | <span class="result pass">Passed: ${passCount}</span> | <span class="result fail">Failed: ${failCount}</span></div>`;
+            results.appendChild(summary);
+        }
+
+        // Auto-run tests when page loads
+        window.addEventListener('load', () => {
+            // Wait a bit for the app to initialize
+            setTimeout(runAllTests, 1000);
+        });
+    </script>
+
+    <!-- Load the main application scripts -->
+    <script src="questions.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>

@@ -885,6 +885,10 @@ async function proceedRename() {
     const oldInterviewName = currentAssessment.interviewName || currentAssessment.name;
     const oldDate = currentAssessment.date;
     
+    // Store the old field values for error recovery
+    const oldAppNameValue = editAppNameInput?.value || '';
+    const oldInterviewNameValue = editInterviewNameInput?.value || '';
+    
     // Update the assessment with new names
     currentAssessment.name = newAppName;
     currentAssessment.interviewName = newInterviewName;
@@ -904,18 +908,16 @@ async function proceedRename() {
         // Show saving status
         updateAutoSaveStatus('saving');
         
-        // Create the old file path to delete it
+        // Save the renamed assessment first (creates new file)
+        await saveAssessments();
+        
+        // Only delete the old file after successful save
         const oldAssessment = {
             name: oldName,
             interviewName: oldInterviewName,
             date: oldDate
         };
-        
-        // Delete the old file first
         await deleteAssessmentFile(oldAssessment);
-        
-        // Save the renamed assessment (creates new file)
-        await saveAssessments();
         
         // Update UI
         updateSavedAssessmentsList();
@@ -952,6 +954,19 @@ async function proceedRename() {
         
         if (existingIndex >= 0) {
             assessments[existingIndex] = JSON.parse(JSON.stringify(currentAssessment));
+        }
+        
+        // Revert the UI fields to original values
+        if (editAppNameInput) {
+            editAppNameInput.value = oldAppNameValue;
+        }
+        if (editInterviewNameInput) {
+            editInterviewNameInput.value = oldInterviewNameValue;
+        }
+        
+        // Revert the interview title
+        if (interviewTitle && oldName && oldInterviewName) {
+            interviewTitle.textContent = `Interview: ${oldName} - ${oldInterviewName}`;
         }
     }
 }
