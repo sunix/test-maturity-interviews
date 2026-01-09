@@ -256,6 +256,12 @@ function setupEventListeners() {
     // Start interview
     startInterviewBtn.addEventListener('click', startInterview);
     
+    // Back to interviews button
+    const backToInterviewsBtn = document.getElementById('back-to-interviews');
+    if (backToInterviewsBtn) {
+        backToInterviewsBtn.addEventListener('click', showDefaultInterviewView);
+    }
+    
     // Profile filter checkboxes change
     if (profileFilterContainer) {
         const profileCheckboxes = profileFilterContainer.querySelectorAll('input[type="checkbox"]');
@@ -381,11 +387,16 @@ function switchTab(tabName) {
     // Show/hide interview controls based on active tab
     const interviewControls = document.getElementById('interview-controls');
     if (interviewControls) {
-        interviewControls.classList.toggle('hidden', tabName !== 'interview');
+        // Show interview controls only when in questionnaire view
+        const questionnaireView = document.getElementById('interview-questionnaire-view');
+        const shouldShow = tabName === 'interview' && questionnaireView && questionnaireView.style.display !== 'none';
+        interviewControls.classList.toggle('hidden', !shouldShow);
     }
     
     // Update body class for padding adjustment
-    document.body.classList.toggle('interview-active', tabName === 'interview');
+    const questionnaireView = document.getElementById('interview-questionnaire-view');
+    const isQuestionnaireActive = tabName === 'interview' && questionnaireView && questionnaireView.style.display !== 'none';
+    document.body.classList.toggle('interview-active', isQuestionnaireActive);
     
     // Auto-select current assessment in Results tab if one is being edited
     if (tabName === 'results' && currentAssessment && currentAssessment.name) {
@@ -408,13 +419,9 @@ function updateTabVisibility() {
     const interviewTab = document.querySelector('[data-tab="interview"]');
     const resultsTab = document.querySelector('[data-tab="results"]');
     
-    // Show Interview tab only if an interview has been started (currentAssessment has a name)
+    // Interview tab is always visible now (contains both start and list)
     if (interviewTab) {
-        if (currentAssessment && currentAssessment.name) {
-            interviewTab.classList.remove('hidden');
-        } else {
-            interviewTab.classList.add('hidden');
-        }
+        interviewTab.classList.remove('hidden');
     }
     
     // Show Results tab only if there are saved assessments
@@ -427,11 +434,44 @@ function updateTabVisibility() {
     }
 }
 
+// Show the questionnaire view (and hide default view)
+function showQuestionnaireView() {
+    const defaultView = document.getElementById('interview-default-view');
+    const questionnaireView = document.getElementById('interview-questionnaire-view');
+    const interviewControls = document.getElementById('interview-controls');
+    
+    if (defaultView) defaultView.style.display = 'none';
+    if (questionnaireView) questionnaireView.style.display = 'block';
+    if (interviewControls) interviewControls.classList.remove('hidden');
+    
+    // Update body class for padding
+    document.body.classList.add('interview-active');
+    
+    // Make sure we're on the interview tab
+    switchTab('interview');
+}
+
+// Show the default interview view (and hide questionnaire view)
+function showDefaultInterviewView() {
+    const defaultView = document.getElementById('interview-default-view');
+    const questionnaireView = document.getElementById('interview-questionnaire-view');
+    const interviewControls = document.getElementById('interview-controls');
+    
+    if (defaultView) defaultView.style.display = 'block';
+    if (questionnaireView) questionnaireView.style.display = 'none';
+    if (interviewControls) interviewControls.classList.add('hidden');
+    
+    // Update body class for padding
+    document.body.classList.remove('interview-active');
+}
+
 // Start Interview
 function startInterview() {
     // Check if sync folder is selected
     if (!syncEnabled || !syncFolderHandle) {
-        alert('⚠️ Sync Folder Required\n\nPlease select a sync folder before starting an interview.\nAll data must be saved to a folder to prevent data loss.\n\nClick "📁 Select Sync Folder" in the Setup tab.');
+        alert('⚠️ Sync Folder Required\n\nPlease select a sync folder before starting an interview.\nAll data must be saved to a folder to prevent data loss.\n\nClick "📁 Select Sync Folder" in the Data tab.');
+        // Switch to Data tab to help user
+        switchTab('data');
         return;
     }
     
@@ -514,8 +554,8 @@ function startInterview() {
     // This ensures the file exists even before any answers are filled
     saveInitialAssessment();
 
-    // Switch to interview tab
-    switchTab('interview');
+    // Switch to questionnaire view within the interview tab
+    showQuestionnaireView();
 }
 
 // Save initial assessment when starting an interview (before any answers)
@@ -1602,7 +1642,8 @@ function loadAssessment(index) {
     
     updateTabVisibility(); // Update tab visibility when loading an assessment
     
-    switchTab('interview');
+    // Switch to questionnaire view within the interview tab
+    showQuestionnaireView();
 }
 
 // Delete Assessment
