@@ -281,6 +281,7 @@
                         <option value="">Choose an assessment...</option>
                     </select>
                     <button id="export-results-excel" class="btn btn-secondary" style="margin-left: 1rem;">📊 Export to Excel</button>
+                    <button id="create-merged-result" class="btn btn-primary" style="margin-left: 1rem;">🔀 Create Merged Result</button>
                 </div>
                 <div id="results-container">
                     <div class="chart-container">
@@ -450,6 +451,39 @@
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" id="cancel-rename-modal">Cancel</button>
                 <button type="button" class="btn btn-primary" id="proceed-rename">Proceed</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Merge Result Modal -->
+    <div id="merge-result-modal" class="modal" style="display: none;">
+        <div class="modal-content" style="max-width: 700px;">
+            <div class="modal-header">
+                <h3>Create Merged Result</h3>
+                <button class="modal-close" id="close-merge-modal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p class="alert alert-info" style="margin-bottom: 1rem;">
+                    ℹ️ Select multiple interviews to merge into a single result. For questions with multiple answers, the average score will be calculated.
+                </p>
+                <form id="merge-result-form">
+                    <div class="form-group">
+                        <label for="merge-result-name">Result Name: *</label>
+                        <input type="text" id="merge-result-name" class="form-control" placeholder="E.g., 'Combined Team Assessment', 'Q1 2024 Overview'" required>
+                        <small style="color: #64748b; display: block; margin-top: 0.25rem;">Give this merged result a descriptive name</small>
+                    </div>
+                    <div class="form-group">
+                        <label>Select Interviews to Merge: *</label>
+                        <div id="merge-interviews-list" class="checkbox-group" style="max-height: 300px; overflow-y: auto; border: 1px solid #e2e8f0; border-radius: 4px; padding: 1rem;">
+                            <!-- Interview checkboxes will be populated here -->
+                        </div>
+                        <small style="color: #64748b; display: block; margin-top: 0.25rem;">Select at least 2 interviews</small>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" id="cancel-merge-modal">Cancel</button>
+                <button type="button" class="btn btn-primary" id="create-merge-result">Create Merged Result</button>
             </div>
         </div>
     </div>

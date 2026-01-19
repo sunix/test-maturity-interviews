@@ -309,6 +309,25 @@ function setupEventListeners() {
         exportResultsExcelBtn.addEventListener('click', exportResultToExcel);
     }
     
+    // Merge results
+    const createMergedResultBtn = document.getElementById('create-merged-result');
+    const closeMergeModalBtn = document.getElementById('close-merge-modal');
+    const cancelMergeModalBtn = document.getElementById('cancel-merge-modal');
+    const createMergeResultBtn = document.getElementById('create-merge-result');
+    
+    if (createMergedResultBtn) {
+        createMergedResultBtn.addEventListener('click', openMergeResultModal);
+    }
+    if (closeMergeModalBtn) {
+        closeMergeModalBtn.addEventListener('click', closeMergeResultModal);
+    }
+    if (cancelMergeModalBtn) {
+        cancelMergeModalBtn.addEventListener('click', closeMergeResultModal);
+    }
+    if (createMergeResultBtn) {
+        createMergeResultBtn.addEventListener('click', createMergedResult);
+    }
+    
     // Excel Export/Import for interview questionnaire
     const exportQuestionnaireBtn = document.getElementById('export-questionnaire');
     const importQuestionnaireBtn = document.getElementById('import-questionnaire');
@@ -1688,27 +1707,39 @@ function updateSavedAssessmentsList() {
         // Build metadata display with interview information
         let metaInfo = [`Date: ${date}`, `Answers: ${answeredCount}`];
         
-        // Add interview name if it exists and is different from app name
-        if (assessment.interviewName && assessment.interviewName !== assessment.name) {
-            metaInfo.push(`Interview: ${assessment.interviewName}`);
+        // For merged results, show different metadata
+        if (assessment.isMergedResult) {
+            metaInfo = [
+                `Created: ${new Date(assessment.createdDate || assessment.date).toLocaleDateString()}`,
+                `Questions: ${answeredCount}`,
+                `Sources: ${assessment.sourceInterviews ? assessment.sourceInterviews.length : 0} interviews`
+            ];
+        } else {
+            // Add interview name if it exists and is different from app name
+            if (assessment.interviewName && assessment.interviewName !== assessment.name) {
+                metaInfo.push(`Interview: ${assessment.interviewName}`);
+            }
+            
+            // Add interviewees count if available
+            if (assessment.interviewees && assessment.interviewees.length > 0) {
+                metaInfo.push(`Interviewees: ${assessment.interviewees.length}`);
+            }
         }
         
-        // Add interviewees count if available
-        if (assessment.interviewees && assessment.interviewees.length > 0) {
-            metaInfo.push(`Interviewees: ${assessment.interviewees.length}`);
-        }
+        // Add merged result badge if applicable
+        const mergedBadge = assessment.isMergedResult ? '<span class="merged-result-badge">🔀 Merged</span> ' : '';
         
         div.innerHTML = `
             <div class="assessment-info">
-                <div class="assessment-name">${assessment.name}${assessment.interviewName && assessment.interviewName !== assessment.name ? ' - ' + assessment.interviewName : ''}</div>
+                <div class="assessment-name">${mergedBadge}${assessment.name}${assessment.interviewName && assessment.interviewName !== assessment.name ? ' - ' + assessment.interviewName : ''}</div>
                 <div class="assessment-meta">
                     ${metaInfo.join(' | ')}
                 </div>
             </div>
             <div class="assessment-actions">
-                <button class="btn btn-secondary btn-small" onclick="loadAssessment(${index})">
+                ${!assessment.isMergedResult ? `<button class="btn btn-secondary btn-small" onclick="loadAssessment(${index})">
                     📝 Edit
-                </button>
+                </button>` : ''}
                 <button class="btn btn-secondary btn-small" onclick="deleteAssessment(${index})">
                     🗑️ Delete
                 </button>
@@ -1723,7 +1754,15 @@ function updateSavedAssessmentsList() {
 
 // Load Assessment for editing
 function loadAssessment(index) {
-    currentAssessment = JSON.parse(JSON.stringify(assessments[index]));
+    const assessment = assessments[index];
+    
+    // Prevent editing merged results
+    if (assessment.isMergedResult) {
+        alert('Merged results cannot be edited. You can view them in the Results tab or delete them.');
+        return;
+    }
+    
+    currentAssessment = JSON.parse(JSON.stringify(assessment));
     
     // Ensure all expected fields exist with defaults for backward compatibility
     if (!currentAssessment.comments) {
@@ -1844,11 +1883,16 @@ function updateResultsSelect() {
     assessments.forEach((assessment, index) => {
         const option = document.createElement('option');
         option.value = index;
+        
         // Include interview name in the dropdown
         const interviewName = assessment.interviewName && assessment.interviewName !== assessment.name 
             ? ` - ${assessment.interviewName}` 
             : '';
-        option.textContent = `${assessment.name}${interviewName} (${new Date(assessment.date).toLocaleDateString()})`;
+        
+        // Add indicator for merged results
+        const mergedIndicator = assessment.isMergedResult ? ' 🔀 [Merged]' : '';
+        
+        option.textContent = `${assessment.name}${interviewName}${mergedIndicator} (${new Date(assessment.date).toLocaleDateString()})`;
         resultsSelect.appendChild(option);
     });
 }
@@ -1914,7 +1958,7 @@ function displayDetailedAnswers(assessment) {
     
     // Add assessment metadata section
     const metadataDiv = document.createElement('div');
-    metadataDiv.className = 'assessment-metadata';
+    metadataDiv.className = assessment.isMergedResult ? 'assessment-metadata merged-result-metadata' : 'assessment-metadata';
     metadataDiv.style.marginTop = '2rem';
     metadataDiv.style.padding = '1rem';
     metadataDiv.style.backgroundColor = '#f8fafc';
@@ -1922,20 +1966,40 @@ function displayDetailedAnswers(assessment) {
     metadataDiv.style.marginBottom = '1rem';
     
     let metadataHtml = '<h3 style="margin-top: 0;">Assessment Information</h3>';
-    metadataHtml += `<p><strong>Application:</strong> ${escapeHtml(assessment.name)}</p>`;
     
-    if (assessment.interviewName && assessment.interviewName !== assessment.name) {
-        metadataHtml += `<p><strong>Interview:</strong> ${escapeHtml(assessment.interviewName)}</p>`;
-    }
-    
-    metadataHtml += `<p><strong>Date:</strong> ${new Date(assessment.date).toLocaleString()}</p>`;
-    
-    if (assessment.interviewees && assessment.interviewees.length > 0) {
-        metadataHtml += `<p><strong>Interviewees:</strong> ${assessment.interviewees.map(name => escapeHtml(name)).join(', ')}</p>`;
-    }
-    
-    if (assessment.selectedProfiles && assessment.selectedProfiles.length > 0) {
-        metadataHtml += `<p><strong>Selected Profiles:</strong> ${assessment.selectedProfiles.join(', ')}</p>`;
+    // Show merged result badge if applicable
+    if (assessment.isMergedResult) {
+        metadataHtml += `<p><strong>Type:</strong> <span class="merged-result-badge">🔀 Merged Result</span></p>`;
+        metadataHtml += `<p><strong>Result Name:</strong> ${escapeHtml(assessment.name)}</p>`;
+        metadataHtml += `<p><strong>Created:</strong> ${new Date(assessment.createdDate || assessment.date).toLocaleString()}</p>`;
+        
+        if (assessment.sourceInterviews && assessment.sourceInterviews.length > 0) {
+            metadataHtml += `<p><strong>Source Interviews (${assessment.sourceInterviews.length}):</strong></p>`;
+            metadataHtml += '<ul class="source-interviews-list">';
+            assessment.sourceInterviews.forEach(source => {
+                const sourceName = source.interviewName && source.interviewName !== source.name 
+                    ? `${source.name} - ${source.interviewName}` 
+                    : source.name;
+                metadataHtml += `<li>${escapeHtml(sourceName)} (${new Date(source.date).toLocaleDateString()})</li>`;
+            });
+            metadataHtml += '</ul>';
+        }
+    } else {
+        metadataHtml += `<p><strong>Application:</strong> ${escapeHtml(assessment.name)}</p>`;
+        
+        if (assessment.interviewName && assessment.interviewName !== assessment.name) {
+            metadataHtml += `<p><strong>Interview:</strong> ${escapeHtml(assessment.interviewName)}</p>`;
+        }
+        
+        metadataHtml += `<p><strong>Date:</strong> ${new Date(assessment.date).toLocaleString()}</p>`;
+        
+        if (assessment.interviewees && assessment.interviewees.length > 0) {
+            metadataHtml += `<p><strong>Interviewees:</strong> ${assessment.interviewees.map(name => escapeHtml(name)).join(', ')}</p>`;
+        }
+        
+        if (assessment.selectedProfiles && assessment.selectedProfiles.length > 0) {
+            metadataHtml += `<p><strong>Selected Profiles:</strong> ${assessment.selectedProfiles.join(', ')}</p>`;
+        }
     }
     
     metadataDiv.innerHTML = metadataHtml;
@@ -1958,6 +2022,7 @@ function displayDetailedAnswers(assessment) {
         const comment = assessment.comments ? assessment.comments[question.id] : null;
         const answeredBy = assessment.answeredBy ? assessment.answeredBy[question.id] : null;
         const attachments = assessment.attachments ? assessment.attachments[question.id] : null;
+        const mergedDetails = assessment.mergedAnswerDetails ? assessment.mergedAnswerDetails[question.id] : null;
         
         if (answer) {
             const answerDiv = document.createElement('div');
@@ -1967,13 +2032,38 @@ function displayDetailedAnswers(assessment) {
             const answerClass = answer === 'yes' ? 'answer-yes' : 'answer-no';
             
             let commentHtml = '';
-            if (comment) {
+            if (comment && !assessment.isMergedResult) {
                 commentHtml = `<div class="answer-comment"><strong>Comment:</strong> ${escapeHtml(comment)}</div>`;
             }
             
             let answeredByHtml = '';
-            if (answeredBy) {
+            if (answeredBy && !assessment.isMergedResult) {
                 answeredByHtml = `<span class="answered-by-badge profile-${answeredBy}">Answered by: ${answeredBy}</span>`;
+            }
+            
+            // For merged results, show detailed contributions from each interview
+            let mergedDetailsHtml = '';
+            if (assessment.isMergedResult && mergedDetails) {
+                mergedDetailsHtml = '<div class="merged-answer-sources">';
+                mergedDetailsHtml += `<div class="merged-answer-sources-title">📊 Merged from ${mergedDetails.totalAnswers} interview${mergedDetails.totalAnswers > 1 ? 's' : ''} (${mergedDetails.yesCount} Yes, ${mergedDetails.noCount} No) - Average: ${(mergedDetails.averageScore * 100).toFixed(0)}%</div>`;
+                
+                mergedDetails.contributions.forEach(contribution => {
+                    mergedDetailsHtml += '<div class="merged-answer-source">';
+                    mergedDetailsHtml += `<div class="merged-answer-source-name">`;
+                    mergedDetailsHtml += `<span class="merged-answer-value ${contribution.answer}">${contribution.answer.toUpperCase()}</span>`;
+                    mergedDetailsHtml += `${escapeHtml(contribution.interviewName)}`;
+                    if (contribution.answeredBy) {
+                        mergedDetailsHtml += ` <span class="answered-by-badge profile-${contribution.answeredBy}" style="font-size: 0.7rem; padding: 0.125rem 0.375rem;">${contribution.answeredBy}</span>`;
+                    }
+                    mergedDetailsHtml += '</div>';
+                    
+                    if (contribution.comment) {
+                        mergedDetailsHtml += `<div class="merged-answer-comment">${escapeHtml(contribution.comment)}</div>`;
+                    }
+                    mergedDetailsHtml += '</div>';
+                });
+                
+                mergedDetailsHtml += '</div>';
             }
             
             let attachmentsHtml = '';
@@ -1982,10 +2072,11 @@ function displayDetailedAnswers(assessment) {
                     const isImage = attachment.type.startsWith('image/');
                     const icon = isImage ? '🖼️' : '📄';
                     const sizeKB = Math.round(attachment.size / 1024);
+                    const sourceInfo = attachment.sourceInterview ? ` (from ${escapeHtml(attachment.sourceInterview)})` : '';
                     return `
                         <div class="result-attachment-item">
                             <span class="attachment-icon">${icon}</span>
-                            <span class="attachment-name">${escapeHtml(attachment.name)}</span>
+                            <span class="attachment-name">${escapeHtml(attachment.name)}${sourceInfo}</span>
                             <span class="attachment-size">(${sizeKB} KB)</span>
                             <button class="btn-result-attachment-view" onclick="viewResultAttachment('${question.id}', ${index})">👁️ View</button>
                         </div>
@@ -2004,6 +2095,7 @@ function displayDetailedAnswers(assessment) {
                 </div>
                 <div class="answer-question">${question.question}</div>
                 ${commentHtml}
+                ${mergedDetailsHtml}
                 ${attachmentsHtml}
             `;
             
@@ -2144,6 +2236,200 @@ function renderRadarChart(scores) {
             }
         }
     });
+}
+
+// Merge Result Functions
+
+// Open merge result modal
+function openMergeResultModal() {
+    // Filter out merged results - can only merge from original interviews
+    const originalAssessments = assessments.filter(a => !a.isMergedResult);
+    
+    if (originalAssessments.length < 2) {
+        alert('You need at least 2 interviews to create a merged result.');
+        return;
+    }
+    
+    const modal = document.getElementById('merge-result-modal');
+    const interviewsList = document.getElementById('merge-interviews-list');
+    
+    // Clear and populate interviews list
+    interviewsList.innerHTML = '';
+    originalAssessments.forEach((assessment, index) => {
+        const checkboxDiv = document.createElement('div');
+        checkboxDiv.className = 'merge-interview-checkbox';
+        
+        const checkbox = document.createElement('input');
+        checkbox.type = 'checkbox';
+        checkbox.id = `merge-interview-${index}`;
+        checkbox.value = index;
+        
+        const label = document.createElement('label');
+        label.setAttribute('for', `merge-interview-${index}`);
+        
+        const interviewName = assessment.interviewName && assessment.interviewName !== assessment.name 
+            ? `${assessment.name} - ${assessment.interviewName}` 
+            : assessment.name;
+        
+        label.innerHTML = `
+            <div><strong>${escapeHtml(interviewName)}</strong></div>
+            <div class="merge-interview-info">
+                ${new Date(assessment.date).toLocaleDateString()} • 
+                ${Object.keys(assessment.answers).length} questions answered
+            </div>
+        `;
+        
+        checkboxDiv.appendChild(checkbox);
+        checkboxDiv.appendChild(label);
+        interviewsList.appendChild(checkboxDiv);
+    });
+    
+    // Clear the result name input
+    document.getElementById('merge-result-name').value = '';
+    
+    // Show modal
+    modal.style.display = 'flex';
+}
+
+// Close merge result modal
+function closeMergeResultModal() {
+    const modal = document.getElementById('merge-result-modal');
+    modal.style.display = 'none';
+}
+
+// Create merged result
+async function createMergedResult() {
+    const resultName = document.getElementById('merge-result-name').value.trim();
+    const checkboxes = document.querySelectorAll('#merge-interviews-list input[type="checkbox"]:checked');
+    
+    if (!resultName) {
+        alert('Please enter a name for the merged result.');
+        return;
+    }
+    
+    if (checkboxes.length < 2) {
+        alert('Please select at least 2 interviews to merge.');
+        return;
+    }
+    
+    // Get selected assessment indices (from the original assessments array)
+    const originalAssessments = assessments.filter(a => !a.isMergedResult);
+    const selectedIndices = Array.from(checkboxes).map(cb => parseInt(cb.value));
+    const selectedAssessments = selectedIndices.map(i => originalAssessments[i]);
+    
+    // Create merged assessment
+    const mergedAssessment = {
+        name: resultName,
+        interviewName: '', // Merged results don't have separate interview names
+        isMergedResult: true,
+        createdDate: new Date().toISOString(),
+        sourceInterviews: selectedAssessments.map(a => ({
+            name: a.name,
+            interviewName: a.interviewName || a.name,
+            date: a.date
+        })),
+        date: new Date().toISOString(),
+        answers: {},
+        comments: {},
+        answeredBy: {},
+        attachments: {},
+        mergedAnswerDetails: {}, // Store which interviews contributed to each answer
+        appVersion: APP_VERSION
+    };
+    
+    // Collect all questions that appear in any of the selected interviews
+    const allQuestionIds = new Set();
+    selectedAssessments.forEach(assessment => {
+        Object.keys(assessment.answers).forEach(questionId => {
+            allQuestionIds.add(questionId);
+        });
+    });
+    
+    // For each question, calculate average and collect details
+    allQuestionIds.forEach(questionId => {
+        const contributions = [];
+        let yesCount = 0;
+        let noCount = 0;
+        
+        selectedAssessments.forEach(assessment => {
+            if (assessment.answers[questionId]) {
+                const answer = assessment.answers[questionId];
+                if (answer === 'yes') yesCount++;
+                if (answer === 'no') noCount++;
+                
+                contributions.push({
+                    interviewName: assessment.interviewName || assessment.name,
+                    answer: answer,
+                    comment: assessment.comments && assessment.comments[questionId] ? assessment.comments[questionId] : null,
+                    answeredBy: assessment.answeredBy && assessment.answeredBy[questionId] ? assessment.answeredBy[questionId] : null,
+                    attachments: assessment.attachments && assessment.attachments[questionId] ? assessment.attachments[questionId] : null
+                });
+            }
+        });
+        
+        // Calculate average score: for yes=1, no=0
+        // Average >= 0.5 means yes, otherwise no
+        const totalAnswers = yesCount + noCount;
+        if (totalAnswers > 0) {
+            const averageScore = yesCount / totalAnswers;
+            mergedAssessment.answers[questionId] = averageScore >= 0.5 ? 'yes' : 'no';
+            
+            // Store details about which interviews contributed
+            mergedAssessment.mergedAnswerDetails[questionId] = {
+                contributions: contributions,
+                yesCount: yesCount,
+                noCount: noCount,
+                averageScore: averageScore,
+                totalAnswers: totalAnswers
+            };
+            
+            // Collect all comments
+            const allComments = contributions
+                .filter(c => c.comment)
+                .map(c => `[${c.interviewName}] ${c.comment}`)
+                .join('\n');
+            if (allComments) {
+                mergedAssessment.comments[questionId] = allComments;
+            }
+            
+            // Collect all attachments
+            const allAttachments = [];
+            contributions.forEach(c => {
+                if (c.attachments && c.attachments.length > 0) {
+                    c.attachments.forEach(att => {
+                        allAttachments.push({
+                            ...att,
+                            sourceInterview: c.interviewName
+                        });
+                    });
+                }
+            });
+            if (allAttachments.length > 0) {
+                mergedAssessment.attachments[questionId] = allAttachments;
+            }
+        }
+    });
+    
+    // Add merged assessment to the assessments array
+    assessments.push(mergedAssessment);
+    
+    try {
+        await saveAssessments();
+        updateSavedAssessmentsList();
+        updateResultsSelect();
+        
+        // Close modal and show success
+        closeMergeResultModal();
+        alert(`Merged result "${resultName}" created successfully!`);
+        
+        // Switch to results tab and select the new merged result
+        switchTab('results');
+        resultsSelect.value = assessments.length - 1;
+        displayResults();
+    } catch (error) {
+        console.error('Failed to save merged result:', error);
+        alert('Failed to save merged result. Please try again.');
+    }
 }
 
 // Export Data
