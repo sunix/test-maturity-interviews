@@ -2056,7 +2056,8 @@ function displayDetailedAnswers(assessment) {
                     mergedDetailsHtml += `<span class="merged-answer-value ${contribution.answer}">${contribution.answer.toUpperCase()}</span>`;
                     mergedDetailsHtml += `${escapeHtml(contribution.interviewName)}`;
                     if (contribution.answeredBy) {
-                        mergedDetailsHtml += ` <span class="answered-by-badge profile-${contribution.answeredBy}" style="font-size: 0.7rem; padding: 0.125rem 0.375rem;">${contribution.answeredBy}</span>`;
+                        const badgeStyle = 'font-size: 0.7rem; padding: 0.125rem 0.375rem;';
+                        mergedDetailsHtml += ` <span class="answered-by-badge profile-${contribution.answeredBy}" style="${badgeStyle}">${contribution.answeredBy}</span>`;
                     }
                     mergedDetailsHtml += '</div>';
                     
