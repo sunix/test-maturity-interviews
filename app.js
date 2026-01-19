@@ -1758,7 +1758,7 @@ function loadAssessment(index) {
     
     // Prevent editing merged results
     if (assessment.isMergedResult) {
-        alert('Merged results cannot be edited. You can view them in the Results tab or delete them.');
+        alert('Merged results cannot be edited. To make changes, create a new merged result or edit the source interviews individually.');
         return;
     }
     
@@ -2044,8 +2044,11 @@ function displayDetailedAnswers(assessment) {
             // For merged results, show detailed contributions from each interview
             let mergedDetailsHtml = '';
             if (assessment.isMergedResult && mergedDetails) {
+                // Build summary line
+                const summaryText = `📊 Merged from ${mergedDetails.totalAnswers} interview${mergedDetails.totalAnswers > 1 ? 's' : ''} (${mergedDetails.yesCount} Yes, ${mergedDetails.noCount} No) - Average: ${(mergedDetails.averageScore * 100).toFixed(0)}%`;
+                
                 mergedDetailsHtml = '<div class="merged-answer-sources">';
-                mergedDetailsHtml += `<div class="merged-answer-sources-title">📊 Merged from ${mergedDetails.totalAnswers} interview${mergedDetails.totalAnswers > 1 ? 's' : ''} (${mergedDetails.yesCount} Yes, ${mergedDetails.noCount} No) - Average: ${(mergedDetails.averageScore * 100).toFixed(0)}%</div>`;
+                mergedDetailsHtml += `<div class="merged-answer-sources-title">${summaryText}</div>`;
                 
                 mergedDetails.contributions.forEach(contribution => {
                     mergedDetailsHtml += '<div class="merged-answer-source">';
@@ -2246,7 +2249,7 @@ function openMergeResultModal() {
     const originalAssessments = assessments.filter(a => !a.isMergedResult);
     
     if (originalAssessments.length < 2) {
-        alert('You need at least 2 interviews to create a merged result.');
+        alert(`You need at least 2 interviews to create a merged result. Currently you have ${originalAssessments.length} interview(s) available.`);
         return;
     }
     
@@ -2303,12 +2306,12 @@ async function createMergedResult() {
     const checkboxes = document.querySelectorAll('#merge-interviews-list input[type="checkbox"]:checked');
     
     if (!resultName) {
-        alert('Please enter a name for the merged result.');
+        alert('Please enter a descriptive name for the merged result (e.g., "Q1 2024 Combined Assessment").');
         return;
     }
     
     if (checkboxes.length < 2) {
-        alert('Please select at least 2 interviews to merge.');
+        alert(`Please select at least 2 interviews to merge. Currently selected: ${checkboxes.length} interview(s).`);
         return;
     }
     
@@ -2428,7 +2431,7 @@ async function createMergedResult() {
         displayResults();
     } catch (error) {
         console.error('Failed to save merged result:', error);
-        alert('Failed to save merged result. Please try again.');
+        alert('Failed to save merged result. Please check your storage permissions and try again. If the problem persists, try refreshing the page.');
     }
 }
 
