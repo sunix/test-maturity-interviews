@@ -1,0 +1,420 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Merged Results Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 20px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .test-section {
+            background: white;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        h1 { color: #333; }
+        h2 { color: #2563eb; margin-top: 0; }
+        .test-case {
+            border-left: 4px solid #2563eb;
+            padding: 10px 15px;
+            margin: 10px 0;
+            background: #f0f7ff;
+        }
+        .pass { border-left-color: #10b981; background: #f0fdf4; }
+        .fail { border-left-color: #ef4444; background: #fef2f2; }
+        pre {
+            background: #1e293b;
+            color: #e2e8f0;
+            padding: 15px;
+            border-radius: 4px;
+            overflow-x: auto;
+            font-size: 12px;
+        }
+        button {
+            background: #2563eb;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            margin: 5px;
+        }
+        button:hover { background: #1d4ed8; }
+        .result { margin-top: 10px; font-weight: bold; }
+        .result.pass { color: #10b981; }
+        .result.fail { color: #ef4444; }
+        .info { background: #e0f2fe; padding: 10px; border-radius: 4px; margin: 10px 0; }
+    </style>
+</head>
+<body>
+    <h1>🧪 Merged Results Test</h1>
+    <p>This page tests the functionality for merging multiple interviews into a single result with averaged scores.</p>
+
+    <div class="test-section">
+        <h2>Feature Overview</h2>
+        <div class="info">
+            <strong>Purpose:</strong> Allow users to create a single combined result from multiple interviews.
+            <br><br>
+            <strong>Use Case:</strong> When conducting interviews with multiple teams (Frontend, Backend, QA) for the same application,
+            users can merge these into one comprehensive assessment showing averaged scores.
+            <br><br>
+            <strong>Scoring Logic:</strong> For questions answered in multiple interviews, the system calculates an average score.
+            If the average is ≥ 0.5 (50%), the merged answer is "Yes", otherwise "No".
+        </div>
+    </div>
+
+    <div class="test-section">
+        <h2>Test Scenarios</h2>
+        <button onclick="runAllTests()">▶️ Run All Tests</button>
+        <div id="test-results"></div>
+    </div>
+
+    <script>
+        const APP_VERSION = '2.1.0';
+
+        // Test data - 3 interviews with overlapping questions
+        const frontendTeam = {
+            name: 'MyApp',
+            interviewName: 'Frontend Team',
+            date: new Date('2024-01-15T10:00:00.000Z').toISOString(),
+            answers: {
+                'GO-1': 'yes',  // 1
+                'GO-2': 'yes',  // 1
+                'GO-3': 'no',   // 0
+                'ME-1': 'yes',  // 1
+                'ME-2': 'no'    // 0
+            },
+            appVersion: APP_VERSION
+        };
+
+        const backendTeam = {
+            name: 'MyApp',
+            interviewName: 'Backend Team',
+            date: new Date('2024-01-20T10:00:00.000Z').toISOString(),
+            answers: {
+                'GO-1': 'no',   // 0
+                'GO-2': 'yes',  // 1
+                'GO-3': 'yes',  // 1
+                'ME-1': 'no',   // 0
+                'ME-2': 'yes'   // 1
+            },
+            appVersion: APP_VERSION
+        };
+
+        const qaTeam = {
+            name: 'MyApp',
+            interviewName: 'QA Team',
+            date: new Date('2024-01-25T10:00:00.000Z').toISOString(),
+            answers: {
+                'GO-1': 'yes',  // 1
+                'GO-2': 'no',   // 0
+                'GO-3': 'yes',  // 1
+                'ME-1': 'yes',  // 1
+                'ME-2': 'yes'   // 1
+            },
+            appVersion: APP_VERSION
+        };
+
+        // Simulate merge logic from app.js
+        function createMergedResult(name, sourceAssessments) {
+            const merged = {
+                name: name,
+                isMergedResult: true,
+                createdDate: new Date().toISOString(),
+                sourceInterviews: sourceAssessments.map(a => ({
+                    name: a.name,
+                    interviewName: a.interviewName,
+                    date: a.date
+                })),
+                date: new Date().toISOString(),
+                answers: {},
+                mergedAnswerDetails: {},
+                appVersion: APP_VERSION
+            };
+
+            // Collect all questions
+            const allQuestionIds = new Set();
+            sourceAssessments.forEach(assessment => {
+                Object.keys(assessment.answers).forEach(qId => allQuestionIds.add(qId));
+            });
+
+            // Calculate average for each question
+            allQuestionIds.forEach(questionId => {
+                const contributions = [];
+                let yesCount = 0;
+                let noCount = 0;
+
+                sourceAssessments.forEach(assessment => {
+                    if (assessment.answers[questionId]) {
+                        const answer = assessment.answers[questionId];
+                        if (answer === 'yes') yesCount++;
+                        if (answer === 'no') noCount++;
+
+                        contributions.push({
+                            interviewName: assessment.interviewName,
+                            answer: answer
+                        });
+                    }
+                });
+
+                const totalAnswers = yesCount + noCount;
+                if (totalAnswers > 0) {
+                    const averageScore = yesCount / totalAnswers;
+                    merged.answers[questionId] = averageScore >= 0.5 ? 'yes' : 'no';
+                    merged.mergedAnswerDetails[questionId] = {
+                        contributions: contributions,
+                        yesCount: yesCount,
+                        noCount: noCount,
+                        averageScore: averageScore,
+                        totalAnswers: totalAnswers
+                    };
+                }
+            });
+
+            return merged;
+        }
+
+        function testMergeAverageCalculation() {
+            const merged = createMergedResult('Test Merge', [frontendTeam, backendTeam, qaTeam]);
+
+            const checks = [
+                { 
+                    name: 'GO-1: 2 Yes, 1 No → Average 67% → Result: Yes',
+                    pass: merged.answers['GO-1'] === 'yes' && 
+                          merged.mergedAnswerDetails['GO-1'].yesCount === 2 &&
+                          merged.mergedAnswerDetails['GO-1'].noCount === 1 &&
+                          Math.round(merged.mergedAnswerDetails['GO-1'].averageScore * 100) === 67
+                },
+                { 
+                    name: 'GO-2: 2 Yes, 1 No → Average 67% → Result: Yes',
+                    pass: merged.answers['GO-2'] === 'yes' && 
+                          merged.mergedAnswerDetails['GO-2'].yesCount === 2
+                },
+                { 
+                    name: 'GO-3: 2 Yes, 1 No → Average 67% → Result: Yes',
+                    pass: merged.answers['GO-3'] === 'yes' && 
+                          merged.mergedAnswerDetails['GO-3'].yesCount === 2
+                },
+                { 
+                    name: 'ME-1: 2 Yes, 1 No → Average 67% → Result: Yes',
+                    pass: merged.answers['ME-1'] === 'yes' && 
+                          merged.mergedAnswerDetails['ME-1'].yesCount === 2
+                },
+                { 
+                    name: 'ME-2: 2 Yes, 1 No → Average 67% → Result: Yes',
+                    pass: merged.answers['ME-2'] === 'yes' && 
+                          merged.mergedAnswerDetails['ME-2'].yesCount === 2
+                },
+                {
+                    name: 'All questions have 3 contributors',
+                    pass: Object.values(merged.mergedAnswerDetails).every(d => d.totalAnswers === 3)
+                }
+            ];
+
+            return {
+                title: 'Test 1: Average Score Calculation',
+                checks: checks,
+                passed: checks.every(c => c.pass)
+            };
+        }
+
+        function testPartialOverlap() {
+            // Test with interviews that don't all answer the same questions
+            const interview1 = {
+                name: 'App',
+                interviewName: 'Team A',
+                date: new Date().toISOString(),
+                answers: { 'Q1': 'yes', 'Q2': 'no', 'Q3': 'yes' }
+            };
+            
+            const interview2 = {
+                name: 'App',
+                interviewName: 'Team B',
+                date: new Date().toISOString(),
+                answers: { 'Q1': 'no', 'Q2': 'yes' } // Missing Q3
+            };
+
+            const merged = createMergedResult('Partial Test', [interview1, interview2]);
+
+            const checks = [
+                {
+                    name: 'Q1: 1 Yes, 1 No → Average 50% → Result: Yes (threshold)',
+                    pass: merged.answers['Q1'] === 'yes' && 
+                          merged.mergedAnswerDetails['Q1'].averageScore === 0.5
+                },
+                {
+                    name: 'Q2: 1 Yes, 1 No → Average 50% → Result: Yes (threshold)',
+                    pass: merged.answers['Q2'] === 'yes'
+                },
+                {
+                    name: 'Q3: Only 1 answer (Yes) → Result: Yes',
+                    pass: merged.answers['Q3'] === 'yes' &&
+                          merged.mergedAnswerDetails['Q3'].totalAnswers === 1
+                }
+            ];
+
+            return {
+                title: 'Test 2: Partial Question Overlap',
+                checks: checks,
+                passed: checks.every(c => c.pass)
+            };
+        }
+
+        function testMergedMetadata() {
+            const merged = createMergedResult('Metadata Test', [frontendTeam, backendTeam, qaTeam]);
+
+            const checks = [
+                {
+                    name: 'isMergedResult flag is set',
+                    pass: merged.isMergedResult === true
+                },
+                {
+                    name: 'Has createdDate',
+                    pass: !!merged.createdDate
+                },
+                {
+                    name: 'Source interviews tracked (3)',
+                    pass: merged.sourceInterviews.length === 3
+                },
+                {
+                    name: 'Source interview names preserved',
+                    pass: merged.sourceInterviews.some(s => s.interviewName === 'Frontend Team') &&
+                          merged.sourceInterviews.some(s => s.interviewName === 'Backend Team') &&
+                          merged.sourceInterviews.some(s => s.interviewName === 'QA Team')
+                },
+                {
+                    name: 'Each question has contribution details',
+                    pass: Object.keys(merged.answers).every(qId => 
+                        merged.mergedAnswerDetails[qId] && 
+                        merged.mergedAnswerDetails[qId].contributions.length > 0
+                    )
+                }
+            ];
+
+            return {
+                title: 'Test 3: Merged Result Metadata',
+                checks: checks,
+                passed: checks.every(c => c.pass)
+            };
+        }
+
+        function testEdgeCases() {
+            const checks = [];
+
+            // Test 1: All yes
+            const allYes1 = { name: 'A', interviewName: 'T1', date: '', answers: { 'Q1': 'yes' }};
+            const allYes2 = { name: 'A', interviewName: 'T2', date: '', answers: { 'Q1': 'yes' }};
+            const allYes3 = { name: 'A', interviewName: 'T3', date: '', answers: { 'Q1': 'yes' }};
+            const mergedAllYes = createMergedResult('All Yes', [allYes1, allYes2, allYes3]);
+            
+            checks.push({
+                name: 'All Yes: 3 Yes, 0 No → 100% → Result: Yes',
+                pass: mergedAllYes.answers['Q1'] === 'yes' && 
+                      mergedAllYes.mergedAnswerDetails['Q1'].averageScore === 1.0
+            });
+
+            // Test 2: All no
+            const allNo1 = { name: 'A', interviewName: 'T1', date: '', answers: { 'Q1': 'no' }};
+            const allNo2 = { name: 'A', interviewName: 'T2', date: '', answers: { 'Q1': 'no' }};
+            const allNo3 = { name: 'A', interviewName: 'T3', date: '', answers: { 'Q1': 'no' }};
+            const mergedAllNo = createMergedResult('All No', [allNo1, allNo2, allNo3]);
+            
+            checks.push({
+                name: 'All No: 0 Yes, 3 No → 0% → Result: No',
+                pass: mergedAllNo.answers['Q1'] === 'no' && 
+                      mergedAllNo.mergedAnswerDetails['Q1'].averageScore === 0.0
+            });
+
+            // Test 3: Exactly 50% threshold
+            const half1 = { name: 'A', interviewName: 'T1', date: '', answers: { 'Q1': 'yes' }};
+            const half2 = { name: 'A', interviewName: 'T2', date: '', answers: { 'Q1': 'no' }};
+            const mergedHalf = createMergedResult('Half', [half1, half2]);
+            
+            checks.push({
+                name: '50% threshold: 1 Yes, 1 No → 50% → Result: Yes (inclusive)',
+                pass: mergedHalf.answers['Q1'] === 'yes' && 
+                      mergedHalf.mergedAnswerDetails['Q1'].averageScore === 0.5
+            });
+
+            // Test 4: Below threshold (49%)
+            const below1 = { name: 'A', interviewName: 'T1', date: '', answers: { 'Q1': 'yes' }};
+            const below2 = { name: 'A', interviewName: 'T2', date: '', answers: { 'Q1': 'no' }};
+            const below3 = { name: 'A', interviewName: 'T3', date: '', answers: { 'Q1': 'no' }};
+            const mergedBelow = createMergedResult('Below', [below1, below2, below3]);
+            
+            checks.push({
+                name: 'Below 50%: 1 Yes, 2 No → 33% → Result: No',
+                pass: mergedBelow.answers['Q1'] === 'no' && 
+                      Math.round(mergedBelow.mergedAnswerDetails['Q1'].averageScore * 100) === 33
+            });
+
+            return {
+                title: 'Test 4: Edge Cases',
+                checks: checks,
+                passed: checks.every(c => c.pass)
+            };
+        }
+
+        function runAllTests() {
+            const tests = [
+                testMergeAverageCalculation(),
+                testPartialOverlap(),
+                testMergedMetadata(),
+                testEdgeCases()
+            ];
+
+            const resultsDiv = document.getElementById('test-results');
+            resultsDiv.innerHTML = '';
+
+            tests.forEach(test => {
+                const testDiv = document.createElement('div');
+                testDiv.className = `test-case ${test.passed ? 'pass' : 'fail'}`;
+                
+                let html = `<h3>${test.passed ? '✅' : '❌'} ${test.title}</h3>`;
+                html += '<ul>';
+                test.checks.forEach(check => {
+                    html += `<li style="color: ${check.pass ? '#10b981' : '#ef4444'}">${check.pass ? '✓' : '✗'} ${check.name}</li>`;
+                });
+                html += '</ul>';
+                
+                testDiv.innerHTML = html;
+                resultsDiv.appendChild(testDiv);
+            });
+
+            // Summary
+            const passed = tests.filter(t => t.passed).length;
+            const total = tests.length;
+            const summaryDiv = document.createElement('div');
+            summaryDiv.className = 'result ' + (passed === total ? 'pass' : 'fail');
+            summaryDiv.textContent = `Summary: ${passed}/${total} tests passed`;
+            resultsDiv.appendChild(summaryDiv);
+
+            // Additional info
+            if (passed === total) {
+                const infoDiv = document.createElement('div');
+                infoDiv.className = 'info';
+                infoDiv.style.marginTop = '20px';
+                infoDiv.innerHTML = `
+                    <strong>✅ All tests passed!</strong><br>
+                    The merge functionality correctly:
+                    <ul style="margin-top: 10px; padding-left: 20px;">
+                        <li>Calculates average scores from multiple answers</li>
+                        <li>Handles partial question overlap</li>
+                        <li>Preserves metadata and contribution details</li>
+                        <li>Handles edge cases (all yes, all no, 50% threshold)</li>
+                    </ul>
+                `;
+                resultsDiv.appendChild(infoDiv);
+            }
+        }
+    </script>
+</body>
+</html>
