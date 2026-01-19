@@ -1739,7 +1739,9 @@ function updateSavedAssessmentsList() {
             <div class="assessment-actions">
                 ${!assessment.isMergedResult ? `<button class="btn btn-secondary btn-small" onclick="loadAssessment(${index})">
                     📝 Edit
-                </button>` : ''}
+                </button>` : `<button class="btn btn-secondary btn-small" onclick="viewMergedResult(${index})">
+                    📊 View Results
+                </button>`}
                 <button class="btn btn-secondary btn-small" onclick="deleteAssessment(${index})">
                     🗑️ Delete
                 </button>
@@ -1750,6 +1752,13 @@ function updateSavedAssessmentsList() {
     });
     
     updateTabVisibility(); // Update tab visibility when assessments are available
+}
+
+// View merged result - switch to Results tab and select it
+function viewMergedResult(index) {
+    switchTab('results');
+    resultsSelect.value = index;
+    displayResults();
 }
 
 // Load Assessment for editing
@@ -3622,11 +3631,20 @@ async function syncFromFolder() {
                     const data = JSON.parse(content);
                     
                     // Validate it's a valid assessment with required fields
-                    if (data && 
+                    // Regular assessments have 'profile', merged results have 'isMergedResult'
+                    const isRegularAssessment = data && 
                         typeof data.name === 'string' && 
                         typeof data.profile === 'string' && 
                         typeof data.answers === 'object' &&
-                        data.date) {
+                        data.date;
+                    
+                    const isMergedResult = data && 
+                        typeof data.name === 'string' && 
+                        data.isMergedResult === true &&
+                        typeof data.answers === 'object' &&
+                        data.date;
+                    
+                    if (isRegularAssessment || isMergedResult) {
                         // Store file metadata for comparison
                         data._fileLastModified = file.lastModified;
                         importedAssessments.push(data);
