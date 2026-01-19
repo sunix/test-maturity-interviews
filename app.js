@@ -1754,7 +1754,10 @@ function updateSavedAssessmentsList() {
     updateTabVisibility(); // Update tab visibility when assessments are available
 }
 
-// View merged result - switch to Results tab and select it
+/**
+ * View merged result - navigates to Results tab and displays the selected merged result
+ * @param {number} index - The index of the merged result in the assessments array
+ */
 function viewMergedResult(index) {
     switchTab('results');
     resultsSelect.value = index;
@@ -3631,18 +3634,20 @@ async function syncFromFolder() {
                     const data = JSON.parse(content);
                     
                     // Validate it's a valid assessment with required fields
-                    // Regular assessments have 'profile', merged results have 'isMergedResult'
-                    const isRegularAssessment = data && 
+                    // Check common fields first
+                    const hasCommonFields = data && 
                         typeof data.name === 'string' && 
-                        typeof data.profile === 'string' && 
                         typeof data.answers === 'object' &&
                         data.date;
                     
-                    const isMergedResult = data && 
-                        typeof data.name === 'string' && 
-                        data.isMergedResult === true &&
-                        typeof data.answers === 'object' &&
-                        data.date;
+                    if (!hasCommonFields) {
+                        console.warn(`File ${entry.name} is missing required fields, skipping`);
+                        continue;
+                    }
+                    
+                    // Check type-specific fields: regular assessments have 'profile', merged results have 'isMergedResult'
+                    const isRegularAssessment = typeof data.profile === 'string';
+                    const isMergedResult = data.isMergedResult === true;
                     
                     if (isRegularAssessment || isMergedResult) {
                         // Store file metadata for comparison
