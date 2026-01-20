@@ -2005,7 +2005,7 @@ function displayDetailedAnswers(assessment) {
                 }
                 
                 if (source.selectedProfiles && source.selectedProfiles.length > 0) {
-                    metadataHtml += `<br>Profiles: ${source.selectedProfiles.join(', ')}`;
+                    metadataHtml += `<br>Profiles: ${source.selectedProfiles.map(p => escapeHtml(p)).join(', ')}`;
                 }
                 
                 if (source.generalComments) {
