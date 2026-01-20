@@ -1986,6 +1986,17 @@ function displayDetailedAnswers(assessment) {
         metadataHtml += `<p><strong>Created:</strong> ${new Date(assessment.createdDate || assessment.date).toLocaleString()}</p>`;
         
         if (assessment.sourceInterviews && assessment.sourceInterviews.length > 0) {
+            // Collect all interview dates
+            const interviewDates = assessment.sourceInterviews
+                .map(s => s.interviewDate)
+                .filter(d => d)
+                .map(d => new Date(d).toLocaleDateString())
+                .filter((date, index, self) => self.indexOf(date) === index); // Remove duplicates
+            
+            if (interviewDates.length > 0) {
+                metadataHtml += `<p><strong>Interview Dates:</strong> ${interviewDates.join(', ')}</p>`;
+            }
+            
             metadataHtml += `<p><strong>Source Interviews (${assessment.sourceInterviews.length}):</strong></p>`;
             metadataHtml += '<ul class="source-interviews-list">';
             assessment.sourceInterviews.forEach(source => {
