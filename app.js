@@ -1992,7 +1992,27 @@ function displayDetailedAnswers(assessment) {
                 const sourceName = source.interviewName && source.interviewName !== source.name 
                     ? `${source.name} - ${source.interviewName}` 
                     : source.name;
-                metadataHtml += `<li>${escapeHtml(sourceName)} (${new Date(source.date).toLocaleDateString()})</li>`;
+                metadataHtml += `<li><strong>${escapeHtml(sourceName)}</strong><br>`;
+                metadataHtml += `<span style="font-size: 0.9em; color: #666;">`;
+                metadataHtml += `Modified: ${new Date(source.date).toLocaleDateString()}`;
+                
+                if (source.interviewDate) {
+                    metadataHtml += ` | Interview Date: ${new Date(source.interviewDate).toLocaleDateString()}`;
+                }
+                
+                if (source.interviewees && source.interviewees.length > 0) {
+                    metadataHtml += `<br>Interviewees: ${source.interviewees.map(name => escapeHtml(name)).join(', ')}`;
+                }
+                
+                if (source.selectedProfiles && source.selectedProfiles.length > 0) {
+                    metadataHtml += `<br>Profiles: ${source.selectedProfiles.join(', ')}`;
+                }
+                
+                if (source.generalComments) {
+                    metadataHtml += `<br>Comments: ${escapeHtml(source.generalComments)}`;
+                }
+                
+                metadataHtml += `</span></li>`;
             });
             metadataHtml += '</ul>';
         }
@@ -2342,7 +2362,11 @@ async function createMergedResult() {
         sourceInterviews: selectedAssessments.map(a => ({
             name: a.name,
             interviewName: a.interviewName || a.name,
-            date: a.date
+            date: a.date,
+            interviewDate: a.interviewDate || null,
+            interviewees: a.interviewees || [],
+            selectedProfiles: a.selectedProfiles || [],
+            generalComments: a.generalComments || ''
         })),
         date: new Date().toISOString(),
         answers: {},

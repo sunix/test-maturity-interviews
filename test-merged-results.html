@@ -85,6 +85,10 @@
             name: 'MyApp',
             interviewName: 'Frontend Team',
             date: new Date('2024-01-15T10:00:00.000Z').toISOString(),
+            interviewDate: new Date('2024-01-10T09:00:00.000Z').toISOString(),
+            interviewees: ['John Doe', 'Jane Smith'],
+            selectedProfiles: ['developer', 'qa'],
+            generalComments: 'Frontend team is well organized',
             answers: {
                 'GO-1': 'yes',  // 1
                 'GO-2': 'yes',  // 1
@@ -99,6 +103,10 @@
             name: 'MyApp',
             interviewName: 'Backend Team',
             date: new Date('2024-01-20T10:00:00.000Z').toISOString(),
+            interviewDate: new Date('2024-01-18T14:00:00.000Z').toISOString(),
+            interviewees: ['Bob Johnson'],
+            selectedProfiles: ['developer', 'devops'],
+            generalComments: 'Backend team needs more testing coverage',
             answers: {
                 'GO-1': 'no',   // 0
                 'GO-2': 'yes',  // 1
@@ -113,6 +121,10 @@
             name: 'MyApp',
             interviewName: 'QA Team',
             date: new Date('2024-01-25T10:00:00.000Z').toISOString(),
+            interviewDate: new Date('2024-01-22T11:00:00.000Z').toISOString(),
+            interviewees: ['Alice Brown', 'Charlie Davis', 'Eve Wilson'],
+            selectedProfiles: ['qa', 'manager'],
+            generalComments: 'QA team has excellent processes',
             answers: {
                 'GO-1': 'yes',  // 1
                 'GO-2': 'no',   // 0
@@ -132,7 +144,11 @@
                 sourceInterviews: sourceAssessments.map(a => ({
                     name: a.name,
                     interviewName: a.interviewName,
-                    date: a.date
+                    date: a.date,
+                    interviewDate: a.interviewDate || null,
+                    interviewees: a.interviewees || [],
+                    selectedProfiles: a.selectedProfiles || [],
+                    generalComments: a.generalComments || ''
                 })),
                 date: new Date().toISOString(),
                 answers: {},
@@ -289,6 +305,26 @@
                     pass: merged.sourceInterviews.some(s => s.interviewName === 'Frontend Team') &&
                           merged.sourceInterviews.some(s => s.interviewName === 'Backend Team') &&
                           merged.sourceInterviews.some(s => s.interviewName === 'QA Team')
+                },
+                {
+                    name: 'Interview dates preserved',
+                    pass: merged.sourceInterviews.every(s => s.interviewDate !== null && s.interviewDate !== undefined)
+                },
+                {
+                    name: 'Interviewees preserved for all sources',
+                    pass: merged.sourceInterviews[0].interviewees.length === 2 &&
+                          merged.sourceInterviews[1].interviewees.length === 1 &&
+                          merged.sourceInterviews[2].interviewees.length === 3
+                },
+                {
+                    name: 'Selected profiles preserved',
+                    pass: merged.sourceInterviews.every(s => Array.isArray(s.selectedProfiles) && s.selectedProfiles.length > 0)
+                },
+                {
+                    name: 'General comments preserved',
+                    pass: merged.sourceInterviews[0].generalComments === 'Frontend team is well organized' &&
+                          merged.sourceInterviews[1].generalComments === 'Backend team needs more testing coverage' &&
+                          merged.sourceInterviews[2].generalComments === 'QA team has excellent processes'
                 },
                 {
                     name: 'Each question has contribution details',
