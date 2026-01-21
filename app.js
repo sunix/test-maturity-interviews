@@ -1,5 +1,5 @@
 // Application version for compatibility tracking
-const APP_VERSION = '2.2.0'; // Minor version bump: cache refresh
+const APP_VERSION = '2.2.1'; // Minor version bump: cache refresh
 
 // Application state
 let currentAssessment = {
