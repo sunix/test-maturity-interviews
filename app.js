@@ -2025,16 +2025,17 @@ function displayDetailedAnswers(assessment) {
                 
                 // Display interview dates (support multiple dates)
                 if (source.interviewDates && Array.isArray(source.interviewDates) && source.interviewDates.length > 0) {
-                    const dates = source.interviewDates
+                    const validDates = source.interviewDates
                         .filter(d => d)
                         .map(d => {
                             const date = new Date(d);
                             return !isNaN(date.getTime()) ? escapeHtml(date.toLocaleDateString()) : null;
                         })
-                        .filter(d => d)  // Remove invalid dates
-                        .join(', ');
-                    if (dates) {
-                        metadataHtml += `<br>Interview Date${source.interviewDates.length > 1 ? 's' : ''}: ${dates}`;
+                        .filter(d => d);  // Remove invalid dates
+                    
+                    if (validDates.length > 0) {
+                        const dates = validDates.join(', ');
+                        metadataHtml += `<br>Interview Date${validDates.length > 1 ? 's' : ''}: ${dates}`;
                     }
                 } else if (source.interviewDate) {
                     // Backward compatibility for old single date format
