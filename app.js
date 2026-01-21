@@ -2002,7 +2002,7 @@ function displayDetailedAnswers(assessment) {
             // Remove duplicates and show summary
             const uniqueDates = [...new Set(allInterviewDates)];
             if (uniqueDates.length > 0) {
-                metadataHtml += `<p><strong>Interview Dates:</strong> ${uniqueDates.join(', ')}</p>`;
+                metadataHtml += `<p><strong>Interview Dates:</strong> ${uniqueDates.map(d => escapeHtml(d)).join(', ')}</p>`;
             }
             
             metadataHtml += `<p><strong>Source Interviews (${assessment.sourceInterviews.length}):</strong></p>`;
@@ -2019,14 +2019,14 @@ function displayDetailedAnswers(assessment) {
                 if (source.interviewDates && Array.isArray(source.interviewDates) && source.interviewDates.length > 0) {
                     const dates = source.interviewDates
                         .filter(d => d)
-                        .map(d => new Date(d).toLocaleDateString())
+                        .map(d => escapeHtml(new Date(d).toLocaleDateString()))
                         .join(', ');
                     if (dates) {
                         metadataHtml += `<br>Interview Date${source.interviewDates.length > 1 ? 's' : ''}: ${dates}`;
                     }
                 } else if (source.interviewDate) {
                     // Backward compatibility for old single date format
-                    metadataHtml += `<br>Interview Date: ${new Date(source.interviewDate).toLocaleDateString()}`;
+                    metadataHtml += `<br>Interview Date: ${escapeHtml(new Date(source.interviewDate).toLocaleDateString())}`;
                 }
                 
                 if (source.interviewees && source.interviewees.length > 0) {
