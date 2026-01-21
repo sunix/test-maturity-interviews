@@ -1991,11 +1991,19 @@ function displayDetailedAnswers(assessment) {
             assessment.sourceInterviews.forEach(source => {
                 if (source.interviewDates && Array.isArray(source.interviewDates)) {
                     source.interviewDates.forEach(d => {
-                        if (d) allInterviewDates.push(new Date(d).toLocaleDateString());
+                        if (d) {
+                            const date = new Date(d);
+                            if (!isNaN(date.getTime())) {  // Check if date is valid
+                                allInterviewDates.push(date.toLocaleDateString());
+                            }
+                        }
                     });
                 } else if (source.interviewDate) {
                     // Backward compatibility for old single date format
-                    allInterviewDates.push(new Date(source.interviewDate).toLocaleDateString());
+                    const date = new Date(source.interviewDate);
+                    if (!isNaN(date.getTime())) {  // Check if date is valid
+                        allInterviewDates.push(date.toLocaleDateString());
+                    }
                 }
             });
             
@@ -2019,14 +2027,21 @@ function displayDetailedAnswers(assessment) {
                 if (source.interviewDates && Array.isArray(source.interviewDates) && source.interviewDates.length > 0) {
                     const dates = source.interviewDates
                         .filter(d => d)
-                        .map(d => escapeHtml(new Date(d).toLocaleDateString()))
+                        .map(d => {
+                            const date = new Date(d);
+                            return !isNaN(date.getTime()) ? escapeHtml(date.toLocaleDateString()) : null;
+                        })
+                        .filter(d => d)  // Remove invalid dates
                         .join(', ');
                     if (dates) {
                         metadataHtml += `<br>Interview Date${source.interviewDates.length > 1 ? 's' : ''}: ${dates}`;
                     }
                 } else if (source.interviewDate) {
                     // Backward compatibility for old single date format
-                    metadataHtml += `<br>Interview Date: ${escapeHtml(new Date(source.interviewDate).toLocaleDateString())}`;
+                    const date = new Date(source.interviewDate);
+                    if (!isNaN(date.getTime())) {  // Check if date is valid
+                        metadataHtml += `<br>Interview Date: ${escapeHtml(date.toLocaleDateString())}`;
+                    }
                 }
                 
                 if (source.interviewees && source.interviewees.length > 0) {
