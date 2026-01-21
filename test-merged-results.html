@@ -85,7 +85,10 @@
             name: 'MyApp',
             interviewName: 'Frontend Team',
             date: new Date('2024-01-15T10:00:00.000Z').toISOString(),
-            interviewDate: new Date('2024-01-10T09:00:00.000Z').toISOString(),
+            interviewDates: [
+                new Date('2024-01-10T09:00:00.000Z').toISOString(),
+                new Date('2024-01-12T14:00:00.000Z').toISOString()  // Interview continued on another day
+            ],
             interviewees: ['John Doe', 'Jane Smith'],
             selectedProfiles: ['developer', 'qa'],
             generalComments: 'Frontend team is well organized',
@@ -103,7 +106,9 @@
             name: 'MyApp',
             interviewName: 'Backend Team',
             date: new Date('2024-01-20T10:00:00.000Z').toISOString(),
-            interviewDate: new Date('2024-01-18T14:00:00.000Z').toISOString(),
+            interviewDates: [
+                new Date('2024-01-18T14:00:00.000Z').toISOString()  // Single day interview
+            ],
             interviewees: ['Bob Johnson'],
             selectedProfiles: ['developer', 'devops'],
             generalComments: 'Backend team needs more testing coverage',
@@ -121,7 +126,11 @@
             name: 'MyApp',
             interviewName: 'QA Team',
             date: new Date('2024-01-25T10:00:00.000Z').toISOString(),
-            interviewDate: new Date('2024-01-22T11:00:00.000Z').toISOString(),
+            interviewDates: [
+                new Date('2024-01-22T11:00:00.000Z').toISOString(),
+                new Date('2024-01-23T10:00:00.000Z').toISOString(),
+                new Date('2024-01-24T15:00:00.000Z').toISOString()  // Interview spanning 3 days
+            ],
             interviewees: ['Alice Brown', 'Charlie Davis', 'Eve Wilson'],
             selectedProfiles: ['qa', 'manager'],
             generalComments: 'QA team has excellent processes',
@@ -145,7 +154,7 @@
                     name: a.name,
                     interviewName: a.interviewName,
                     date: a.date,
-                    interviewDate: a.interviewDate || null,
+                    interviewDates: a.interviewDates || (a.interviewDate ? [a.interviewDate] : []),
                     interviewees: a.interviewees || [],
                     selectedProfiles: a.selectedProfiles || [],
                     generalComments: a.generalComments || ''
@@ -307,8 +316,14 @@
                           merged.sourceInterviews.some(s => s.interviewName === 'QA Team')
                 },
                 {
-                    name: 'Interview dates preserved',
-                    pass: merged.sourceInterviews.every(s => s.interviewDate !== null && s.interviewDate !== undefined)
+                    name: 'Interview dates preserved as arrays',
+                    pass: merged.sourceInterviews.every(s => Array.isArray(s.interviewDates))
+                },
+                {
+                    name: 'Multiple interview dates preserved (Frontend: 2, Backend: 1, QA: 3)',
+                    pass: merged.sourceInterviews[0].interviewDates.length === 2 &&
+                          merged.sourceInterviews[1].interviewDates.length === 1 &&
+                          merged.sourceInterviews[2].interviewDates.length === 3
                 },
                 {
                     name: 'Interviewees preserved for all sources',

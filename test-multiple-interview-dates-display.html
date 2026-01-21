@@ -42,15 +42,26 @@
             padding: 2px 4px;
             border-radius: 2px;
         }
+        .highlight-green {
+            background: #d1fae5;
+            padding: 2px 4px;
+            border-radius: 2px;
+        }
     </style>
 </head>
 <body>
-    <h1>🧪 Multiple Interview Dates Display Test</h1>
-    <p>This page demonstrates how merged results now display multiple interview dates from source interviews.</p>
+    <h1>🧪 Multiple Interview Dates Per Source - Display Test</h1>
+    <p>This page demonstrates how merged results now support and display multiple interview dates for each source interview.</p>
+
+    <div class="test-section">
+        <h2>Use Case</h2>
+        <p><strong>Scenario:</strong> A manager is interviewed but the session runs out of time. The interview is completed on another day.</p>
+        <p>Previously, only one interview date per source could be stored. Now, each source interview can have multiple dates.</p>
+    </div>
 
     <div class="test-section">
         <h2>Display Example</h2>
-        <p>When a merged result contains multiple source interviews with different interview dates, the display now shows:</p>
+        <p>Merged result with sources having different numbers of interview dates:</p>
         
         <div class="metadata-section">
             <h3 style="margin-top: 0;">Merged Result Metadata</h3>
@@ -58,17 +69,18 @@
             <!-- Simulated metadata display -->
             <p><strong>Type:</strong> <span style="background: #dcfce7; padding: 2px 8px; border-radius: 4px;">🔀 Merged Result</span></p>
             <p><strong>Result Name:</strong> Q1 2024 Combined Assessment</p>
-            <p><strong>Created:</strong> 1/20/2026, 9:17:44 PM</p>
+            <p><strong>Created:</strong> 1/21/2026, 8:02:27 AM</p>
             
-            <!-- NEW: Interview Dates Summary -->
-            <p><strong class="highlight">Interview Dates:</strong> <span class="highlight">1/10/2024, 1/18/2024, 1/22/2024</span></p>
+            <!-- NEW: Interview Dates Summary showing ALL dates from ALL sources -->
+            <p><strong class="highlight">Interview Dates:</strong> <span class="highlight">1/10/2024, 1/12/2024, 1/18/2024, 1/22/2024, 1/23/2024, 1/24/2024</span></p>
             
             <p><strong>Source Interviews (3):</strong></p>
             <ul class="source-interviews-list">
                 <li>
                     <strong>MyApp - Frontend Team</strong><br>
                     <span style="font-size: 0.9em; color: #666;">
-                        Modified: 1/15/2024 | Interview Date: 1/10/2024<br>
+                        Modified: 1/15/2024<br>
+                        <span class="highlight-green">Interview Dates: 1/10/2024, 1/12/2024</span> ← Multiple dates<br>
                         Interviewees: John Doe, Jane Smith<br>
                         Profiles: developer, qa<br>
                         Comments: Frontend team is well organized
@@ -77,7 +89,8 @@
                 <li>
                     <strong>MyApp - Backend Team</strong><br>
                     <span style="font-size: 0.9em; color: #666;">
-                        Modified: 1/20/2024 | Interview Date: 1/18/2024<br>
+                        Modified: 1/20/2024<br>
+                        <span class="highlight-green">Interview Date: 1/18/2024</span> ← Single date<br>
                         Interviewees: Bob Johnson<br>
                         Profiles: developer, devops<br>
                         Comments: Backend team needs more testing coverage
@@ -86,7 +99,8 @@
                 <li>
                     <strong>MyApp - QA Team</strong><br>
                     <span style="font-size: 0.9em; color: #666;">
-                        Modified: 1/25/2024 | Interview Date: 1/22/2024<br>
+                        Modified: 1/25/2024<br>
+                        <span class="highlight-green">Interview Dates: 1/22/2024, 1/23/2024, 1/24/2024</span> ← Multiple dates spanning 3 days<br>
                         Interviewees: Alice Brown, Charlie Davis, Eve Wilson<br>
                         Profiles: qa, manager<br>
                         Comments: QA team has excellent processes
@@ -99,22 +113,47 @@
     <div class="test-section">
         <h2>Key Improvements</h2>
         <ul>
-            <li>✅ <strong>Interview Dates Summary:</strong> All interview dates are now displayed prominently at the top (highlighted in yellow)</li>
-            <li>✅ <strong>Quick Overview:</strong> Users can immediately see all the dates when interviews were conducted</li>
-            <li>✅ <strong>Date Range:</strong> Easy to identify the time span covered by the merged assessment</li>
-            <li>✅ <strong>Duplicate Removal:</strong> If multiple interviews have the same date, it's shown only once</li>
-            <li>✅ <strong>Detailed View:</strong> Each source interview still shows its individual interview date for traceability</li>
+            <li>✅ <strong>Multiple Dates Per Source:</strong> Each source interview can have multiple interview dates (e.g., interview conducted over 2-3 days)</li>
+            <li>✅ <strong>Comprehensive Summary:</strong> All interview dates from all sources are collected and displayed at the top</li>
+            <li>✅ <strong>Smart Display:</strong> Shows "Interview Date" (singular) for single-date interviews and "Interview Dates" (plural) for multi-date interviews</li>
+            <li>✅ <strong>Duplicate Removal:</strong> If multiple sources have the same date, it appears only once in the summary</li>
+            <li>✅ <strong>Individual Traceability:</strong> Each source interview shows its own specific dates for detailed tracking</li>
+            <li>✅ <strong>Backward Compatible:</strong> Still supports old single-date format for existing assessments</li>
         </ul>
     </div>
 
     <div class="test-section">
-        <h2>Use Cases</h2>
+        <h2>Real-World Use Cases</h2>
         <ul>
-            <li><strong>Time Range Analysis:</strong> Quickly see when the interviews were conducted (e.g., "All interviews from Jan 10-22, 2024")</li>
-            <li><strong>Historical Context:</strong> Understand if the data is recent or spans a longer period</li>
-            <li><strong>Report Generation:</strong> Include the interview dates in reports without drilling into each source</li>
-            <li><strong>Quality Assurance:</strong> Verify that all expected interviews from a specific timeframe are included</li>
+            <li><strong>Multi-Day Interviews:</strong> Manager interviewed on Monday (initial questions), completed on Wednesday (remaining questions)</li>
+            <li><strong>Team Sessions:</strong> Frontend team interviewed across multiple sprint planning sessions</li>
+            <li><strong>Follow-up Interviews:</strong> Initial interview + follow-up session to clarify or expand on topics</li>
+            <li><strong>Phased Assessments:</strong> Part 1 (governance questions) one day, Part 2 (technical questions) another day</li>
+            <li><strong>Time Zone Challenges:</strong> Global team interviewed in multiple sessions across different time zones</li>
         </ul>
+    </div>
+
+    <div class="test-section">
+        <h2>Data Structure</h2>
+        <p>Each source interview now stores dates as an array:</p>
+        <pre style="background: #1e293b; color: #e2e8f0; padding: 15px; border-radius: 4px; overflow-x: auto;">
+{
+  sourceInterviews: [
+    {
+      name: 'MyApp',
+      interviewName: 'Frontend Team',
+      date: '2024-01-15T10:00:00.000Z',
+      <strong style="color: #fbbf24;">interviewDates: [
+        '2024-01-10T09:00:00.000Z',
+        '2024-01-12T14:00:00.000Z'
+      ]</strong>,
+      interviewees: ['John Doe', 'Jane Smith'],
+      selectedProfiles: ['developer', 'qa'],
+      generalComments: 'Frontend team is well organized'
+    }
+  ]
+}
+        </pre>
     </div>
 </body>
 </html>
