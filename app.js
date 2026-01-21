@@ -1986,13 +1986,78 @@ function displayDetailedAnswers(assessment) {
         metadataHtml += `<p><strong>Created:</strong> ${new Date(assessment.createdDate || assessment.date).toLocaleString()}</p>`;
         
         if (assessment.sourceInterviews && assessment.sourceInterviews.length > 0) {
+            // Collect all interview dates from all sources
+            const allInterviewDates = [];
+            assessment.sourceInterviews.forEach(source => {
+                if (source.interviewDates && Array.isArray(source.interviewDates)) {
+                    source.interviewDates.forEach(d => {
+                        if (d) {
+                            const date = new Date(d);
+                            if (!isNaN(date.getTime())) {  // Check if date is valid
+                                allInterviewDates.push(date.toLocaleDateString());
+                            }
+                        }
+                    });
+                } else if (source.interviewDate) {
+                    // Backward compatibility for old single date format
+                    const date = new Date(source.interviewDate);
+                    if (!isNaN(date.getTime())) {  // Check if date is valid
+                        allInterviewDates.push(date.toLocaleDateString());
+                    }
+                }
+            });
+            
+            // Remove duplicates and show summary
+            const uniqueDates = [...new Set(allInterviewDates)];
+            if (uniqueDates.length > 0) {
+                metadataHtml += `<p><strong>Interview Dates:</strong> ${uniqueDates.map(d => escapeHtml(d)).join(', ')}</p>`;
+            }
+            
             metadataHtml += `<p><strong>Source Interviews (${assessment.sourceInterviews.length}):</strong></p>`;
             metadataHtml += '<ul class="source-interviews-list">';
             assessment.sourceInterviews.forEach(source => {
                 const sourceName = source.interviewName && source.interviewName !== source.name 
                     ? `${source.name} - ${source.interviewName}` 
                     : source.name;
-                metadataHtml += `<li>${escapeHtml(sourceName)} (${new Date(source.date).toLocaleDateString()})</li>`;
+                metadataHtml += `<li><strong>${escapeHtml(sourceName)}</strong><br>`;
+                metadataHtml += `<span style="font-size: 0.9em; color: #666;">`;
+                metadataHtml += `Modified: ${new Date(source.date).toLocaleDateString()}`;
+                
+                // Display interview dates (support multiple dates)
+                if (source.interviewDates && Array.isArray(source.interviewDates) && source.interviewDates.length > 0) {
+                    const validDates = source.interviewDates
+                        .filter(d => d)
+                        .map(d => {
+                            const date = new Date(d);
+                            return !isNaN(date.getTime()) ? escapeHtml(date.toLocaleDateString()) : null;
+                        })
+                        .filter(d => d);  // Remove invalid dates
+                    
+                    if (validDates.length > 0) {
+                        const dates = validDates.join(', ');
+                        metadataHtml += `<br>Interview Date${validDates.length > 1 ? 's' : ''}: ${dates}`;
+                    }
+                } else if (source.interviewDate) {
+                    // Backward compatibility for old single date format
+                    const date = new Date(source.interviewDate);
+                    if (!isNaN(date.getTime())) {  // Check if date is valid
+                        metadataHtml += `<br>Interview Date: ${escapeHtml(date.toLocaleDateString())}`;
+                    }
+                }
+                
+                if (source.interviewees && source.interviewees.length > 0) {
+                    metadataHtml += `<br>Interviewees: ${source.interviewees.map(name => escapeHtml(name)).join(', ')}`;
+                }
+                
+                if (source.selectedProfiles && source.selectedProfiles.length > 0) {
+                    metadataHtml += `<br>Profiles: ${source.selectedProfiles.map(p => escapeHtml(p)).join(', ')}`;
+                }
+                
+                if (source.generalComments) {
+                    metadataHtml += `<br>Comments: ${escapeHtml(source.generalComments)}`;
+                }
+                
+                metadataHtml += `</span></li>`;
             });
             metadataHtml += '</ul>';
         }
@@ -2342,7 +2407,11 @@ async function createMergedResult() {
         sourceInterviews: selectedAssessments.map(a => ({
             name: a.name,
             interviewName: a.interviewName || a.name,
-            date: a.date
+            date: a.date,
+            interviewDates: a.interviewDates || (a.interviewDate ? [a.interviewDate] : []),
+            interviewees: a.interviewees || [],
+            selectedProfiles: a.selectedProfiles || [],
+            generalComments: a.generalComments || ''
         })),
         date: new Date().toISOString(),
         answers: {},
