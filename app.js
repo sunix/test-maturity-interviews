@@ -1697,58 +1697,89 @@ function updateSavedAssessmentsList() {
 
     savedAssessmentsDiv.innerHTML = '<h3 style="margin-bottom: 1rem;">Saved Assessments</h3>';
     
+    // Group assessments by application name and sort alphabetically
+    const assessmentsByApp = {};
     assessments.forEach((assessment, index) => {
-        const div = document.createElement('div');
-        div.className = 'assessment-item';
+        const appName = assessment.name || 'Unnamed';
+        if (!assessmentsByApp[appName]) {
+            assessmentsByApp[appName] = [];
+        }
+        assessmentsByApp[appName].push({ assessment, index });
+    });
+    
+    // Sort application names alphabetically
+    const sortedAppNames = Object.keys(assessmentsByApp).sort((a, b) => a.localeCompare(b));
+    
+    // Display assessments grouped by application name
+    sortedAppNames.forEach(appName => {
+        // Create application name header
+        const appHeader = document.createElement('div');
+        appHeader.className = 'app-group-header';
+        appHeader.innerHTML = `<strong>📱 ${escapeHtml(appName)}</strong>`;
+        savedAssessmentsDiv.appendChild(appHeader);
         
-        const date = new Date(assessment.date).toLocaleDateString();
-        const answeredCount = Object.keys(assessment.answers).length;
-        
-        // Build metadata display with interview information
-        let metaInfo = [`Date: ${date}`, `Answers: ${answeredCount}`];
-        
-        // For merged results, show different metadata
-        if (assessment.isMergedResult) {
-            metaInfo = [
-                `Created: ${new Date(assessment.createdDate || assessment.date).toLocaleDateString()}`,
-                `Questions: ${answeredCount}`,
-                `Sources: ${assessment.sourceInterviews ? assessment.sourceInterviews.length : 0} interviews`
-            ];
-        } else {
-            // Add interview name if it exists and is different from app name
-            if (assessment.interviewName && assessment.interviewName !== assessment.name) {
-                metaInfo.push(`Interview: ${assessment.interviewName}`);
+        // Display all assessments for this application
+        assessmentsByApp[appName].forEach(({ assessment, index }) => {
+            const div = document.createElement('div');
+            div.className = 'assessment-item';
+            
+            const date = new Date(assessment.date).toLocaleDateString();
+            const answeredCount = Object.keys(assessment.answers).length;
+            
+            // Build metadata display with interview information
+            let metaInfo = [`Date: ${date}`, `Answers: ${answeredCount}`];
+            
+            // For merged results, show different metadata
+            if (assessment.isMergedResult) {
+                metaInfo = [
+                    `Created: ${new Date(assessment.createdDate || assessment.date).toLocaleDateString()}`,
+                    `Questions: ${answeredCount}`,
+                    `Sources: ${assessment.sourceInterviews ? assessment.sourceInterviews.length : 0} interviews`
+                ];
+            } else {
+                // Add interview name if it exists and is different from app name
+                if (assessment.interviewName && assessment.interviewName !== assessment.name) {
+                    metaInfo.push(`Interview: ${assessment.interviewName}`);
+                }
+                
+                // Add interviewees count if available
+                if (assessment.interviewees && assessment.interviewees.length > 0) {
+                    metaInfo.push(`Interviewees: ${assessment.interviewees.length}`);
+                }
             }
             
-            // Add interviewees count if available
-            if (assessment.interviewees && assessment.interviewees.length > 0) {
-                metaInfo.push(`Interviewees: ${assessment.interviewees.length}`);
+            // Add merged result badge if applicable
+            const mergedBadge = assessment.isMergedResult ? '<span class="merged-result-badge">🔀 Merged</span> ' : '';
+            
+            // Display name: for merged results, show the full name; for regular, show only interviewName if different
+            let displayName = '';
+            if (assessment.isMergedResult) {
+                displayName = assessment.name;
+            } else if (assessment.interviewName && assessment.interviewName !== assessment.name) {
+                displayName = assessment.interviewName;
             }
-        }
-        
-        // Add merged result badge if applicable
-        const mergedBadge = assessment.isMergedResult ? '<span class="merged-result-badge">🔀 Merged</span> ' : '';
-        
-        div.innerHTML = `
-            <div class="assessment-info">
-                <div class="assessment-name">${mergedBadge}${assessment.name}${assessment.interviewName && assessment.interviewName !== assessment.name ? ' - ' + assessment.interviewName : ''}</div>
-                <div class="assessment-meta">
-                    ${metaInfo.join(' | ')}
+            
+            div.innerHTML = `
+                <div class="assessment-info">
+                    <div class="assessment-name">${mergedBadge}${displayName ? escapeHtml(displayName) : ''}</div>
+                    <div class="assessment-meta">
+                        ${metaInfo.join(' | ')}
+                    </div>
                 </div>
-            </div>
-            <div class="assessment-actions">
-                ${!assessment.isMergedResult ? `<button class="btn btn-secondary btn-small" onclick="loadAssessment(${index})">
-                    📝 Edit
-                </button>` : `<button class="btn btn-secondary btn-small" onclick="viewMergedResult(${index})">
-                    📊 View Results
-                </button>`}
-                <button class="btn btn-secondary btn-small" onclick="deleteAssessment(${index})">
-                    🗑️ Delete
-                </button>
-            </div>
-        `;
-        
-        savedAssessmentsDiv.appendChild(div);
+                <div class="assessment-actions">
+                    ${!assessment.isMergedResult ? `<button class="btn btn-secondary btn-small" onclick="loadAssessment(${index})">
+                        📝 Edit
+                    </button>` : `<button class="btn btn-secondary btn-small" onclick="viewMergedResult(${index})">
+                        📊 View Results
+                    </button>`}
+                    <button class="btn btn-secondary btn-small" onclick="deleteAssessment(${index})">
+                        🗑️ Delete
+                    </button>
+                </div>
+            `;
+            
+            savedAssessmentsDiv.appendChild(div);
+        });
     });
     
     updateTabVisibility(); // Update tab visibility when assessments are available
@@ -2336,33 +2367,62 @@ function openMergeResultModal() {
     
     // Clear and populate interviews list
     interviewsList.innerHTML = '';
+    
+    // Group interviews by application name and sort alphabetically
+    const interviewsByApp = {};
     originalAssessments.forEach((assessment, index) => {
-        const checkboxDiv = document.createElement('div');
-        checkboxDiv.className = 'merge-interview-checkbox';
+        const appName = assessment.name || 'Unnamed';
+        if (!interviewsByApp[appName]) {
+            interviewsByApp[appName] = [];
+        }
+        interviewsByApp[appName].push({ assessment, index });
+    });
+    
+    // Sort application names alphabetically
+    const sortedAppNames = Object.keys(interviewsByApp).sort((a, b) => a.localeCompare(b));
+    
+    // Constant for default interview name
+    const DEFAULT_INTERVIEW_NAME = 'Main Interview';
+    
+    // Display interviews grouped by application name
+    sortedAppNames.forEach(appName => {
+        // Create application name header
+        const appHeader = document.createElement('div');
+        appHeader.className = 'merge-app-group-header';
+        appHeader.innerHTML = `<strong>📱 ${escapeHtml(appName)}</strong>`;
+        interviewsList.appendChild(appHeader);
         
-        const checkbox = document.createElement('input');
-        checkbox.type = 'checkbox';
-        checkbox.id = `merge-interview-${index}`;
-        checkbox.value = index;
-        
-        const label = document.createElement('label');
-        label.setAttribute('for', `merge-interview-${index}`);
-        
-        const interviewName = assessment.interviewName && assessment.interviewName !== assessment.name 
-            ? `${assessment.name} - ${assessment.interviewName}` 
-            : assessment.name;
-        
-        label.innerHTML = `
-            <div><strong>${escapeHtml(interviewName)}</strong></div>
-            <div class="merge-interview-info">
-                ${new Date(assessment.date).toLocaleDateString()} • 
-                ${Object.keys(assessment.answers).length} questions answered
-            </div>
-        `;
-        
-        checkboxDiv.appendChild(checkbox);
-        checkboxDiv.appendChild(label);
-        interviewsList.appendChild(checkboxDiv);
+        // Display all interviews for this application
+        interviewsByApp[appName].forEach(({ assessment, index }) => {
+            const checkboxDiv = document.createElement('div');
+            checkboxDiv.className = 'merge-interview-checkbox';
+            
+            const checkbox = document.createElement('input');
+            checkbox.type = 'checkbox';
+            checkbox.id = `merge-interview-${index}`;
+            checkbox.value = index;
+            
+            const label = document.createElement('label');
+            label.setAttribute('for', `merge-interview-${index}`);
+            
+            // Determine interview display name
+            let interviewName = DEFAULT_INTERVIEW_NAME;
+            if (assessment.interviewName && assessment.interviewName !== assessment.name) {
+                interviewName = assessment.interviewName;
+            }
+            
+            label.innerHTML = `
+                <div><strong>${escapeHtml(interviewName)}</strong></div>
+                <div class="merge-interview-info">
+                    ${new Date(assessment.date).toLocaleDateString()} • 
+                    ${Object.keys(assessment.answers).length} questions answered
+                </div>
+            `;
+            
+            checkboxDiv.appendChild(checkbox);
+            checkboxDiv.appendChild(label);
+            interviewsList.appendChild(checkboxDiv);
+        });
     });
     
     // Clear the result name input

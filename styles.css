@@ -782,6 +782,23 @@ header h1 {
     gap: 0.5rem;
 }
 
+/* Application group header styles - shared by assessment list and merge modal */
+.app-group-header,
+.merge-app-group-header {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    padding: 0.75rem 0.5rem;
+    margin-top: 1rem;
+    margin-bottom: 0.5rem;
+    border-bottom: 2px solid var(--border-color);
+}
+
+.app-group-header:first-of-type,
+.merge-app-group-header:first-of-type {
+    margin-top: 0.5rem;
+}
+
 .btn-small {
     padding: 0.5rem 1rem;
     font-size: 0.875rem;
