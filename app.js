@@ -1752,9 +1752,12 @@ function updateSavedAssessmentsList() {
             const mergedBadge = assessment.isMergedResult ? '<span class="merged-result-badge">🔀 Merged</span> ' : '';
             
             // Display name: for merged results, show the full name; for regular, show only interviewName if different
-            const displayName = assessment.isMergedResult 
-                ? assessment.name 
-                : (assessment.interviewName && assessment.interviewName !== assessment.name ? assessment.interviewName : '');
+            let displayName = '';
+            if (assessment.isMergedResult) {
+                displayName = assessment.name;
+            } else if (assessment.interviewName && assessment.interviewName !== assessment.name) {
+                displayName = assessment.interviewName;
+            }
             
             div.innerHTML = `
                 <div class="assessment-info">
@@ -2399,9 +2402,12 @@ function openMergeResultModal() {
             const label = document.createElement('label');
             label.setAttribute('for', `merge-interview-${index}`);
             
-            const interviewName = assessment.interviewName && assessment.interviewName !== assessment.name 
-                ? assessment.interviewName
-                : 'Main Interview';
+            // Determine interview display name
+            const DEFAULT_INTERVIEW_NAME = 'Main Interview';
+            let interviewName = DEFAULT_INTERVIEW_NAME;
+            if (assessment.interviewName && assessment.interviewName !== assessment.name) {
+                interviewName = assessment.interviewName;
+            }
             
             label.innerHTML = `
                 <div><strong>${escapeHtml(interviewName)}</strong></div>
