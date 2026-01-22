@@ -2029,17 +2029,10 @@ function escapeHtml(text) {
 // Helper function to generate filename for an assessment
 function generateFileName(appName, interviewName, date) {
     const safeName = appName.replace(/[^a-z0-9_-]/gi, '_');
-    // Use empty string as fallback instead of appName to avoid duplication
-    const safeInterviewName = interviewName ? interviewName.replace(/[^a-z0-9_-]/gi, '_') : '';
+    // Use appName as fallback if interviewName is not provided (matches syncToFolder logic)
+    const safeInterviewName = (interviewName || appName).replace(/[^a-z0-9_-]/gi, '_');
     const dateStr = new Date(date).toISOString().split('T')[0];
-    
-    // If interview name is provided, include it in the filename
-    if (safeInterviewName) {
-        return `assessment-${safeName}-${safeInterviewName}-${dateStr}.json`;
-    } else {
-        // For backward compatibility, use simple format when no interview name
-        return `assessment-${safeName}-${dateStr}.json`;
-    }
+    return `assessment-${safeName}-${safeInterviewName}-${dateStr}.json`;
 }
 
 // Display detailed answers with comments
