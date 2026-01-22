@@ -1766,15 +1766,11 @@ function updateSavedAssessmentsList() {
             // Add merged result badge if applicable
             const mergedBadge = assessment.isMergedResult ? '<span class="merged-result-badge">🔀 Merged</span> ' : '';
             
-            // Display name: for merged results, show both app name and interview name; for regular, show only interviewName if different
+            // Display name: for merged results, show only interview name (like regular assessments); for regular, show only interviewName if different
             let displayName = '';
             if (assessment.isMergedResult) {
-                // Show both app name and interview name for merged results
-                if (assessment.interviewName) {
-                    displayName = `${assessment.name} - ${assessment.interviewName}`;
-                } else {
-                    displayName = assessment.name;
-                }
+                // Show only interview name for merged results (consistent with regular assessments)
+                displayName = assessment.interviewName || assessment.name;
             } else if (assessment.interviewName && assessment.interviewName !== assessment.name) {
                 displayName = assessment.interviewName;
             }
