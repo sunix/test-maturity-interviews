@@ -2019,6 +2019,14 @@ function escapeHtml(text) {
     return div.innerHTML;
 }
 
+// Helper function to generate filename for an assessment
+function generateFileName(appName, interviewName, date) {
+    const safeName = appName.replace(/[^a-z0-9_-]/gi, '_');
+    const safeInterviewName = (interviewName || appName).replace(/[^a-z0-9_-]/gi, '_');
+    const dateStr = new Date(date).toISOString().split('T')[0];
+    return `assessment-${safeName}-${safeInterviewName}-${dateStr}.json`;
+}
+
 // Display detailed answers with comments
 function displayDetailedAnswers(assessment) {
     const themeScoresDiv = document.getElementById('theme-scores');
