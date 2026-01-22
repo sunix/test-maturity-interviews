@@ -2381,6 +2381,9 @@ function openMergeResultModal() {
     // Sort application names alphabetically
     const sortedAppNames = Object.keys(interviewsByApp).sort((a, b) => a.localeCompare(b));
     
+    // Constant for default interview name
+    const DEFAULT_INTERVIEW_NAME = 'Main Interview';
+    
     // Display interviews grouped by application name
     sortedAppNames.forEach(appName => {
         // Create application name header
@@ -2403,7 +2406,6 @@ function openMergeResultModal() {
             label.setAttribute('for', `merge-interview-${index}`);
             
             // Determine interview display name
-            const DEFAULT_INTERVIEW_NAME = 'Main Interview';
             let interviewName = DEFAULT_INTERVIEW_NAME;
             if (assessment.interviewName && assessment.interviewName !== assessment.name) {
                 interviewName = assessment.interviewName;
