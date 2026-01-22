@@ -2029,9 +2029,17 @@ function escapeHtml(text) {
 // Helper function to generate filename for an assessment
 function generateFileName(appName, interviewName, date) {
     const safeName = appName.replace(/[^a-z0-9_-]/gi, '_');
-    const safeInterviewName = (interviewName || appName).replace(/[^a-z0-9_-]/gi, '_');
+    // Use empty string as fallback instead of appName to avoid duplication
+    const safeInterviewName = interviewName ? interviewName.replace(/[^a-z0-9_-]/gi, '_') : '';
     const dateStr = new Date(date).toISOString().split('T')[0];
-    return `assessment-${safeName}-${safeInterviewName}-${dateStr}.json`;
+    
+    // If interview name is provided, include it in the filename
+    if (safeInterviewName) {
+        return `assessment-${safeName}-${safeInterviewName}-${dateStr}.json`;
+    } else {
+        // For backward compatibility, use simple format when no interview name
+        return `assessment-${safeName}-${dateStr}.json`;
+    }
 }
 
 // Display detailed answers with comments
@@ -2694,7 +2702,7 @@ async function proceedEditMerged() {
     const assessment = assessments[editingMergedResultIndex];
     const oldAppName = assessment.name;
     const oldInterviewName = assessment.interviewName;
-    const oldFileName = generateFileName(oldAppName, oldInterviewName || '', assessment.date);
+    const oldFileName = generateFileName(oldAppName, oldInterviewName, assessment.date);
     
     // Update the assessment
     assessment.name = newAppName;
@@ -2707,18 +2715,26 @@ async function proceedEditMerged() {
             
             // Only rename if the filename has changed
             if (oldFileName !== newFileName) {
+                // First, save with the new name
+                await saveAssessments();
+                
+                // Then try to delete the old file
                 try {
-                    // Delete old file
                     await folderHandle.removeEntry(oldFileName);
+                    console.log(`Deleted old file: ${oldFileName}`);
                 } catch (err) {
-                    console.warn('Could not delete old file:', err);
-                    // Continue anyway - the old file might not exist
+                    console.warn(`Could not delete old file ${oldFileName}:`, err.message);
+                    // Continue - the old file might not exist or might have been renamed already
+                    // The new file has been saved successfully, so this is not critical
                 }
+            } else {
+                // No filename change, just save
+                await saveAssessments();
             }
+        } else {
+            // No folder sync, just save
+            await saveAssessments();
         }
-        
-        // Save all assessments
-        await saveAssessments();
         
         // Update UI
         updateSavedAssessmentsList();
