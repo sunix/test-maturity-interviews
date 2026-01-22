@@ -328,6 +328,21 @@ function setupEventListeners() {
         createMergeResultBtn.addEventListener('click', createMergedResult);
     }
     
+    // Edit merged result metadata modal controls
+    const closeEditMergedModalBtn = document.getElementById('close-edit-merged-modal');
+    const cancelEditMergedModalBtn = document.getElementById('cancel-edit-merged-modal');
+    const proceedEditMergedBtn = document.getElementById('proceed-edit-merged');
+    
+    if (closeEditMergedModalBtn) {
+        closeEditMergedModalBtn.addEventListener('click', closeEditMergedModal);
+    }
+    if (cancelEditMergedModalBtn) {
+        cancelEditMergedModalBtn.addEventListener('click', closeEditMergedModal);
+    }
+    if (proceedEditMergedBtn) {
+        proceedEditMergedBtn.addEventListener('click', proceedEditMerged);
+    }
+    
     // Excel Export/Import for interview questionnaire
     const exportQuestionnaireBtn = document.getElementById('export-questionnaire');
     const importQuestionnaireBtn = document.getElementById('import-questionnaire');
@@ -1751,10 +1766,11 @@ function updateSavedAssessmentsList() {
             // Add merged result badge if applicable
             const mergedBadge = assessment.isMergedResult ? '<span class="merged-result-badge">🔀 Merged</span> ' : '';
             
-            // Display name: for merged results, show the full name; for regular, show only interviewName if different
+            // Display name: for merged results, show only interview name (like regular assessments); for regular, show only interviewName if different
             let displayName = '';
             if (assessment.isMergedResult) {
-                displayName = assessment.name;
+                // Show only interview name for merged results (consistent with regular assessments)
+                displayName = assessment.interviewName || assessment.name;
             } else if (assessment.interviewName && assessment.interviewName !== assessment.name) {
                 displayName = assessment.interviewName;
             }
@@ -1769,7 +1785,11 @@ function updateSavedAssessmentsList() {
                 <div class="assessment-actions">
                     ${!assessment.isMergedResult ? `<button class="btn btn-secondary btn-small" onclick="loadAssessment(${index})">
                         📝 Edit
-                    </button>` : `<button class="btn btn-secondary btn-small" onclick="viewMergedResult(${index})">
+                    </button>` : `
+                    <button class="btn btn-secondary btn-small" onclick="editMergedResult(${index})">
+                        ✏️ Edit
+                    </button>
+                    <button class="btn btn-secondary btn-small" onclick="viewMergedResult(${index})">
                         📊 View Results
                     </button>`}
                     <button class="btn btn-secondary btn-small" onclick="deleteAssessment(${index})">
@@ -1928,9 +1948,16 @@ function updateResultsSelect() {
         option.value = index;
         
         // Include interview name in the dropdown
-        const interviewName = assessment.interviewName && assessment.interviewName !== assessment.name 
-            ? ` - ${assessment.interviewName}` 
-            : '';
+        // For merged results, always show interview name if it exists
+        // For regular assessments, only show if different from app name
+        let interviewName = '';
+        if (assessment.isMergedResult) {
+            interviewName = assessment.interviewName ? ` - ${assessment.interviewName}` : '';
+        } else {
+            interviewName = assessment.interviewName && assessment.interviewName !== assessment.name 
+                ? ` - ${assessment.interviewName}` 
+                : '';
+        }
         
         // Add indicator for merged results
         const mergedIndicator = assessment.isMergedResult ? ' 🔀 [Merged]' : '';
@@ -1995,6 +2022,15 @@ function escapeHtml(text) {
     return div.innerHTML;
 }
 
+// Helper function to generate filename for an assessment
+function generateFileName(appName, interviewName, date) {
+    const safeName = appName.replace(/[^a-z0-9_-]/gi, '_');
+    // Use appName as fallback if interviewName is not provided (matches syncToFolder logic)
+    const safeInterviewName = (interviewName || appName).replace(/[^a-z0-9_-]/gi, '_');
+    const dateStr = new Date(date).toISOString().split('T')[0];
+    return `assessment-${safeName}-${safeInterviewName}-${dateStr}.json`;
+}
+
 // Display detailed answers with comments
 function displayDetailedAnswers(assessment) {
     const themeScoresDiv = document.getElementById('theme-scores');
@@ -2013,7 +2049,10 @@ function displayDetailedAnswers(assessment) {
     // Show merged result badge if applicable
     if (assessment.isMergedResult) {
         metadataHtml += `<p><strong>Type:</strong> <span class="merged-result-badge">🔀 Merged Result</span></p>`;
-        metadataHtml += `<p><strong>Result Name:</strong> ${escapeHtml(assessment.name)}</p>`;
+        metadataHtml += `<p><strong>Application Name:</strong> ${escapeHtml(assessment.name)}</p>`;
+        if (assessment.interviewName) {
+            metadataHtml += `<p><strong>Interview Name:</strong> ${escapeHtml(assessment.interviewName)}</p>`;
+        }
         metadataHtml += `<p><strong>Created:</strong> ${new Date(assessment.createdDate || assessment.date).toLocaleString()}</p>`;
         
         if (assessment.sourceInterviews && assessment.sourceInterviews.length > 0) {
@@ -2425,8 +2464,9 @@ function openMergeResultModal() {
         });
     });
     
-    // Clear the result name input
+    // Clear the input fields
     document.getElementById('merge-result-name').value = '';
+    document.getElementById('merge-result-interview-name').value = '';
     
     // Show modal
     modal.style.display = 'flex';
@@ -2440,11 +2480,17 @@ function closeMergeResultModal() {
 
 // Create merged result
 async function createMergedResult() {
-    const resultName = document.getElementById('merge-result-name').value.trim();
+    const appName = document.getElementById('merge-result-name').value.trim();
+    const interviewName = document.getElementById('merge-result-interview-name').value.trim();
     const checkboxes = document.querySelectorAll('#merge-interviews-list input[type="checkbox"]:checked');
     
-    if (!resultName) {
-        alert('Please enter a descriptive name for the merged result (e.g., "Q1 2024 Combined Assessment").');
+    if (!appName) {
+        alert('Please enter an application name.');
+        return;
+    }
+    
+    if (!interviewName) {
+        alert('Please enter an interview name for the merged result.');
         return;
     }
     
@@ -2460,8 +2506,8 @@ async function createMergedResult() {
     
     // Create merged assessment
     const mergedAssessment = {
-        name: resultName,
-        interviewName: '', // Merged results don't have separate interview names
+        name: appName,
+        interviewName: interviewName,
         isMergedResult: true,
         createdDate: new Date().toISOString(),
         sourceInterviews: selectedAssessments.map(a => ({
@@ -2565,7 +2611,7 @@ async function createMergedResult() {
         
         // Close modal and show success
         closeMergeResultModal();
-        alert(`Merged result "${resultName}" created successfully!`);
+        alert(`Merged result "${appName} - ${interviewName}" created successfully!`);
         
         // Switch to results tab and select the new merged result
         switchTab('results');
@@ -2574,6 +2620,124 @@ async function createMergedResult() {
     } catch (error) {
         console.error('Failed to save merged result:', error);
         alert('Failed to save merged result. Please check your storage permissions and try again. If the problem persists, try refreshing the page.');
+    }
+}
+
+// Variable to track the merged result being edited
+let editingMergedResultIndex = null;
+
+// Open edit merged result metadata modal
+function editMergedResult(index) {
+    const assessment = assessments[index];
+    
+    if (!assessment || !assessment.isMergedResult) {
+        alert('This assessment is not a merged result.');
+        return;
+    }
+    
+    editingMergedResultIndex = index;
+    
+    const modal = document.getElementById('edit-merged-modal');
+    const appNameInput = document.getElementById('edit-merged-app-name');
+    const interviewNameInput = document.getElementById('edit-merged-interview-name');
+    
+    // Pre-fill with current values
+    if (appNameInput) {
+        appNameInput.value = assessment.name || '';
+    }
+    if (interviewNameInput) {
+        interviewNameInput.value = assessment.interviewName || '';
+    }
+    
+    // Show modal
+    if (modal) {
+        modal.style.display = 'flex';
+    }
+}
+
+// Close edit merged result modal
+function closeEditMergedModal() {
+    const modal = document.getElementById('edit-merged-modal');
+    if (modal) {
+        modal.style.display = 'none';
+    }
+    editingMergedResultIndex = null;
+}
+
+// Proceed with editing merged result metadata
+async function proceedEditMerged() {
+    if (editingMergedResultIndex === null || !assessments[editingMergedResultIndex]) {
+        alert('No merged result selected for editing.');
+        return;
+    }
+    
+    const appNameInput = document.getElementById('edit-merged-app-name');
+    const interviewNameInput = document.getElementById('edit-merged-interview-name');
+    
+    const newAppName = appNameInput?.value.trim();
+    const newInterviewName = interviewNameInput?.value.trim();
+    
+    // Validation
+    if (!newAppName) {
+        alert('Please enter an application name');
+        return;
+    }
+    
+    if (!newInterviewName) {
+        alert('Please enter an interview name');
+        return;
+    }
+    
+    const assessment = assessments[editingMergedResultIndex];
+    const oldAppName = assessment.name;
+    const oldInterviewName = assessment.interviewName;
+    const oldFileName = generateFileName(oldAppName, oldInterviewName, assessment.date);
+    
+    // Update the assessment
+    assessment.name = newAppName;
+    assessment.interviewName = newInterviewName;
+    
+    try {
+        // If using folder sync, need to handle file renaming
+        if (syncFolderHandle) {
+            const newFileName = generateFileName(newAppName, newInterviewName, assessment.date);
+            
+            // Only rename if the filename has changed
+            if (oldFileName !== newFileName) {
+                // First, save with the new name
+                await saveAssessments();
+                
+                // Then try to delete the old file
+                try {
+                    await syncFolderHandle.removeEntry(oldFileName);
+                    console.log(`Deleted old file: ${oldFileName}`);
+                } catch (err) {
+                    console.warn(`Could not delete old file ${oldFileName}:`, err.message);
+                    // Continue - the old file might not exist or might have been renamed already
+                    // The new file has been saved successfully, so this is not critical
+                }
+            } else {
+                // No filename change, just save
+                await saveAssessments();
+            }
+        } else {
+            // No folder sync, just save
+            await saveAssessments();
+        }
+        
+        // Update UI
+        updateSavedAssessmentsList();
+        updateResultsSelect();
+        
+        // Close modal and show success
+        closeEditMergedModal();
+        alert(`Merged result updated successfully!`);
+    } catch (error) {
+        console.error('Failed to update merged result:', error);
+        // Revert changes on error
+        assessment.name = oldAppName;
+        assessment.interviewName = oldInterviewName;
+        alert('Failed to update merged result. Please try again.');
     }
 }
 

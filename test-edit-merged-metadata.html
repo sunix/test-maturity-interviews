@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test: Edit Merged Assessment Metadata</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 20px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .test-section {
+            background: white;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        h1 { color: #333; }
+        h2 { color: #2563eb; margin-top: 0; }
+        .info { background: #e0f2fe; padding: 10px; border-radius: 4px; margin: 10px 0; }
+        .success { background: #d1fae5; padding: 10px; border-radius: 4px; margin: 10px 0; color: #065f46; }
+        code {
+            background: #f1f5f9;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Courier New', monospace;
+        }
+        ol, ul {
+            line-height: 1.8;
+        }
+        .screenshot-placeholder {
+            background: #e5e7eb;
+            padding: 60px 20px;
+            text-align: center;
+            border-radius: 8px;
+            margin: 15px 0;
+            border: 2px dashed #9ca3af;
+        }
+    </style>
+</head>
+<body>
+    <h1>✏️ Test: Edit Merged Assessment Metadata</h1>
+    <p>This page documents the new feature for editing merged assessment metadata (application name and interview name).</p>
+
+    <div class="test-section">
+        <h2>Feature Overview</h2>
+        <div class="info">
+            <strong>Purpose:</strong> Allow users to edit the application name and interview name of merged results after creation.
+            <br><br>
+            <strong>Use Case:</strong> When a merged result is created with incorrect or generic names, users can now update them without recreating the entire merged result.
+        </div>
+    </div>
+
+    <div class="test-section">
+        <h2>Changes Made</h2>
+        
+        <h3>1. Updated Create Merged Result Modal</h3>
+        <ul>
+            <li><strong>Before:</strong> Single field "Result Name" that stores in <code>name</code> field</li>
+            <li><strong>After:</strong> Two separate fields:
+                <ul>
+                    <li><code>Application Name</code> - stored in <code>name</code> field</li>
+                    <li><code>Interview Name</code> - stored in <code>interviewName</code> field</li>
+                </ul>
+            </li>
+        </ul>
+
+        <h3>2. Added Edit Button for Merged Results</h3>
+        <ul>
+            <li>Previously, merged results only had a "View Results" button</li>
+            <li>Now merged results have both:
+                <ul>
+                    <li><strong>✏️ Edit</strong> button - opens the edit metadata modal</li>
+                    <li><strong>📊 View Results</strong> button - navigates to Results tab</li>
+                </ul>
+            </li>
+        </ul>
+
+        <h3>3. New Edit Merged Metadata Modal</h3>
+        <ul>
+            <li>Modal ID: <code>edit-merged-modal</code></li>
+            <li>Contains two input fields:
+                <ul>
+                    <li>Application Name (required)</li>
+                    <li>Interview Name (required)</li>
+                </ul>
+            </li>
+            <li>Validates that both fields are not empty</li>
+            <li>Saves changes and updates file name if using folder sync</li>
+        </ul>
+
+        <h3>4. Updated Display Logic</h3>
+        <ul>
+            <li><strong>Saved Assessments List:</strong> Shows "App Name - Interview Name" for merged results</li>
+            <li><strong>Results Tab Metadata:</strong> Displays both fields separately:
+                <ul>
+                    <li><strong>Application Name:</strong> [value]</li>
+                    <li><strong>Interview Name:</strong> [value]</li>
+                </ul>
+            </li>
+            <li><strong>Results Dropdown:</strong> Shows "App Name - Interview Name 🔀 [Merged] (date)"</li>
+        </ul>
+    </div>
+
+    <div class="test-section">
+        <h2>Manual Testing Instructions</h2>
+        
+        <h3>Prerequisites</h3>
+        <ol>
+            <li>Open <code>index.html</code> in a browser</li>
+            <li>Create at least 2 sample interviews with different answers</li>
+        </ol>
+
+        <h3>Test 1: Create Merged Result with New Fields</h3>
+        <ol>
+            <li>Go to the <strong>Data</strong> tab</li>
+            <li>Click <strong>"🔀 Create Merged Result"</strong> button</li>
+            <li>You should see two input fields:
+                <ul>
+                    <li><code>Application Name</code></li>
+                    <li><code>Interview Name</code></li>
+                </ul>
+            </li>
+            <li>Enter values:
+                <ul>
+                    <li>Application Name: "MyApp"</li>
+                    <li>Interview Name: "Q1 2024 Combined"</li>
+                </ul>
+            </li>
+            <li>Select at least 2 interviews</li>
+            <li>Click <strong>"Create Merged Result"</strong></li>
+            <li><strong>Expected:</strong> Success message shows "MyApp - Q1 2024 Combined"</li>
+        </ol>
+
+        <h3>Test 2: View Merged Result Display</h3>
+        <ol>
+            <li>Go to <strong>Interview</strong> tab</li>
+            <li>Scroll to <strong>Existing Interviews</strong></li>
+            <li>Find the merged result (has 🔀 badge)</li>
+            <li><strong>Expected:</strong> 
+                <ul>
+                    <li>Name shows as "MyApp - Q1 2024 Combined"</li>
+                    <li>Has two buttons: "✏️ Edit" and "📊 View Results"</li>
+                </ul>
+            </li>
+        </ol>
+
+        <h3>Test 3: Edit Merged Result Metadata</h3>
+        <ol>
+            <li>Click the <strong>"✏️ Edit"</strong> button on a merged result</li>
+            <li><strong>Expected:</strong> Modal opens with two pre-filled fields</li>
+            <li>Change the values:
+                <ul>
+                    <li>Application Name: "MyNewApp"</li>
+                    <li>Interview Name: "Updated Assessment"</li>
+                </ul>
+            </li>
+            <li>Click <strong>"Save Changes"</strong></li>
+            <li><strong>Expected:</strong> 
+                <ul>
+                    <li>Success message appears</li>
+                    <li>List updates to show "MyNewApp - Updated Assessment"</li>
+                </ul>
+            </li>
+        </ol>
+
+        <h3>Test 4: Validation</h3>
+        <ol>
+            <li>Click <strong>"✏️ Edit"</strong> on a merged result</li>
+            <li>Clear the <code>Application Name</code> field</li>
+            <li>Click <strong>"Save Changes"</strong></li>
+            <li><strong>Expected:</strong> Alert: "Please enter an application name"</li>
+            <li>Fill in Application Name but clear Interview Name</li>
+            <li>Click <strong>"Save Changes"</strong></li>
+            <li><strong>Expected:</strong> Alert: "Please enter an interview name"</li>
+        </ol>
+
+        <h3>Test 5: Results Tab Display</h3>
+        <ol>
+            <li>Go to <strong>Results</strong> tab</li>
+            <li>Select a merged result from dropdown</li>
+            <li><strong>Expected:</strong> Metadata section shows:
+                <ul>
+                    <li><strong>Type:</strong> 🔀 Merged Result</li>
+                    <li><strong>Application Name:</strong> MyNewApp</li>
+                    <li><strong>Interview Name:</strong> Updated Assessment</li>
+                    <li><strong>Created:</strong> [timestamp]</li>
+                </ul>
+            </li>
+        </ol>
+    </div>
+
+    <div class="test-section">
+        <h2>Code Changes Summary</h2>
+        
+        <h3>Files Modified</h3>
+        <ul>
+            <li><code>index.html</code>
+                <ul>
+                    <li>Updated merge result modal to have two fields</li>
+                    <li>Added new edit merged metadata modal</li>
+                </ul>
+            </li>
+            <li><code>app.js</code>
+                <ul>
+                    <li>Added event listeners for edit modal buttons</li>
+                    <li>Updated <code>createMergedResult()</code> to use both fields</li>
+                    <li>Added <code>editMergedResult()</code> function</li>
+                    <li>Added <code>closeEditMergedModal()</code> function</li>
+                    <li>Added <code>proceedEditMerged()</code> function</li>
+                    <li>Updated display logic to show both names</li>
+                </ul>
+            </li>
+        </ul>
+    </div>
+
+    <div class="test-section">
+        <h2>Success Criteria</h2>
+        <div class="success">
+            ✅ Merged results can be created with separate app name and interview name
+            <br>
+            ✅ Merged results display both names in the format "App Name - Interview Name"
+            <br>
+            ✅ Edit button appears for merged results
+            <br>
+            ✅ Edit modal opens with pre-filled values
+            <br>
+            ✅ Changes are saved and reflected in UI
+            <br>
+            ✅ Validation prevents empty names
+            <br>
+            ✅ File renaming works when using folder sync
+        </div>
+    </div>
+
+    <div class="test-section">
+        <h2>Notes</h2>
+        <ul>
+            <li>Backward compatibility: Existing merged results with empty <code>interviewName</code> will still work, showing only the app name</li>
+            <li>The edit functionality is similar to the existing rename modal for regular assessments</li>
+            <li>File name generation includes both names when both are provided</li>
+        </ul>
+    </div>
+</body>
+</html>
