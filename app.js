@@ -1952,9 +1952,16 @@ function updateResultsSelect() {
         option.value = index;
         
         // Include interview name in the dropdown
-        const interviewName = assessment.interviewName && assessment.interviewName !== assessment.name 
-            ? ` - ${assessment.interviewName}` 
-            : '';
+        // For merged results, always show interview name if it exists
+        // For regular assessments, only show if different from app name
+        let interviewName = '';
+        if (assessment.isMergedResult) {
+            interviewName = assessment.interviewName ? ` - ${assessment.interviewName}` : '';
+        } else {
+            interviewName = assessment.interviewName && assessment.interviewName !== assessment.name 
+                ? ` - ${assessment.interviewName}` 
+                : '';
+        }
         
         // Add indicator for merged results
         const mergedIndicator = assessment.isMergedResult ? ' 🔀 [Merged]' : '';
