@@ -2703,7 +2703,7 @@ async function proceedEditMerged() {
     
     try {
         // If using folder sync, need to handle file renaming
-        if (folderHandle) {
+        if (syncFolderHandle) {
             const newFileName = generateFileName(newAppName, newInterviewName, assessment.date);
             
             // Only rename if the filename has changed
@@ -2713,7 +2713,7 @@ async function proceedEditMerged() {
                 
                 // Then try to delete the old file
                 try {
-                    await folderHandle.removeEntry(oldFileName);
+                    await syncFolderHandle.removeEntry(oldFileName);
                     console.log(`Deleted old file: ${oldFileName}`);
                 } catch (err) {
                     console.warn(`Could not delete old file ${oldFileName}:`, err.message);
