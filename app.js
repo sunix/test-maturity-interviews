@@ -2406,13 +2406,13 @@ function displayDetailedAnswers(assessment) {
             
             answerDiv.innerHTML = `
                 <div class="answer-detail-header">
-                    <span class="answer-theme-tag">${question.theme}</span>
+                    <span class="answer-theme-tag">${getTranslation(question.theme)}</span>
                     <div>
                         ${answeredByHtml}
                         <span class="answer-indicator ${answerClass}">${answerIcon} ${answer.toUpperCase()}</span>
                     </div>
                 </div>
-                <div class="answer-question">${question.question}</div>
+                <div class="answer-question">${getTranslation(question.question)}</div>
                 ${commentHtml}
                 ${mergedDetailsHtml}
                 ${attachmentsHtml}
