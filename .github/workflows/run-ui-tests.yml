@@ -1,0 +1,206 @@
+name: Run UI Tests
+
+on:
+  issue_comment:
+    types: [created]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      pr_number:
+        description: 'PR number to test (optional)'
+        required: false
+
+permissions:
+  contents: read
+  pull-requests: write
+  issues: write
+
+concurrency:
+  group: test-${{ github.event.issue.number || github.event.pull_request.number || github.run_id }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    # Run if it's a /test comment on a PR, or a PR event, or manual dispatch
+    if: >
+      (github.event_name == 'issue_comment' && 
+       github.event.issue.pull_request && 
+       contains(github.event.comment.body, '/test')) ||
+      github.event_name == 'pull_request' ||
+      github.event_name == 'workflow_dispatch'
+
+    steps:
+      - name: Resolve PR number
+        shell: bash
+        run: |
+          if [ "${{ github.event_name }}" = "issue_comment" ]; then
+            PR_NUM="${{ github.event.issue.number }}"
+          elif [ "${{ github.event_name }}" = "pull_request" ]; then
+            PR_NUM="${{ github.event.pull_request.number }}"
+          elif [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            PR_NUM="${{ github.event.inputs.pr_number }}"
+          fi
+          
+          # Validate PR number is numeric (if provided)
+          if [ -n "$PR_NUM" ] && ! [[ "$PR_NUM" =~ ^[0-9]+$ ]]; then
+            echo "Error: Invalid PR number: $PR_NUM"
+            exit 1
+          fi
+          
+          echo "PR_NUMBER=$PR_NUM" >> $GITHUB_ENV
+          echo "Resolved PR_NUMBER=$PR_NUM"
+
+      - name: Comment PR with test starting
+        if: env.PR_NUMBER != ''
+        id: start_comment
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const prNumber = Number(process.env.PR_NUMBER);
+            const runUrl = `${process.env.GITHUB_SERVER_URL}/${process.env.GITHUB_REPOSITORY}/actions/runs/${process.env.GITHUB_RUN_ID}`;
+            const body = `🧪 **UI Tests starting...**\n\n🔗 [View workflow run](${runUrl})`;
+            const { data: comment } = await github.rest.issues.createComment({
+              issue_number: prNumber,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body
+            });
+            core.setOutput('comment_id', comment.id);
+
+      - name: Checkout PR (if PR number available)
+        if: env.PR_NUMBER != ''
+        uses: actions/checkout@v4
+        with:
+          ref: refs/pull/${{ env.PR_NUMBER }}/merge
+
+      - name: Checkout (if no PR)
+        if: env.PR_NUMBER == ''
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright browsers
+        run: npx playwright install chromium --with-deps
+
+      - name: Start local server
+        run: |
+          npm run serve &
+          echo $! > server.pid
+          # Wait for server to be ready
+          npx wait-on http://localhost:8080 -t 30000
+
+      - name: Run tests
+        run: npm run test:report
+        env:
+          BASE_URL: http://localhost:8080
+
+      - name: Stop local server
+        if: always()
+        run: |
+          if [ -f server.pid ]; then
+            kill $(cat server.pid) || true
+            rm server.pid
+          fi
+
+      - name: Upload test reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-reports
+          path: reports/
+          retention-days: 30
+
+      - name: Read test results
+        if: always()
+        id: test_results
+        run: |
+          if [ -f reports/cucumber-report.json ]; then
+            # Extract basic stats from the JSON report
+            TOTAL=$(jq '[.[] | select(.elements != null) | .elements[]] | length' reports/cucumber-report.json)
+            PASSED=$(jq '[.[] | select(.elements != null) | .elements[] | select(.steps != null) | .steps[] | select(.result.status == "passed")] | length' reports/cucumber-report.json)
+            FAILED=$(jq '[.[] | select(.elements != null) | .elements[] | select(.steps != null) | .steps[] | select(.result.status == "failed")] | length' reports/cucumber-report.json)
+            
+            echo "total_scenarios=$TOTAL" >> $GITHUB_OUTPUT
+            echo "passed_steps=$PASSED" >> $GITHUB_OUTPUT
+            echo "failed_steps=$FAILED" >> $GITHUB_OUTPUT
+            
+            if [ "$FAILED" -gt 0 ]; then
+              echo "test_status=failed" >> $GITHUB_OUTPUT
+            else
+              echo "test_status=passed" >> $GITHUB_OUTPUT
+            fi
+          else
+            echo "test_status=error" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Update PR comment with results
+        if: always() && env.PR_NUMBER != '' && steps.start_comment.outputs.comment_id
+        uses: actions/github-script@v7
+        env:
+          COMMENT_ID: ${{ steps.start_comment.outputs.comment_id }}
+          TEST_STATUS: ${{ steps.test_results.outputs.test_status }}
+          PASSED_STEPS: ${{ steps.test_results.outputs.passed_steps }}
+          FAILED_STEPS: ${{ steps.test_results.outputs.failed_steps }}
+        with:
+          script: |
+            const commentId = Number(process.env.COMMENT_ID);
+            const testStatus = process.env.TEST_STATUS || 'error';
+            const passedSteps = process.env.PASSED_STEPS || '0';
+            const failedSteps = process.env.FAILED_STEPS || '0';
+            const runUrl = `${process.env.GITHUB_SERVER_URL}/${process.env.GITHUB_REPOSITORY}/actions/runs/${process.env.GITHUB_RUN_ID}`;
+            
+            let statusIcon = '✅';
+            let statusText = 'passed';
+            
+            if (testStatus === 'failed') {
+              statusIcon = '❌';
+              statusText = 'failed';
+            } else if (testStatus === 'error') {
+              statusIcon = '⚠️';
+              statusText = 'encountered errors';
+            }
+            
+            const body = `${statusIcon} **UI Tests ${statusText}**
+
+            📊 **Results:**
+            - ✅ Passed steps: ${passedSteps}
+            - ❌ Failed steps: ${failedSteps}
+
+            🔗 [View workflow run](${runUrl})
+            📄 [Download detailed HTML report](${runUrl}#artifacts)
+
+            <details>
+            <summary>📖 How to view the detailed report</summary>
+
+            1. Click on the workflow run link above
+            2. Scroll to the "Artifacts" section at the bottom
+            3. Download the \`test-reports\` artifact
+            4. Extract the zip file
+            5. Open \`index.html\` in your browser
+
+            The report includes:
+            - All test scenarios with step-by-step results
+            - Screenshots of failures
+            - Detailed error messages
+            - Environment information
+            </details>`;
+            
+            await github.rest.issues.updateComment({
+              comment_id: commentId,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body
+            });
+
+      - name: Fail workflow if tests failed
+        if: steps.test_results.outputs.test_status == 'failed'
+        run: exit 1
