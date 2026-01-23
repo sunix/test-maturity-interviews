@@ -68,18 +68,32 @@
             <header>
                 <div class="header-content">
                     <div class="header-left">
-                        <div class="header-title">
-                            <h1>🎯 Test Maturity Assessment</h1>
-                            <p class="subtitle">
-                                Evaluate and track testing maturity across teams and applications
-                                <span id="app-version" class="app-version" title="Current application version"></span>
-                            </p>
+                        <div class="header-title-row">
+                            <div class="header-title">
+                                <h1>🎯 Test Maturity Assessment</h1>
+                                <p class="subtitle">
+                                    Evaluate and track testing maturity across teams and applications
+                                    <span id="app-version" class="app-version" title="Current application version"></span>
+                                </p>
+                            </div>
+                            <div class="header-title-actions">
+                                <button id="header-select-sync-folder" class="btn btn-sync" title="Select sync folder">📁</button>
+                                <div class="language-selector-container">
+                                    <button id="language-selector-btn" class="btn btn-language" title="Change language" aria-label="Change language">
+                                        🌐
+                                    </button>
+                                    <div id="language-menu" class="language-menu" style="display: none;">
+                                        <button class="language-option" data-lang="fr">🇫🇷 Français</button>
+                                        <button class="language-option" data-lang="en">🇬🇧 English</button>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                         <nav class="tabs tabs-desktop">
                             <button class="tab-button active" data-tab="interview">Interview</button>
-                            <button class="tab-button" data-tab="data">Data</button>
-                            <button class="tab-button" data-tab="question-editor">Question editor</button>
                             <button class="tab-button" data-tab="results">Results</button>
+                            <button class="tab-button" data-tab="question-editor">Question editor</button>
+                            <button class="tab-button" data-tab="data">Data</button>
                         </nav>
                     </div>
                     <div class="header-right">
@@ -96,16 +110,6 @@
                                     <span class="sync-status-text">Not syncing</span>
                                 </div>
                             </div>
-                            <button id="header-select-sync-folder" class="btn btn-sync" title="Select sync folder">📁</button>
-                        </div>
-                        <div class="language-selector-container">
-                            <button id="language-selector-btn" class="btn btn-language" title="Change language" aria-label="Change language">
-                                🌐
-                            </button>
-                            <div id="language-menu" class="language-menu" style="display: none;">
-                                <button class="language-option" data-lang="fr">🇫🇷 Français</button>
-                                <button class="language-option" data-lang="en">🇬🇧 English</button>
-                            </div>
                         </div>
                     </div>
                 </div>
@@ -113,9 +117,9 @@
 
             <nav class="tabs tabs-mobile">
                 <button class="tab-button active" data-tab="interview">Interview</button>
-                <button class="tab-button" data-tab="data">Data</button>
-                <button class="tab-button" data-tab="question-editor">Question editor</button>
                 <button class="tab-button" data-tab="results">Results</button>
+                <button class="tab-button" data-tab="question-editor">Question editor</button>
+                <button class="tab-button" data-tab="data">Data</button>
             </nav>
 
             <!-- Update Available Banner -->

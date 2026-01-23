@@ -131,6 +131,9 @@ function setLanguage(lang) {
     renderQuestions();
     renderQuestionsList();
     updateQuestionsStatus();
+    
+    // Re-render results to update translations
+    displayResults();
 }
 
 // Helper function to update theme dropdown translations
