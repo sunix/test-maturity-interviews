@@ -99,6 +99,18 @@ function getTranslation(value, lang = currentLanguage) {
     return '';
 }
 
+// Helper function to update language active state in menu
+function updateLanguageActiveState(lang) {
+    const languageOptions = document.querySelectorAll('.language-option');
+    languageOptions.forEach(option => {
+        if (option.dataset.lang === lang) {
+            option.classList.add('active');
+        } else {
+            option.classList.remove('active');
+        }
+    });
+}
+
 // Helper function to set language
 function setLanguage(lang) {
     if (!AVAILABLE_LANGUAGES.includes(lang)) {
@@ -110,14 +122,7 @@ function setLanguage(lang) {
     localStorage.setItem('appLanguage', lang);
     
     // Update active state in language menu
-    const languageOptions = document.querySelectorAll('.language-option');
-    languageOptions.forEach(option => {
-        if (option.dataset.lang === lang) {
-            option.classList.add('active');
-        } else {
-            option.classList.remove('active');
-        }
-    });
+    updateLanguageActiveState(lang);
     
     // Re-render questions and UI
     renderQuestions();
@@ -516,10 +521,6 @@ function setupEventListeners() {
                 const lang = option.dataset.lang;
                 setLanguage(lang);
                 languageMenu.style.display = 'none';
-                
-                // Update active state
-                languageOptions.forEach(opt => opt.classList.remove('active'));
-                option.classList.add('active');
             });
             
             // Set initial active state
@@ -4842,9 +4843,11 @@ function saveQuestion() {
         id: questionId,
         theme: themeSelect.value,
         profiles: profiles,
-        question: {
+        question: textInputEn.value.trim() ? {
             fr: textInputFr.value.trim(),
-            en: textInputEn.value.trim() || textInputFr.value.trim() // Use French as fallback if English is empty
+            en: textInputEn.value.trim()
+        } : {
+            fr: textInputFr.value.trim()
         },
         category: categoryInput.value.trim() || '',
         weight: parseInt(weightInput.value)
