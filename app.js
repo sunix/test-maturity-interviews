@@ -109,11 +109,15 @@ function setLanguage(lang) {
     currentLanguage = lang;
     localStorage.setItem('appLanguage', lang);
     
-    // Update language selector if it exists
-    const langSelector = document.getElementById('language-selector');
-    if (langSelector) {
-        langSelector.value = lang;
-    }
+    // Update active state in language menu
+    const languageOptions = document.querySelectorAll('.language-option');
+    languageOptions.forEach(option => {
+        if (option.dataset.lang === lang) {
+            option.classList.add('active');
+        } else {
+            option.classList.remove('active');
+        }
+    });
     
     // Re-render questions and UI
     renderQuestions();
@@ -486,14 +490,42 @@ function setupEventListeners() {
         editGeneralCommentsInput.addEventListener('input', handleMetadataChange);
     }
     
-    // Language selector
-    const languageSelector = document.getElementById('language-selector');
-    if (languageSelector) {
-        // Set initial value from localStorage
-        languageSelector.value = currentLanguage;
-        // Add change event listener
-        languageSelector.addEventListener('change', (e) => {
-            setLanguage(e.target.value);
+    // Language selector button and menu
+    const languageSelectorBtn = document.getElementById('language-selector-btn');
+    const languageMenu = document.getElementById('language-menu');
+    const languageOptions = document.querySelectorAll('.language-option');
+    
+    if (languageSelectorBtn && languageMenu) {
+        // Toggle menu on button click
+        languageSelectorBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const isVisible = languageMenu.style.display !== 'none';
+            languageMenu.style.display = isVisible ? 'none' : 'block';
+        });
+        
+        // Close menu when clicking outside
+        document.addEventListener('click', (e) => {
+            if (!languageSelectorBtn.contains(e.target) && !languageMenu.contains(e.target)) {
+                languageMenu.style.display = 'none';
+            }
+        });
+        
+        // Handle language option clicks
+        languageOptions.forEach(option => {
+            option.addEventListener('click', (e) => {
+                const lang = option.dataset.lang;
+                setLanguage(lang);
+                languageMenu.style.display = 'none';
+                
+                // Update active state
+                languageOptions.forEach(opt => opt.classList.remove('active'));
+                option.classList.add('active');
+            });
+            
+            // Set initial active state
+            if (option.dataset.lang === currentLanguage) {
+                option.classList.add('active');
+            }
         });
     }
 }
@@ -4659,8 +4691,18 @@ function openQuestionModal(questionId = null) {
         if (question) {
             idInput.value = question.id;
             idInput.disabled = true; // Can't change ID when editing
-            document.getElementById('question-theme').value = question.theme;
-            document.getElementById('question-text').value = question.question;
+            
+            // Handle theme - could be string or translation object
+            const themeValue = typeof question.theme === 'string' ? question.theme : (question.theme?.fr || question.theme?.en || '');
+            document.getElementById('question-theme').value = themeValue;
+            
+            // Handle question text - support both old (string) and new (translation object) formats
+            const questionTextFr = typeof question.question === 'string' ? question.question : (question.question?.fr || '');
+            const questionTextEn = typeof question.question === 'string' ? '' : (question.question?.en || '');
+            
+            document.getElementById('question-text-fr').value = questionTextFr;
+            document.getElementById('question-text-en').value = questionTextEn;
+            
             document.getElementById('question-category').value = question.category || '';
             document.getElementById('question-weight').value = question.weight;
             
@@ -4751,7 +4793,8 @@ function highlightAndFocusQuestion(questionId) {
 function saveQuestion() {
     const idInput = document.getElementById('question-id');
     const themeSelect = document.getElementById('question-theme');
-    const textInput = document.getElementById('question-text');
+    const textInputFr = document.getElementById('question-text-fr');
+    const textInputEn = document.getElementById('question-text-en');
     const categoryInput = document.getElementById('question-category');
     const weightInput = document.getElementById('question-weight');
     const idError = document.getElementById('id-error');
@@ -4768,8 +4811,8 @@ function saveQuestion() {
         return;
     }
     
-    if (!textInput.value.trim()) {
-        alert('Please enter question text');
+    if (!textInputFr.value.trim()) {
+        alert('Please enter question text in French');
         return;
     }
     
@@ -4794,11 +4837,15 @@ function saveQuestion() {
         }
     }
     
+    // Create question object with translation support
     const questionData = {
         id: questionId,
         theme: themeSelect.value,
         profiles: profiles,
-        question: textInput.value.trim(),
+        question: {
+            fr: textInputFr.value.trim(),
+            en: textInputEn.value.trim() || textInputFr.value.trim() // Use French as fallback if English is empty
+        },
         category: categoryInput.value.trim() || '',
         weight: parseInt(weightInput.value)
     };

@@ -88,13 +88,6 @@
                             <span></span>
                             <span></span>
                         </button>
-                        <div class="language-selector-container">
-                            <label for="language-selector" style="font-size: 0.9rem; margin-right: 0.5rem;">🌐</label>
-                            <select id="language-selector" class="language-select" title="Select language">
-                                <option value="fr">Français</option>
-                                <option value="en">English</option>
-                            </select>
-                        </div>
                         <div class="header-sync-status">
                             <div id="header-sync-indicator" class="sync-indicator sync-no-folder">
                                 <span class="sync-status-dot"></span>
@@ -104,6 +97,15 @@
                                 </div>
                             </div>
                             <button id="header-select-sync-folder" class="btn btn-sync" title="Select sync folder">📁</button>
+                        </div>
+                        <div class="language-selector-container">
+                            <button id="language-selector-btn" class="btn btn-language" title="Change language" aria-label="Change language">
+                                🌐
+                            </button>
+                            <div id="language-menu" class="language-menu" style="display: none;">
+                                <button class="language-option" data-lang="fr">🇫🇷 Français</button>
+                                <button class="language-option" data-lang="en">🇬🇧 English</button>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -390,8 +392,13 @@
                         </div>
                     </div>
                     <div class="form-group">
-                        <label for="question-text">Question Text: *</label>
-                        <textarea id="question-text" rows="3" placeholder="Enter the question text..." required></textarea>
+                        <label for="question-text-fr">Question Text (French): *</label>
+                        <textarea id="question-text-fr" rows="3" placeholder="Enter the question text in French..." required></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="question-text-en">Question Text (English):</label>
+                        <textarea id="question-text-en" rows="3" placeholder="Enter the question text in English (optional)..."></textarea>
+                        <small>If left empty, French text will be used as fallback</small>
                     </div>
                     <div class="form-group">
                         <label for="question-category">Category:</label>
