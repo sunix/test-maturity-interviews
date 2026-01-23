@@ -10,15 +10,27 @@ class CustomWorld {
   }
 
   async init() {
-    this.browser = await chromium.launch({
-      headless: process.env.HEADED !== 'true',
-      slowMo: process.env.SLOWMO ? parseInt(process.env.SLOWMO) : 0
-    });
-    this.context = await this.browser.newContext({
-      viewport: { width: 1280, height: 720 },
-      permissions: ['clipboard-read', 'clipboard-write']
-    });
-    this.page = await this.context.newPage();
+    try {
+      const slowMo = process.env.SLOWMO ? parseInt(process.env.SLOWMO, 10) : 0;
+      
+      // Validate slowMo is a valid number
+      if (isNaN(slowMo) || slowMo < 0) {
+        console.warn('Invalid SLOWMO value, using 0');
+      }
+      
+      this.browser = await chromium.launch({
+        headless: process.env.HEADED !== 'true',
+        slowMo: isNaN(slowMo) || slowMo < 0 ? 0 : slowMo
+      });
+      this.context = await this.browser.newContext({
+        viewport: { width: 1280, height: 720 },
+        permissions: ['clipboard-read', 'clipboard-write']
+      });
+      this.page = await this.context.newPage();
+    } catch (error) {
+      console.error('Failed to initialize browser:', error);
+      throw error;
+    }
   }
 
   async cleanup() {

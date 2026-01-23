@@ -45,7 +45,7 @@ if [ "$START_SERVER" == true ]; then
     sleep 3
     
     # Check if server is running
-    if curl -s http://localhost:8080 > /dev/null; then
+    if curl -s --max-time 5 http://localhost:8080 > /dev/null; then
         echo -e "${GREEN}✓ Server is ready at http://localhost:8080${NC}"
     else
         echo -e "${RED}❌ Server failed to start${NC}"

@@ -47,8 +47,9 @@ Given('I have an exported assessments file', async function() {
     }]
   };
   
-  // Store it for later use - use OS temp directory for cross-platform compatibility
-  this.importFilePath = path.join(os.tmpdir(), 'test-export.json');
+  // Store it for later use - use OS temp directory with unique filename
+  const uniqueId = Date.now();
+  this.importFilePath = path.join(os.tmpdir(), `test-export-${uniqueId}.json`);
   fs.writeFileSync(this.importFilePath, JSON.stringify(this.exportedData));
 });
 

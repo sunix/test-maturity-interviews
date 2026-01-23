@@ -37,8 +37,37 @@ Given('I have a saved interview named {string}', async function(interviewName) {
 });
 
 Given('I have a completed assessment named {string}', async function(assessmentName) {
-  // Reuse the saved interview setup
-  await this['I have a saved interview named'](assessmentName);
+  // Setup a saved interview
+  await this.page.goto(this.baseURL);
+  await this.page.waitForLoadState('networkidle');
+  
+  // Navigate to Interview tab and create an interview
+  await this.page.click('button[data-tab="interview"]');
+  await this.page.waitForTimeout(500);
+  
+  await this.page.fill('input[placeholder*="Application"]', 'Test App');
+  await this.page.fill('input[placeholder*="Interview"]', assessmentName);
+  await this.page.selectOption('select#profile-filter', { label: 'All profiles' });
+  
+  await this.page.click('button:has-text("Start Interview")');
+  await this.page.waitForSelector('.question-item', { timeout: 5000 });
+  
+  // Answer some questions
+  const questions = await this.page.$$('.question-item');
+  const limit = Math.min(10, questions.length);
+  
+  for (let i = 0; i < limit; i++) {
+    const question = await this.page.locator('.question-item').nth(i);
+    const yesButton = question.locator('button:has-text("Yes")');
+    await yesButton.click();
+    await this.page.waitForTimeout(50);
+  }
+  
+  // Save the interview
+  await this.page.click('button:has-text("Save Interview")');
+  await this.page.waitForTimeout(1000);
+  
+  this.savedInterviewName = assessmentName;
 });
 
 // Results viewing
