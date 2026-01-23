@@ -1,6 +1,10 @@
 // Application version for compatibility tracking
 const APP_VERSION = '2.2.2'; // Minor version bump: cache refresh
 
+// Language state - default to French to maintain current user experience
+let currentLanguage = localStorage.getItem('appLanguage') || 'fr';
+const AVAILABLE_LANGUAGES = ['fr', 'en'];
+
 // Application state
 let currentAssessment = {
     name: '', // Application name
@@ -44,6 +48,125 @@ let editingIdleTimeout = null;
 const EDITING_IDLE_THRESHOLD = 5000; // Consider idle after 5 seconds of no changes
 const SYNC_INTERVAL_ACTIVE = 15000; // 15 seconds during active editing
 const SYNC_INTERVAL_IDLE = 5000; // 5 seconds when idle
+
+// Helper function to get translation for a text value
+// Supports both old format (string) and new format (object with language keys)
+function getTranslation(value, lang = currentLanguage) {
+    if (!value) return '';
+    
+    // If value is already a string (old format), try to find matching theme
+    if (typeof value === 'string') {
+        // Check if this is a theme string - look it up in QUESTIONS_CATALOG.themes
+        const matchingTheme = QUESTIONS_CATALOG.themes.find(t => 
+            (typeof t === 'object' && (t.fr === value || t.en === value)) ||
+            (typeof t === 'string' && t === value)
+        );
+        
+        if (matchingTheme && typeof matchingTheme === 'object') {
+            // Found a matching theme object, return translation
+            if (matchingTheme[lang]) {
+                return matchingTheme[lang];
+            }
+            // Fallback to French then English
+            return matchingTheme['fr'] || matchingTheme['en'] || value;
+        }
+        
+        // Not a theme or no match found, return as-is
+        return value;
+    }
+    
+    // If value is an object (new format), get the translation
+    if (typeof value === 'object') {
+        // Try to get the translation in the current language
+        if (value[lang]) {
+            return value[lang];
+        }
+        // Fallback to French if translation not available
+        if (value['fr']) {
+            return value['fr'];
+        }
+        // Fallback to English
+        if (value['en']) {
+            return value['en'];
+        }
+        // Fallback to first available language
+        const keys = Object.keys(value);
+        if (keys.length > 0) {
+            return value[keys[0]];
+        }
+    }
+    
+    return '';
+}
+
+// Helper function to update language active state in menu
+function updateLanguageActiveState(lang) {
+    const languageOptions = document.querySelectorAll('.language-option');
+    languageOptions.forEach(option => {
+        if (option.dataset.lang === lang) {
+            option.classList.add('active');
+        } else {
+            option.classList.remove('active');
+        }
+    });
+}
+
+// Helper function to set language
+function setLanguage(lang) {
+    if (!AVAILABLE_LANGUAGES.includes(lang)) {
+        console.warn(`Language ${lang} not available, using default`);
+        return;
+    }
+    
+    currentLanguage = lang;
+    localStorage.setItem('appLanguage', lang);
+    
+    // Update active state in language menu
+    updateLanguageActiveState(lang);
+    
+    // Update theme dropdown options to show translated theme names
+    updateThemeDropdownTranslations();
+    
+    // Re-render questions and UI
+    renderQuestions();
+    renderQuestionsList();
+    updateQuestionsStatus();
+    
+    // Re-render results to update translations if results tab is visible or has data
+    const resultsTab = document.getElementById('tab-results');
+    if (resultsTab && (resultsTab.style.display !== 'none' || assessments.length > 0)) {
+        displayResults();
+    }
+}
+
+// Helper function to update theme dropdown translations
+function updateThemeDropdownTranslations() {
+    const themeSelect = document.getElementById('question-theme');
+    if (!themeSelect) return;
+    
+    // Save current selection
+    const currentValue = themeSelect.value;
+    
+    // Update option text content to current language
+    const options = themeSelect.querySelectorAll('option');
+    let themeIndex = 0;
+    options.forEach(option => {
+        // Skip the first "Select a theme..." option
+        if (option.value === '') {
+            return;
+        }
+        
+        // Update text to current language
+        const theme = QUESTIONS_CATALOG.themes[themeIndex];
+        if (theme) {
+            option.textContent = getTranslation(theme, currentLanguage);
+            themeIndex++;  // Only increment for actual theme options
+        }
+    });
+    
+    // Restore selection
+    themeSelect.value = currentValue;
+}
 
 // Helper function to get active questions catalog
 function getActiveQuestionsCatalog() {
@@ -409,6 +532,143 @@ function setupEventListeners() {
     if (editGeneralCommentsInput) {
         editGeneralCommentsInput.addEventListener('input', handleMetadataChange);
     }
+    
+    // Language selector button and menu
+    const languageSelectorBtn = document.getElementById('language-selector-btn');
+    const languageMenu = document.getElementById('language-menu');
+    const languageOptions = document.querySelectorAll('.language-option');
+    
+    if (languageSelectorBtn && languageMenu) {
+        // Toggle menu on button click
+        languageSelectorBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const isVisible = languageMenu.style.display !== 'none';
+            languageMenu.style.display = isVisible ? 'none' : 'block';
+        });
+        
+        // Close menu when clicking outside
+        document.addEventListener('click', (e) => {
+            if (!languageSelectorBtn.contains(e.target) && !languageMenu.contains(e.target)) {
+                languageMenu.style.display = 'none';
+            }
+        });
+        
+        // Handle language option clicks
+        languageOptions.forEach(option => {
+            option.addEventListener('click', (e) => {
+                const lang = option.dataset.lang;
+                setLanguage(lang);
+                languageMenu.style.display = 'none';
+            });
+            
+            // Set initial active state
+            if (option.dataset.lang === currentLanguage) {
+                option.classList.add('active');
+            }
+        });
+    }
+}
+
+// Tab Overflow Handling
+const TAB_OVERFLOW_BTN_WIDTH = 60; // Width of overflow button in pixels
+const TAB_GAP_WIDTH = 8; // Gap between tabs (should match CSS)
+const RESIZE_DEBOUNCE_DELAY = 150; // Delay for resize event debouncing
+
+let handleTabOverflowFunc = null; // Store reference to the handler
+
+function initTabOverflow() {
+    const tabsDesktop = document.querySelector('.tabs-desktop');
+    const tabButtons = Array.from(tabsDesktop.querySelectorAll('.tab-button'));
+    const overflowContainer = tabsDesktop.querySelector('.tab-overflow-container');
+    const overflowBtn = tabsDesktop.querySelector('.tab-overflow-btn');
+    const overflowMenu = tabsDesktop.querySelector('.tab-overflow-menu');
+    
+    if (!overflowContainer || !overflowBtn || !overflowMenu) return;
+    
+    function handleTabOverflow() {
+        // Reset all tabs to visible
+        tabButtons.forEach(tab => {
+            tab.style.display = '';
+        });
+        overflowContainer.style.display = 'none';
+        overflowMenu.innerHTML = '';
+        
+        // Calculate available space
+        const tabsRect = tabsDesktop.getBoundingClientRect();
+        const availableWidth = tabsRect.width - TAB_OVERFLOW_BTN_WIDTH;
+        
+        let currentWidth = 0;
+        const visibleTabs = [];
+        const overflowTabs = [];
+        
+        // Determine which tabs fit
+        tabButtons.forEach((tab, index) => {
+            const tabWidth = tab.offsetWidth + TAB_GAP_WIDTH;
+            if (currentWidth + tabWidth <= availableWidth) {
+                currentWidth += tabWidth;
+                visibleTabs.push(tab);
+            } else {
+                overflowTabs.push(tab);
+            }
+        });
+        
+        // If there are overflow tabs, show the overflow menu
+        if (overflowTabs.length > 0) {
+            overflowTabs.forEach(tab => {
+                tab.style.display = 'none';
+                
+                // Clone tab for overflow menu
+                const menuItem = document.createElement('button');
+                menuItem.className = 'tab-button';
+                if (tab.classList.contains('active')) {
+                    menuItem.classList.add('active');
+                }
+                menuItem.dataset.tab = tab.dataset.tab;
+                menuItem.textContent = tab.textContent;
+                menuItem.addEventListener('click', () => {
+                    switchTab(tab.dataset.tab);
+                    overflowMenu.style.display = 'none';
+                });
+                
+                overflowMenu.appendChild(menuItem);
+            });
+            
+            overflowContainer.style.display = 'flex';
+        }
+    }
+    
+    // Store reference for external calls
+    handleTabOverflowFunc = handleTabOverflow;
+    
+    // Handle overflow button click
+    overflowBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const isVisible = overflowMenu.style.display !== 'none';
+        overflowMenu.style.display = isVisible ? 'none' : 'block';
+    });
+    
+    // Close menu when clicking outside
+    document.addEventListener('click', (e) => {
+        if (!overflowContainer.contains(e.target)) {
+            overflowMenu.style.display = 'none';
+        }
+    });
+    
+    // Initial check and recheck on window resize
+    handleTabOverflow();
+    
+    let resizeTimeout;
+    window.addEventListener('resize', () => {
+        clearTimeout(resizeTimeout);
+        resizeTimeout = setTimeout(handleTabOverflow, RESIZE_DEBOUNCE_DELAY);
+    });
+}
+
+// Initialize tab overflow handling after DOM is loaded
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initTabOverflow);
+} else {
+    initTabOverflow();
 }
 
 // Close mobile menu
@@ -434,6 +694,11 @@ function switchTab(tabName) {
             content.classList.add('active');
         }
     });
+    
+    // Update overflow menu to reflect new active state
+    if (handleTabOverflowFunc) {
+        handleTabOverflowFunc();
+    }
     
     // Show/hide interview controls based on active tab
     const interviewControls = document.getElementById('interview-controls');
@@ -1021,8 +1286,8 @@ function renderQuestions() {
         // Determine theme grouping
         const prevQuestion = index > 0 ? filteredQuestions[index - 1] : null;
         const nextQuestion = index < filteredQuestions.length - 1 ? filteredQuestions[index + 1] : null;
-        const isFirstInGroup = !prevQuestion || prevQuestion.theme !== question.theme;
-        const isLastInGroup = !nextQuestion || nextQuestion.theme !== question.theme;
+        const isFirstInGroup = !prevQuestion || getTranslation(prevQuestion.theme) !== getTranslation(question.theme);
+        const isLastInGroup = !nextQuestion || getTranslation(nextQuestion.theme) !== getTranslation(question.theme);
         
         // Apply grouping classes
         if (!isFirstInGroup && !isLastInGroup) {
@@ -1034,7 +1299,8 @@ function renderQuestions() {
         }
         
         // Show theme header only for first question in group
-        const themeHeader = isFirstInGroup ? `<div class="question-theme-header">${question.theme}</div>` : '';
+        const themeText = getTranslation(question.theme);
+        const themeHeader = isFirstInGroup ? `<div class="question-theme-header">${themeText}</div>` : '';
         
         // Generate profile badges for questions
         const profileBadges = question.profiles
@@ -1084,10 +1350,11 @@ function renderQuestions() {
             `;
         }
         
+        const questionText = getTranslation(question.question);
         questionDiv.innerHTML = `
             ${themeHeader}
             <div class="question-content">
-                <div class="question-text"><span class="question-id">${question.id}</span>${question.question}</div>
+                <div class="question-text"><span class="question-id">${question.id}</span>${questionText}</div>
                 <div class="answer-buttons">
                     <button class="answer-btn" data-question-id="${question.id}" data-answer="yes">
                         ✓ Yes
@@ -1597,9 +1864,11 @@ function calculateMaturityScores(assessment) {
     const scores = {};
     const themeData = {};
 
-    // Initialize theme data
+    // Initialize theme data - use theme objects directly
     QUESTIONS_CATALOG.themes.forEach(theme => {
-        themeData[theme] = {
+        // Create a normalized theme key (use French as canonical key for backward compatibility)
+        const themeKey = getTranslation(theme, 'fr');
+        themeData[themeKey] = {
             totalWeight: 0,
             earnedWeight: 0
         };
@@ -1610,9 +1879,13 @@ function calculateMaturityScores(assessment) {
     getActiveQuestionsCatalog().forEach(question => {
         const answer = assessment.answers[question.id];
         if (answer) {
-            themeData[question.theme].totalWeight += question.weight;
-            if (answer === 'yes') {
-                themeData[question.theme].earnedWeight += question.weight;
+            // Normalize theme to French for consistent key
+            const themeKey = getTranslation(question.theme, 'fr');
+            if (themeData[themeKey]) {
+                themeData[themeKey].totalWeight += question.weight;
+                if (answer === 'yes') {
+                    themeData[themeKey].earnedWeight += question.weight;
+                }
             }
         }
     });
@@ -1998,8 +2271,16 @@ function displayResults() {
         const score = scores[theme];
         const div = document.createElement('div');
         div.className = 'theme-score';
+        // Display theme in current language - theme is stored in French (canonical key)
+        // Find the matching theme from QUESTIONS_CATALOG.themes
+        let themeObj = QUESTIONS_CATALOG.themes.find(t => getTranslation(t, 'fr') === theme);
+        if (!themeObj) {
+            themeObj = theme; // Fallback to string if not found
+        }
+        const displayTheme = getTranslation(themeObj);
+        
         div.innerHTML = `
-            <span class="theme-name">${theme}</span>
+            <span class="theme-name">${displayTheme}</span>
             <div>
                 <span class="theme-maturity">${score}/5</span>
                 <span class="maturity-level">${maturityLabels[score]}</span>
@@ -2238,13 +2519,13 @@ function displayDetailedAnswers(assessment) {
             
             answerDiv.innerHTML = `
                 <div class="answer-detail-header">
-                    <span class="answer-theme-tag">${question.theme}</span>
+                    <span class="answer-theme-tag">${getTranslation(question.theme)}</span>
                     <div>
                         ${answeredByHtml}
                         <span class="answer-indicator ${answerClass}">${answerIcon} ${answer.toUpperCase()}</span>
                     </div>
                 </div>
-                <div class="answer-question">${question.question}</div>
+                <div class="answer-question">${getTranslation(question.question)}</div>
                 ${commentHtml}
                 ${mergedDetailsHtml}
                 ${attachmentsHtml}
@@ -2324,7 +2605,15 @@ function renderRadarChart(scores) {
         radarChart.destroy();
     }
     
-    const labels = Object.keys(scores);
+    // Convert theme keys to translated labels
+    const labels = Object.keys(scores).map(theme => {
+        // Find the matching theme from QUESTIONS_CATALOG.themes
+        let themeObj = QUESTIONS_CATALOG.themes.find(t => getTranslation(t, 'fr') === theme);
+        if (!themeObj) {
+            themeObj = theme; // Fallback to string if not found
+        }
+        return getTranslation(themeObj);
+    });
     const data = Object.values(scores);
     
     radarChart = new Chart(ctx, {
@@ -4224,12 +4513,15 @@ function initQuestionEditor() {
     const themeSelect = document.getElementById('question-theme');
     const questionIdInput = document.getElementById('question-id');
     
-    // Populate theme dropdown
+    // Populate theme dropdown with translated values
     if (themeSelect) {
         QUESTIONS_CATALOG.themes.forEach(theme => {
             const option = document.createElement('option');
-            option.value = theme;
-            option.textContent = theme;
+            // Use French as the canonical value (for consistency with THEME_PREFIXES)
+            const themeValueFr = getTranslation(theme, 'fr');
+            option.value = themeValueFr;
+            // Display in current language
+            option.textContent = getTranslation(theme, currentLanguage);
             themeSelect.appendChild(option);
         });
         
@@ -4409,12 +4701,15 @@ function renderQuestionsList() {
         
         const customBadge = customQuestions ? '<span class="custom-badge">Custom</span>' : '';
         
+        const themeText = getTranslation(question.theme);
+        const questionText = getTranslation(question.question);
+        
         item.innerHTML = `
             <div class="question-editor-header">
                 <div class="question-editor-header-left">
                     <span class="question-drag-handle">☰</span>
                     <span class="question-editor-id">${question.id}</span>
-                    <span class="question-editor-theme">${question.theme}</span>
+                    <span class="question-editor-theme">${themeText}</span>
                     ${customBadge}
                 </div>
                 <div class="question-editor-actions">
@@ -4424,7 +4719,7 @@ function renderQuestionsList() {
                     ${customQuestions ? `<button class="btn btn-small btn-danger" onclick="deleteQuestion('${question.id}')">🗑️</button>` : ''}
                 </div>
             </div>
-            <div class="question-editor-text">${question.question}</div>
+            <div class="question-editor-text">${questionText}</div>
             <div class="question-editor-meta">
                 ${profileBadges}
                 ${question.category ? `<span>Category: ${question.category}</span>` : ''}
@@ -4545,8 +4840,18 @@ function openQuestionModal(questionId = null) {
         if (question) {
             idInput.value = question.id;
             idInput.disabled = true; // Can't change ID when editing
-            document.getElementById('question-theme').value = question.theme;
-            document.getElementById('question-text').value = question.question;
+            
+            // Handle theme - could be string or translation object
+            const themeValue = typeof question.theme === 'string' ? question.theme : (question.theme?.fr || question.theme?.en || '');
+            document.getElementById('question-theme').value = themeValue;
+            
+            // Handle question text - support both old (string) and new (translation object) formats
+            const questionTextFr = typeof question.question === 'string' ? question.question : (question.question?.fr || '');
+            const questionTextEn = typeof question.question === 'string' ? '' : (question.question?.en || '');
+            
+            document.getElementById('question-text-fr').value = questionTextFr;
+            document.getElementById('question-text-en').value = questionTextEn;
+            
             document.getElementById('question-category').value = question.category || '';
             document.getElementById('question-weight').value = question.weight;
             
@@ -4637,7 +4942,8 @@ function highlightAndFocusQuestion(questionId) {
 function saveQuestion() {
     const idInput = document.getElementById('question-id');
     const themeSelect = document.getElementById('question-theme');
-    const textInput = document.getElementById('question-text');
+    const textInputFr = document.getElementById('question-text-fr');
+    const textInputEn = document.getElementById('question-text-en');
     const categoryInput = document.getElementById('question-category');
     const weightInput = document.getElementById('question-weight');
     const idError = document.getElementById('id-error');
@@ -4654,8 +4960,8 @@ function saveQuestion() {
         return;
     }
     
-    if (!textInput.value.trim()) {
-        alert('Please enter question text');
+    if (!textInputFr.value.trim()) {
+        alert('Please enter question text in French');
         return;
     }
     
@@ -4680,11 +4986,17 @@ function saveQuestion() {
         }
     }
     
+    // Create question object with translation support
     const questionData = {
         id: questionId,
         theme: themeSelect.value,
         profiles: profiles,
-        question: textInput.value.trim(),
+        question: textInputEn.value.trim() ? {
+            fr: textInputFr.value.trim(),
+            en: textInputEn.value.trim()
+        } : {
+            fr: textInputFr.value.trim()
+        },
         category: categoryInput.value.trim() || '',
         weight: parseInt(weightInput.value)
     };
@@ -4816,8 +5128,17 @@ function duplicateQuestion(questionId) {
     // Pre-fill all fields including suggested ID with -DUP suffix
     idInput.value = generateDuplicateId(questionId, questionsArray);
     idInput.disabled = false;
-    document.getElementById('question-theme').value = question.theme;
-    document.getElementById('question-text').value = question.question;
+    
+    // Handle theme - could be string or translation object
+    const themeValue = typeof question.theme === 'string' ? question.theme : (question.theme?.fr || question.theme?.en || '');
+    document.getElementById('question-theme').value = themeValue;
+    
+    // Handle question text - support both old (string) and new (translation object) formats
+    const questionTextFr = typeof question.question === 'string' ? question.question : (question.question?.fr || '');
+    const questionTextEn = typeof question.question === 'string' ? '' : (question.question?.en || '');
+    
+    document.getElementById('question-text-fr').value = questionTextFr;
+    document.getElementById('question-text-en').value = questionTextEn;
     document.getElementById('question-category').value = question.category || '';
     document.getElementById('question-weight').value = question.weight;
     

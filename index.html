@@ -6,7 +6,7 @@
     <title>Test Maturity Assessment</title>
     
     <!-- PWA Meta Tags -->
-    <meta name="description" content="Evaluate and track testing maturity across teams and applications">
+    <meta name="description" content="Testing maturity across teams and applications">
     <meta name="theme-color" content="#2563eb">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
@@ -71,15 +71,19 @@
                         <div class="header-title">
                             <h1>🎯 Test Maturity Assessment</h1>
                             <p class="subtitle">
-                                Evaluate and track testing maturity across teams and applications
+                                Testing maturity across teams and applications
                                 <span id="app-version" class="app-version" title="Current application version"></span>
                             </p>
                         </div>
                         <nav class="tabs tabs-desktop">
                             <button class="tab-button active" data-tab="interview">Interview</button>
-                            <button class="tab-button" data-tab="data">Data</button>
-                            <button class="tab-button" data-tab="question-editor">Question editor</button>
                             <button class="tab-button" data-tab="results">Results</button>
+                            <button class="tab-button" data-tab="question-editor">Question editor</button>
+                            <button class="tab-button" data-tab="data">Data</button>
+                            <div class="tab-overflow-container" style="display: none;">
+                                <button class="tab-overflow-btn" aria-label="More tabs">⋯</button>
+                                <div class="tab-overflow-menu" style="display: none;"></div>
+                            </div>
                         </nav>
                     </div>
                     <div class="header-right">
@@ -98,15 +102,24 @@
                             </div>
                             <button id="header-select-sync-folder" class="btn btn-sync" title="Select sync folder">📁</button>
                         </div>
+                        <div class="language-selector-container">
+                            <button id="language-selector-btn" class="btn btn-language" title="Change language" aria-label="Change language">
+                                🌐
+                            </button>
+                            <div id="language-menu" class="language-menu" style="display: none;">
+                                <button class="language-option" data-lang="fr">🇫🇷 Français</button>
+                                <button class="language-option" data-lang="en">🇬🇧 English</button>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </header>
 
             <nav class="tabs tabs-mobile">
                 <button class="tab-button active" data-tab="interview">Interview</button>
-                <button class="tab-button" data-tab="data">Data</button>
-                <button class="tab-button" data-tab="question-editor">Question editor</button>
                 <button class="tab-button" data-tab="results">Results</button>
+                <button class="tab-button" data-tab="question-editor">Question editor</button>
+                <button class="tab-button" data-tab="data">Data</button>
             </nav>
 
             <!-- Update Available Banner -->
@@ -383,8 +396,13 @@
                         </div>
                     </div>
                     <div class="form-group">
-                        <label for="question-text">Question Text: *</label>
-                        <textarea id="question-text" rows="3" placeholder="Enter the question text..." required></textarea>
+                        <label for="question-text-fr">Question Text (French): *</label>
+                        <textarea id="question-text-fr" rows="3" placeholder="Enter the question text in French..." required></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="question-text-en">Question Text (English):</label>
+                        <textarea id="question-text-en" rows="3" placeholder="Enter the question text in English (optional)..."></textarea>
+                        <small>If left empty, the French text will be used for English display</small>
                     </div>
                     <div class="form-group">
                         <label for="question-category">Category:</label>
