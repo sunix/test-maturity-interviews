@@ -146,14 +146,16 @@ function updateThemeDropdownTranslations() {
     let themeIndex = 0;
     options.forEach(option => {
         // Skip the first "Select a theme..." option
-        if (option.value === '') return;
+        if (option.value === '') {
+            return;
+        }
         
         // Update text to current language
         const theme = QUESTIONS_CATALOG.themes[themeIndex];
         if (theme) {
             option.textContent = getTranslation(theme, currentLanguage);
+            themeIndex++;  // Only increment for actual theme options
         }
-        themeIndex++;
     });
     
     // Restore selection
