@@ -8,7 +8,7 @@
     "test:local": "BASE_URL=http://localhost:8080 npm run test:report",
     "test:preview": "npm run test:report",
     "serve": "npx http-server . -p 8080 -c-1",
-    "postinstall": "npx playwright install chromium"
+    "postinstall": "npx playwright install chromium || echo 'Playwright install skipped (will be installed in CI)'"
   },
   "keywords": [
     "testing",
