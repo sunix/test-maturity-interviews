@@ -25,7 +25,7 @@ Feature: Interview Management
   Scenario: Save interview results
     Given I have started an interview with name "Test App"
     And I have answered at least 5 questions
-    When I click "Save Interview"
+    When I click save interview button
     Then I should see a success message
     And the interview should appear in the results list
 

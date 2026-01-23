@@ -9,7 +9,7 @@ Feature: Data Management
   Scenario: Export assessments
     Given I have at least one saved assessment
     When I navigate to the "Data" tab
-    And I click "Export All Data"
+    And I click export all data button
     Then a JSON file should be downloaded
     And the file should contain all assessments
 
@@ -17,7 +17,7 @@ Feature: Data Management
     Given I have an exported assessments file
     When I navigate to the "Data" tab
     And I upload the assessments file
-    And I click "Import"
+    And I click import button
     Then I should see a success message
     And the imported assessments should appear in the list
 

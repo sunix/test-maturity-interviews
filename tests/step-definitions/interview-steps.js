@@ -125,11 +125,6 @@ Given('I have answered at least {int} questions', async function(count) {
   }
 });
 
-When('I click {string}', async function(buttonText) {
-  await this.page.click(`button:has-text("${buttonText}")`);
-  await this.page.waitForTimeout(500);
-});
-
 Then('I should see a success message', async function() {
   // The app auto-saves, so we just need to verify the interview is stored
   // We can check this by verifying we can navigate to results

@@ -49,7 +49,9 @@ When('I select {string} from the results dropdown', async function(assessmentNam
 });
 
 When('I select {string} from the dropdown', async function(assessmentName) {
-  await this['I select from the results dropdown'](assessmentName);
+  const dropdown = await this.page.locator('select#assessment-select');
+  await dropdown.selectOption({ label: assessmentName });
+  await this.page.waitForTimeout(1000);
 });
 
 // Radar chart assertions

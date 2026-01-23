@@ -2,6 +2,7 @@ const { Given, When, Then } = require('@cucumber/cucumber');
 const { expect } = require('@playwright/test');
 const fs = require('fs');
 const path = require('path');
+const os = require('os');
 
 // Prerequisites
 Given('I have at least one saved assessment', async function() {
@@ -46,14 +47,19 @@ Given('I have an exported assessments file', async function() {
     }]
   };
   
-  // Store it for later use
-  this.importFilePath = '/tmp/test-export.json';
+  // Store it for later use - use OS temp directory for cross-platform compatibility
+  this.importFilePath = path.join(os.tmpdir(), 'test-export.json');
   fs.writeFileSync(this.importFilePath, JSON.stringify(this.exportedData));
 });
 
 // Export actions
-When('I click {string}', async function(buttonText) {
-  await this.page.click(`button:has-text("${buttonText}")`);
+When('I click export all data button', async function() {
+  await this.page.click('button:has-text("Export All Data")');
+  await this.page.waitForTimeout(500);
+});
+
+When('I click import button', async function() {
+  await this.page.click('button:has-text("Import")');
   await this.page.waitForTimeout(500);
 });
 

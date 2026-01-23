@@ -2,7 +2,7 @@ const reporter = require('cucumber-html-reporter');
 const fs = require('fs');
 const path = require('path');
 
-const reportDir = path.join(__dirname, '..', 'reports');
+const reportDir = path.join(__dirname, '..', '..', 'reports');
 const jsonReport = path.join(reportDir, 'cucumber-report.json');
 const htmlReport = path.join(reportDir, 'cucumber-report.html');
 
@@ -12,6 +12,10 @@ if (!fs.existsSync(jsonReport)) {
   process.exit(1);
 }
 
+// Read package.json to get version
+const packageJson = JSON.parse(fs.readFileSync(path.join(__dirname, '..', '..', 'package.json'), 'utf8'));
+const appVersion = packageJson.version;
+
 const options = {
   theme: 'bootstrap',
   jsonFile: jsonReport,
@@ -20,7 +24,7 @@ const options = {
   scenarioTimestamp: true,
   launchReport: false,
   metadata: {
-    'App Version': '2.2.2',
+    'App Version': appVersion,
     'Test Environment': process.env.BASE_URL || 'http://localhost:8080',
     'Browser': 'Chromium',
     'Platform': process.platform,
@@ -121,7 +125,7 @@ const indexHtml = `<!DOCTYPE html>
             <dd>${process.env.BASE_URL || 'http://localhost:8080'}</dd>
             
             <dt>🔧 App Version:</dt>
-            <dd>2.2.2</dd>
+            <dd>${appVersion}</dd>
             
             <dt>💻 Platform:</dt>
             <dd>${process.platform}</dd>
