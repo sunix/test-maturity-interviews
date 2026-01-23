@@ -4977,8 +4977,17 @@ function duplicateQuestion(questionId) {
     // Pre-fill all fields including suggested ID with -DUP suffix
     idInput.value = generateDuplicateId(questionId, questionsArray);
     idInput.disabled = false;
-    document.getElementById('question-theme').value = question.theme;
-    document.getElementById('question-text').value = question.question;
+    
+    // Handle theme - could be string or translation object
+    const themeValue = typeof question.theme === 'string' ? question.theme : (question.theme?.fr || question.theme?.en || '');
+    document.getElementById('question-theme').value = themeValue;
+    
+    // Handle question text - support both old (string) and new (translation object) formats
+    const questionTextFr = typeof question.question === 'string' ? question.question : (question.question?.fr || '');
+    const questionTextEn = typeof question.question === 'string' ? '' : (question.question?.en || '');
+    
+    document.getElementById('question-text-fr').value = questionTextFr;
+    document.getElementById('question-text-en').value = questionTextEn;
     document.getElementById('question-category').value = question.category || '';
     document.getElementById('question-weight').value = question.weight;
     
