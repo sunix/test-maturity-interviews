@@ -54,8 +54,24 @@ const SYNC_INTERVAL_IDLE = 5000; // 5 seconds when idle
 function getTranslation(value, lang = currentLanguage) {
     if (!value) return '';
     
-    // If value is already a string (old format), return it
+    // If value is already a string (old format), try to find matching theme
     if (typeof value === 'string') {
+        // Check if this is a theme string - look it up in QUESTIONS_CATALOG.themes
+        const matchingTheme = QUESTIONS_CATALOG.themes.find(t => 
+            (typeof t === 'object' && (t.fr === value || t.en === value)) ||
+            (typeof t === 'string' && t === value)
+        );
+        
+        if (matchingTheme && typeof matchingTheme === 'object') {
+            // Found a matching theme object, return translation
+            if (matchingTheme[lang]) {
+                return matchingTheme[lang];
+            }
+            // Fallback to French then English
+            return matchingTheme['fr'] || matchingTheme['en'] || value;
+        }
+        
+        // Not a theme or no match found, return as-is
         return value;
     }
     
