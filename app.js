@@ -570,6 +570,12 @@ function setupEventListeners() {
 }
 
 // Tab Overflow Handling
+const TAB_OVERFLOW_BTN_WIDTH = 60; // Width of overflow button in pixels
+const TAB_GAP_WIDTH = 8; // Gap between tabs (should match CSS)
+const RESIZE_DEBOUNCE_DELAY = 150; // Delay for resize event debouncing
+
+let handleTabOverflowFunc = null; // Store reference to the handler
+
 function initTabOverflow() {
     const tabsDesktop = document.querySelector('.tabs-desktop');
     const tabButtons = Array.from(tabsDesktop.querySelectorAll('.tab-button'));
@@ -589,8 +595,7 @@ function initTabOverflow() {
         
         // Calculate available space
         const tabsRect = tabsDesktop.getBoundingClientRect();
-        const overflowBtnWidth = 60; // Estimated width of overflow button
-        const availableWidth = tabsRect.width - overflowBtnWidth;
+        const availableWidth = tabsRect.width - TAB_OVERFLOW_BTN_WIDTH;
         
         let currentWidth = 0;
         const visibleTabs = [];
@@ -598,7 +603,7 @@ function initTabOverflow() {
         
         // Determine which tabs fit
         tabButtons.forEach((tab, index) => {
-            const tabWidth = tab.offsetWidth + 8; // +8 for gap
+            const tabWidth = tab.offsetWidth + TAB_GAP_WIDTH;
             if (currentWidth + tabWidth <= availableWidth) {
                 currentWidth += tabWidth;
                 visibleTabs.push(tab);
@@ -632,6 +637,9 @@ function initTabOverflow() {
         }
     }
     
+    // Store reference for external calls
+    handleTabOverflowFunc = handleTabOverflow;
+    
     // Handle overflow button click
     overflowBtn.addEventListener('click', (e) => {
         e.stopPropagation();
@@ -652,7 +660,7 @@ function initTabOverflow() {
     let resizeTimeout;
     window.addEventListener('resize', () => {
         clearTimeout(resizeTimeout);
-        resizeTimeout = setTimeout(handleTabOverflow, 150);
+        resizeTimeout = setTimeout(handleTabOverflow, RESIZE_DEBOUNCE_DELAY);
     });
 }
 
@@ -686,6 +694,11 @@ function switchTab(tabName) {
             content.classList.add('active');
         }
     });
+    
+    // Update overflow menu to reflect new active state
+    if (handleTabOverflowFunc) {
+        handleTabOverflowFunc();
+    }
     
     // Show/hide interview controls based on active tab
     const interviewControls = document.getElementById('interview-controls');
