@@ -132,8 +132,11 @@ function setLanguage(lang) {
     renderQuestionsList();
     updateQuestionsStatus();
     
-    // Re-render results to update translations
-    displayResults();
+    // Re-render results to update translations if results tab is visible or has data
+    const resultsTab = document.getElementById('tab-results');
+    if (resultsTab && (resultsTab.style.display !== 'none' || assessments.length > 0)) {
+        displayResults();
+    }
 }
 
 // Helper function to update theme dropdown translations
