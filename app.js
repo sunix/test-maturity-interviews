@@ -124,10 +124,40 @@ function setLanguage(lang) {
     // Update active state in language menu
     updateLanguageActiveState(lang);
     
+    // Update theme dropdown options to show translated theme names
+    updateThemeDropdownTranslations();
+    
     // Re-render questions and UI
     renderQuestions();
     renderQuestionsList();
     updateQuestionsStatus();
+}
+
+// Helper function to update theme dropdown translations
+function updateThemeDropdownTranslations() {
+    const themeSelect = document.getElementById('question-theme');
+    if (!themeSelect) return;
+    
+    // Save current selection
+    const currentValue = themeSelect.value;
+    
+    // Update option text content to current language
+    const options = themeSelect.querySelectorAll('option');
+    let themeIndex = 0;
+    options.forEach(option => {
+        // Skip the first "Select a theme..." option
+        if (option.value === '') return;
+        
+        // Update text to current language
+        const theme = QUESTIONS_CATALOG.themes[themeIndex];
+        if (theme) {
+            option.textContent = getTranslation(theme, currentLanguage);
+        }
+        themeIndex++;
+    });
+    
+    // Restore selection
+    themeSelect.value = currentValue;
 }
 
 // Helper function to get active questions catalog
@@ -4368,12 +4398,15 @@ function initQuestionEditor() {
     const themeSelect = document.getElementById('question-theme');
     const questionIdInput = document.getElementById('question-id');
     
-    // Populate theme dropdown
+    // Populate theme dropdown with translated values
     if (themeSelect) {
         QUESTIONS_CATALOG.themes.forEach(theme => {
             const option = document.createElement('option');
-            option.value = theme;
-            option.textContent = theme;
+            // Use French as the canonical value (for consistency with THEME_PREFIXES)
+            const themeValueFr = getTranslation(theme, 'fr');
+            option.value = themeValueFr;
+            // Display in current language
+            option.textContent = getTranslation(theme, currentLanguage);
             themeSelect.appendChild(option);
         });
         
