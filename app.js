@@ -569,6 +569,100 @@ function setupEventListeners() {
     }
 }
 
+// Tab Overflow Handling
+function initTabOverflow() {
+    const tabsDesktop = document.querySelector('.tabs-desktop');
+    const tabButtons = Array.from(tabsDesktop.querySelectorAll('.tab-button'));
+    const overflowContainer = tabsDesktop.querySelector('.tab-overflow-container');
+    const overflowBtn = tabsDesktop.querySelector('.tab-overflow-btn');
+    const overflowMenu = tabsDesktop.querySelector('.tab-overflow-menu');
+    
+    if (!overflowContainer || !overflowBtn || !overflowMenu) return;
+    
+    function handleTabOverflow() {
+        // Reset all tabs to visible
+        tabButtons.forEach(tab => {
+            tab.style.display = '';
+        });
+        overflowContainer.style.display = 'none';
+        overflowMenu.innerHTML = '';
+        
+        // Calculate available space
+        const tabsRect = tabsDesktop.getBoundingClientRect();
+        const overflowBtnWidth = 60; // Estimated width of overflow button
+        const availableWidth = tabsRect.width - overflowBtnWidth;
+        
+        let currentWidth = 0;
+        const visibleTabs = [];
+        const overflowTabs = [];
+        
+        // Determine which tabs fit
+        tabButtons.forEach((tab, index) => {
+            const tabWidth = tab.offsetWidth + 8; // +8 for gap
+            if (currentWidth + tabWidth <= availableWidth) {
+                currentWidth += tabWidth;
+                visibleTabs.push(tab);
+            } else {
+                overflowTabs.push(tab);
+            }
+        });
+        
+        // If there are overflow tabs, show the overflow menu
+        if (overflowTabs.length > 0) {
+            overflowTabs.forEach(tab => {
+                tab.style.display = 'none';
+                
+                // Clone tab for overflow menu
+                const menuItem = document.createElement('button');
+                menuItem.className = 'tab-button';
+                if (tab.classList.contains('active')) {
+                    menuItem.classList.add('active');
+                }
+                menuItem.dataset.tab = tab.dataset.tab;
+                menuItem.textContent = tab.textContent;
+                menuItem.addEventListener('click', () => {
+                    switchTab(tab.dataset.tab);
+                    overflowMenu.style.display = 'none';
+                });
+                
+                overflowMenu.appendChild(menuItem);
+            });
+            
+            overflowContainer.style.display = 'flex';
+        }
+    }
+    
+    // Handle overflow button click
+    overflowBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const isVisible = overflowMenu.style.display !== 'none';
+        overflowMenu.style.display = isVisible ? 'none' : 'block';
+    });
+    
+    // Close menu when clicking outside
+    document.addEventListener('click', (e) => {
+        if (!overflowContainer.contains(e.target)) {
+            overflowMenu.style.display = 'none';
+        }
+    });
+    
+    // Initial check and recheck on window resize
+    handleTabOverflow();
+    
+    let resizeTimeout;
+    window.addEventListener('resize', () => {
+        clearTimeout(resizeTimeout);
+        resizeTimeout = setTimeout(handleTabOverflow, 150);
+    });
+}
+
+// Initialize tab overflow handling after DOM is loaded
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initTabOverflow);
+} else {
+    initTabOverflow();
+}
+
 // Close mobile menu
 function closeMobileMenu() {
     if (hamburgerBtn && tabsMobile) {
