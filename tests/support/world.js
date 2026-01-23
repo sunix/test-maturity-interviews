@@ -1,5 +1,8 @@
 const { setWorldConstructor, Before, After, BeforeAll, AfterAll } = require('@cucumber/cucumber');
 const { chromium } = require('playwright');
+const fs = require('fs');
+const os = require('os');
+const path = require('path');
 
 class CustomWorld {
   constructor() {
@@ -7,20 +10,25 @@ class CustomWorld {
     this.context = null;
     this.page = null;
     this.baseURL = process.env.BASE_URL || 'http://localhost:8080';
+    this.tempFiles = []; // Track temp files for cleanup
   }
 
   async init() {
     try {
-      const slowMo = process.env.SLOWMO ? parseInt(process.env.SLOWMO, 10) : 0;
-      
-      // Validate slowMo is a valid number
-      if (isNaN(slowMo) || slowMo < 0) {
-        console.warn('Invalid SLOWMO value, using 0');
+      // Validate and parse SLOWMO value
+      let slowMo = 0;
+      if (process.env.SLOWMO) {
+        const parsed = parseInt(process.env.SLOWMO, 10);
+        if (!isNaN(parsed) && parsed >= 0) {
+          slowMo = parsed;
+        } else {
+          console.warn('Invalid SLOWMO value, using 0');
+        }
       }
       
       this.browser = await chromium.launch({
         headless: process.env.HEADED !== 'true',
-        slowMo: isNaN(slowMo) || slowMo < 0 ? 0 : slowMo
+        slowMo
       });
       this.context = await this.browser.newContext({
         viewport: { width: 1280, height: 720 },
@@ -37,6 +45,17 @@ class CustomWorld {
     if (this.page) await this.page.close();
     if (this.context) await this.context.close();
     if (this.browser) await this.browser.close();
+    
+    // Cleanup temp files
+    this.tempFiles.forEach(filePath => {
+      try {
+        if (fs.existsSync(filePath)) {
+          fs.unlinkSync(filePath);
+        }
+      } catch (error) {
+        console.warn(`Failed to cleanup temp file ${filePath}:`, error.message);
+      }
+    });
   }
 }
 

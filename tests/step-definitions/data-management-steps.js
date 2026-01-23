@@ -51,6 +51,9 @@ Given('I have an exported assessments file', async function() {
   const uniqueId = Date.now();
   this.importFilePath = path.join(os.tmpdir(), `test-export-${uniqueId}.json`);
   fs.writeFileSync(this.importFilePath, JSON.stringify(this.exportedData));
+  
+  // Track for cleanup
+  this.tempFiles.push(this.importFilePath);
 });
 
 // Export actions

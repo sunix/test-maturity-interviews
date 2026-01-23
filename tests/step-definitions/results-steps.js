@@ -77,12 +77,6 @@ When('I select {string} from the results dropdown', async function(assessmentNam
   await this.page.waitForTimeout(1000);
 });
 
-When('I select {string} from the dropdown', async function(assessmentName) {
-  const dropdown = await this.page.locator('select#assessment-select');
-  await dropdown.selectOption({ label: assessmentName });
-  await this.page.waitForTimeout(1000);
-});
-
 // Radar chart assertions
 Then('I should see a radar chart with {int} themes', async function(themeCount) {
   await this.page.waitForSelector('canvas', { timeout: 5000 });
