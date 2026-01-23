@@ -1,6 +1,10 @@
 // Application version for compatibility tracking
 const APP_VERSION = '2.2.2'; // Minor version bump: cache refresh
 
+// Language state - default to French to maintain current user experience
+let currentLanguage = localStorage.getItem('appLanguage') || 'fr';
+const AVAILABLE_LANGUAGES = ['fr', 'en'];
+
 // Application state
 let currentAssessment = {
     name: '', // Application name
@@ -44,6 +48,62 @@ let editingIdleTimeout = null;
 const EDITING_IDLE_THRESHOLD = 5000; // Consider idle after 5 seconds of no changes
 const SYNC_INTERVAL_ACTIVE = 15000; // 15 seconds during active editing
 const SYNC_INTERVAL_IDLE = 5000; // 5 seconds when idle
+
+// Helper function to get translation for a text value
+// Supports both old format (string) and new format (object with language keys)
+function getTranslation(value, lang = currentLanguage) {
+    if (!value) return '';
+    
+    // If value is already a string (old format), return it
+    if (typeof value === 'string') {
+        return value;
+    }
+    
+    // If value is an object (new format), get the translation
+    if (typeof value === 'object') {
+        // Try to get the translation in the current language
+        if (value[lang]) {
+            return value[lang];
+        }
+        // Fallback to French if translation not available
+        if (value['fr']) {
+            return value['fr'];
+        }
+        // Fallback to English
+        if (value['en']) {
+            return value['en'];
+        }
+        // Fallback to first available language
+        const keys = Object.keys(value);
+        if (keys.length > 0) {
+            return value[keys[0]];
+        }
+    }
+    
+    return '';
+}
+
+// Helper function to set language
+function setLanguage(lang) {
+    if (!AVAILABLE_LANGUAGES.includes(lang)) {
+        console.warn(`Language ${lang} not available, using default`);
+        return;
+    }
+    
+    currentLanguage = lang;
+    localStorage.setItem('appLanguage', lang);
+    
+    // Update language selector if it exists
+    const langSelector = document.getElementById('language-selector');
+    if (langSelector) {
+        langSelector.value = lang;
+    }
+    
+    // Re-render questions and UI
+    renderQuestions();
+    renderQuestionsList();
+    updateQuestionsStatus();
+}
 
 // Helper function to get active questions catalog
 function getActiveQuestionsCatalog() {
@@ -408,6 +468,17 @@ function setupEventListeners() {
     }
     if (editGeneralCommentsInput) {
         editGeneralCommentsInput.addEventListener('input', handleMetadataChange);
+    }
+    
+    // Language selector
+    const languageSelector = document.getElementById('language-selector');
+    if (languageSelector) {
+        // Set initial value from localStorage
+        languageSelector.value = currentLanguage;
+        // Add change event listener
+        languageSelector.addEventListener('change', (e) => {
+            setLanguage(e.target.value);
+        });
     }
 }
 
@@ -1021,8 +1092,8 @@ function renderQuestions() {
         // Determine theme grouping
         const prevQuestion = index > 0 ? filteredQuestions[index - 1] : null;
         const nextQuestion = index < filteredQuestions.length - 1 ? filteredQuestions[index + 1] : null;
-        const isFirstInGroup = !prevQuestion || prevQuestion.theme !== question.theme;
-        const isLastInGroup = !nextQuestion || nextQuestion.theme !== question.theme;
+        const isFirstInGroup = !prevQuestion || getTranslation(prevQuestion.theme) !== getTranslation(question.theme);
+        const isLastInGroup = !nextQuestion || getTranslation(nextQuestion.theme) !== getTranslation(question.theme);
         
         // Apply grouping classes
         if (!isFirstInGroup && !isLastInGroup) {
@@ -1034,7 +1105,8 @@ function renderQuestions() {
         }
         
         // Show theme header only for first question in group
-        const themeHeader = isFirstInGroup ? `<div class="question-theme-header">${question.theme}</div>` : '';
+        const themeText = getTranslation(question.theme);
+        const themeHeader = isFirstInGroup ? `<div class="question-theme-header">${themeText}</div>` : '';
         
         // Generate profile badges for questions
         const profileBadges = question.profiles
@@ -1084,10 +1156,11 @@ function renderQuestions() {
             `;
         }
         
+        const questionText = getTranslation(question.question);
         questionDiv.innerHTML = `
             ${themeHeader}
             <div class="question-content">
-                <div class="question-text"><span class="question-id">${question.id}</span>${question.question}</div>
+                <div class="question-text"><span class="question-id">${question.id}</span>${questionText}</div>
                 <div class="answer-buttons">
                     <button class="answer-btn" data-question-id="${question.id}" data-answer="yes">
                         ✓ Yes
@@ -1597,9 +1670,11 @@ function calculateMaturityScores(assessment) {
     const scores = {};
     const themeData = {};
 
-    // Initialize theme data
+    // Initialize theme data - use theme objects directly
     QUESTIONS_CATALOG.themes.forEach(theme => {
-        themeData[theme] = {
+        // Create a normalized theme key (use French as canonical key for backward compatibility)
+        const themeKey = getTranslation(theme, 'fr');
+        themeData[themeKey] = {
             totalWeight: 0,
             earnedWeight: 0
         };
@@ -1610,9 +1685,13 @@ function calculateMaturityScores(assessment) {
     getActiveQuestionsCatalog().forEach(question => {
         const answer = assessment.answers[question.id];
         if (answer) {
-            themeData[question.theme].totalWeight += question.weight;
-            if (answer === 'yes') {
-                themeData[question.theme].earnedWeight += question.weight;
+            // Normalize theme to French for consistent key
+            const themeKey = getTranslation(question.theme, 'fr');
+            if (themeData[themeKey]) {
+                themeData[themeKey].totalWeight += question.weight;
+                if (answer === 'yes') {
+                    themeData[themeKey].earnedWeight += question.weight;
+                }
             }
         }
     });
@@ -1998,8 +2077,16 @@ function displayResults() {
         const score = scores[theme];
         const div = document.createElement('div');
         div.className = 'theme-score';
+        // Display theme in current language - theme is stored in French (canonical key)
+        // Find the matching theme from QUESTIONS_CATALOG.themes
+        let themeObj = QUESTIONS_CATALOG.themes.find(t => getTranslation(t, 'fr') === theme);
+        if (!themeObj) {
+            themeObj = theme; // Fallback to string if not found
+        }
+        const displayTheme = getTranslation(themeObj);
+        
         div.innerHTML = `
-            <span class="theme-name">${theme}</span>
+            <span class="theme-name">${displayTheme}</span>
             <div>
                 <span class="theme-maturity">${score}/5</span>
                 <span class="maturity-level">${maturityLabels[score]}</span>
@@ -2324,7 +2411,15 @@ function renderRadarChart(scores) {
         radarChart.destroy();
     }
     
-    const labels = Object.keys(scores);
+    // Convert theme keys to translated labels
+    const labels = Object.keys(scores).map(theme => {
+        // Find the matching theme from QUESTIONS_CATALOG.themes
+        let themeObj = QUESTIONS_CATALOG.themes.find(t => getTranslation(t, 'fr') === theme);
+        if (!themeObj) {
+            themeObj = theme; // Fallback to string if not found
+        }
+        return getTranslation(themeObj);
+    });
     const data = Object.values(scores);
     
     radarChart = new Chart(ctx, {
@@ -4409,12 +4504,15 @@ function renderQuestionsList() {
         
         const customBadge = customQuestions ? '<span class="custom-badge">Custom</span>' : '';
         
+        const themeText = getTranslation(question.theme);
+        const questionText = getTranslation(question.question);
+        
         item.innerHTML = `
             <div class="question-editor-header">
                 <div class="question-editor-header-left">
                     <span class="question-drag-handle">☰</span>
                     <span class="question-editor-id">${question.id}</span>
-                    <span class="question-editor-theme">${question.theme}</span>
+                    <span class="question-editor-theme">${themeText}</span>
                     ${customBadge}
                 </div>
                 <div class="question-editor-actions">
@@ -4424,7 +4522,7 @@ function renderQuestionsList() {
                     ${customQuestions ? `<button class="btn btn-small btn-danger" onclick="deleteQuestion('${question.id}')">🗑️</button>` : ''}
                 </div>
             </div>
-            <div class="question-editor-text">${question.question}</div>
+            <div class="question-editor-text">${questionText}</div>
             <div class="question-editor-meta">
                 ${profileBadges}
                 ${question.category ? `<span>Category: ${question.category}</span>` : ''}

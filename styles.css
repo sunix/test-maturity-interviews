@@ -173,6 +173,34 @@ header {
     gap: 1rem;
 }
 
+/* Language Selector */
+.language-selector-container {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+.language-select {
+    padding: 0.5rem 0.75rem;
+    border: 2px solid var(--border-color);
+    border-radius: 0.5rem;
+    background-color: var(--bg-color);
+    color: var(--text-primary);
+    font-size: 0.875rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.language-select:hover {
+    border-color: var(--primary-color);
+}
+
+.language-select:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+}
+
 .header-title {
     flex-shrink: 0;
 }
