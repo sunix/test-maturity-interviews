@@ -3528,7 +3528,7 @@ function exportInterviewQuestionnaireToExcel() {
             ['6. Import this file back into the application using "Import Questionnaire" button'],
             [],
             ['Important Notes:'],
-            ['- Do NOT modify the "Question ID" or "Question Text" columns'],
+            ['- Do NOT modify the "Question ID", "Question Text Fr", or "Question Text En" columns'],
             ['- Valid Answer values: Yes, No, or blank (case-insensitive)'],
             ['- Valid Answered By values: developer, qa, devops, manager (case-insensitive)'],
             ['- "Answered By" is pre-filled with the first selected profile when available'],
@@ -3550,9 +3550,9 @@ function exportInterviewQuestionnaireToExcel() {
         instructionsSheet['!cols'] = [{ wch: 25 }, { wch: 80 }];
         XLSX.utils.book_append_sheet(workbook, instructionsSheet, 'Instructions');
         
-        // Create questionnaire sheet with simplified columns
+        // Create questionnaire sheet with simplified columns including multilingual support
         const questionnaireData = [
-            ['Question ID', 'Question Text', 'Answer', 'Answered By', 'Comment', 'Attachment Notes']
+            ['Question ID', 'Question Text Fr', 'Question Text En', 'Answer', 'Answered By', 'Comment', 'Attachment Notes']
         ];
         
         // Determine default "Answered By" value (first selected profile)
@@ -3574,9 +3574,23 @@ function exportInterviewQuestionnaireToExcel() {
                 attachmentNotes = attachments.map(att => att.name).join(', ');
             }
             
+            // Handle both old format (string) and new format (object with fr/en)
+            let questionTextFr = '';
+            let questionTextEn = '';
+            if (typeof question.question === 'string') {
+                // Old format: plain string - put it in both columns
+                questionTextFr = question.question;
+                questionTextEn = question.question;
+            } else if (typeof question.question === 'object' && question.question !== null) {
+                // New format: object with fr and en properties
+                questionTextFr = question.question.fr || '';
+                questionTextEn = question.question.en || '';
+            }
+            
             questionnaireData.push([
                 question.id,
-                question.question,
+                questionTextFr,
+                questionTextEn,
                 existingAnswer,
                 existingAnsweredBy,
                 existingComment,
@@ -3589,7 +3603,8 @@ function exportInterviewQuestionnaireToExcel() {
         // Auto-size columns
         questionnaireSheet['!cols'] = [
             { wch: 12 },  // Question ID
-            { wch: 70 },  // Question Text
+            { wch: 70 },  // Question Text Fr
+            { wch: 70 },  // Question Text En
             { wch: 10 },  // Answer
             { wch: 15 },  // Answered By
             { wch: 40 },  // Comment
