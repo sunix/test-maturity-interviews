@@ -109,11 +109,12 @@
             <li>🔲 Open the Excel file and verify structure:
                 <ul>
                     <li>Instructions sheet present</li>
-                    <li>Questionnaire sheet present</li>
+                    <li>Questionnaire sheet present with multilingual columns</li>
                     <li>Interview metadata shown</li>
                     <li>All questions listed</li>
+                    <li>Question Text Fr and Question Text En columns populated</li>
                     <li>Existing answers populated</li>
-                    <li>Column headers correct</li>
+                    <li>Column headers correct (includes both French and English text columns)</li>
                 </ul>
             </li>
             <li>🔲 Fill in/modify some answers in Excel</li>
@@ -143,16 +144,17 @@
         <h3>Questionnaire Sheet Columns:</h3>
         <ol>
             <li><strong>Question ID:</strong> Unique identifier (e.g., GO-1, MS-5)</li>
-            <li><strong>Theme:</strong> The maturity theme</li>
-            <li><strong>Profiles:</strong> Who can answer (developer, qa, devops, manager)</li>
-            <li><strong>Question Text:</strong> The actual question</li>
+            <li><strong>Question Text Fr:</strong> The question in French</li>
+            <li><strong>Question Text En:</strong> The question in English</li>
             <li><strong>Answer:</strong> yes/no (editable)</li>
             <li><strong>Answered By:</strong> Profile who answered (editable)</li>
             <li><strong>Comment:</strong> Additional notes (editable)</li>
             <li><strong>Attachment Notes:</strong> References to attachments (editable)</li>
-            <li><strong>Weight:</strong> Question importance (1-5)</li>
-            <li><strong>Category:</strong> Test category (optional)</li>
         </ol>
+        <div class="info">
+            <strong>Note:</strong> Questions now support multilingual format with separate French and English columns.
+            Old format questions (plain strings) will appear in both columns.
+        </div>
     </div>
 
     <div class="test-section">

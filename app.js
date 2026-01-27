@@ -3581,7 +3581,7 @@ function exportInterviewQuestionnaireToExcel() {
                 // Old format: plain string - put it in both columns
                 questionTextFr = question.question;
                 questionTextEn = question.question;
-            } else if (typeof question.question === 'object') {
+            } else if (typeof question.question === 'object' && question.question !== null) {
                 // New format: object with fr and en properties
                 questionTextFr = question.question.fr || '';
                 questionTextEn = question.question.en || '';
