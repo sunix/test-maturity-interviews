@@ -2525,7 +2525,7 @@ function displayDetailedAnswers(assessment) {
                         <span class="answer-indicator ${answerClass}">${answerIcon} ${answer.toUpperCase()}</span>
                     </div>
                 </div>
-                <div class="answer-question">${getTranslation(question.question)}</div>
+                <div class="answer-question"><strong>[${escapeHtml(question.id)}]</strong> ${getTranslation(question.question)}</div>
                 ${commentHtml}
                 ${mergedDetailsHtml}
                 ${attachmentsHtml}
