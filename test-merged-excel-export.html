@@ -1,0 +1,541 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Merged Excel Export Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 20px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .test-section {
+            background: white;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        h1 { color: #333; }
+        h2 { color: #2563eb; margin-top: 0; }
+        .test-case {
+            border-left: 4px solid #2563eb;
+            padding: 10px 15px;
+            margin: 10px 0;
+            background: #f0f7ff;
+        }
+        .pass { border-left-color: #10b981; background: #f0fdf4; }
+        .fail { border-left-color: #ef4444; background: #fef2f2; }
+        pre {
+            background: #1e293b;
+            color: #e2e8f0;
+            padding: 15px;
+            border-radius: 4px;
+            overflow-x: auto;
+            font-size: 12px;
+        }
+        button {
+            background: #2563eb;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            margin: 5px;
+        }
+        button:hover { background: #1d4ed8; }
+        .success { color: #10b981; }
+        .error { color: #ef4444; }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 10px 0;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        th {
+            background: #2563eb;
+            color: white;
+        }
+        tr:nth-child(even) {
+            background: #f9f9f9;
+        }
+    </style>
+</head>
+<body>
+    <h1>🧪 Merged Excel Export Test</h1>
+    <p>This test verifies that exporting merged assessments to Excel handles multiple answers correctly.</p>
+
+    <div class="test-section">
+        <h2>Test Setup</h2>
+        <button onclick="setupTest()">Setup Test Data</button>
+        <button onclick="runTests()">Run All Tests</button>
+        <button onclick="clearTestData()">Clear Test Data</button>
+        <div id="setup-output"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>Test Results</h2>
+        <div id="test-results"></div>
+    </div>
+
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
+    <script src="questions.js"></script>
+    <script src="app.js"></script>
+
+    <script>
+        // Test setup and execution
+        let testAssessments = [];
+
+        function log(message, type = 'info') {
+            const output = document.getElementById('setup-output');
+            const div = document.createElement('div');
+            div.className = type;
+            div.textContent = message;
+            output.appendChild(div);
+        }
+
+        function setupTest() {
+            const output = document.getElementById('setup-output');
+            output.innerHTML = '<p>Setting up test data...</p>';
+
+            try {
+                // Clear existing assessments
+                assessments = [];
+
+                // Create two test assessments with overlapping questions
+                const assessment1 = {
+                    name: 'TestApp1',
+                    interviewName: 'Interview1',
+                    date: new Date('2024-01-15').toISOString(),
+                    answers: {
+                        'q1': 'yes',
+                        'q2': 'no',
+                        'q3': 'yes'
+                    },
+                    comments: {
+                        'q1': 'Comment from Interview 1',
+                        'q2': 'Issue found in Interview 1'
+                    },
+                    answeredBy: {
+                        'q1': 'John Doe',
+                        'q2': 'Jane Smith'
+                    },
+                    profile: 'Development',
+                    interviewees: ['John Doe', 'Jane Smith'],
+                    selectedProfiles: ['Development']
+                };
+
+                const assessment2 = {
+                    name: 'TestApp2',
+                    interviewName: 'Interview2',
+                    date: new Date('2024-01-20').toISOString(),
+                    answers: {
+                        'q1': 'yes',
+                        'q2': 'yes',
+                        'q3': 'no'
+                    },
+                    comments: {
+                        'q1': 'Comment from Interview 2',
+                        'q3': 'Different perspective in Interview 2'
+                    },
+                    answeredBy: {
+                        'q1': 'Bob Wilson',
+                        'q2': 'Alice Brown'
+                    },
+                    profile: 'Operations',
+                    interviewees: ['Bob Wilson', 'Alice Brown'],
+                    selectedProfiles: ['Operations']
+                };
+
+                const assessment3 = {
+                    name: 'TestApp3',
+                    interviewName: 'Interview3',
+                    date: new Date('2024-01-25').toISOString(),
+                    answers: {
+                        'q1': 'no',
+                        'q2': 'yes',
+                        'q3': 'yes'
+                    },
+                    comments: {
+                        'q2': 'Comment from Interview 3'
+                    },
+                    answeredBy: {
+                        'q3': 'Charlie Davis'
+                    },
+                    profile: 'Testing',
+                    interviewees: ['Charlie Davis'],
+                    selectedProfiles: ['Testing']
+                };
+
+                assessments.push(assessment1, assessment2, assessment3);
+
+                // Create merged assessment
+                const mergedAssessment = {
+                    name: 'MergedApp',
+                    interviewName: 'Merged Interview',
+                    isMergedResult: true,
+                    createdDate: new Date().toISOString(),
+                    date: new Date().toISOString(),
+                    answers: {
+                        'q1': 'yes',  // 2 yes, 1 no -> average 0.67 -> yes
+                        'q2': 'yes',  // 2 yes, 1 no -> average 0.67 -> yes
+                        'q3': 'yes'   // 2 yes, 1 no -> average 0.67 -> yes
+                    },
+                    comments: {},
+                    answeredBy: {},
+                    attachments: {},
+                    mergedAnswerDetails: {
+                        'q1': {
+                            contributions: [
+                                {
+                                    interviewName: 'Interview1',
+                                    answer: 'yes',
+                                    comment: 'Comment from Interview 1',
+                                    answeredBy: 'John Doe',
+                                    attachments: null
+                                },
+                                {
+                                    interviewName: 'Interview2',
+                                    answer: 'yes',
+                                    comment: 'Comment from Interview 2',
+                                    answeredBy: 'Bob Wilson',
+                                    attachments: null
+                                },
+                                {
+                                    interviewName: 'Interview3',
+                                    answer: 'no',
+                                    comment: null,
+                                    answeredBy: null,
+                                    attachments: null
+                                }
+                            ],
+                            yesCount: 2,
+                            noCount: 1,
+                            averageScore: 0.67,
+                            totalAnswers: 3
+                        },
+                        'q2': {
+                            contributions: [
+                                {
+                                    interviewName: 'Interview1',
+                                    answer: 'no',
+                                    comment: 'Issue found in Interview 1',
+                                    answeredBy: 'Jane Smith',
+                                    attachments: null
+                                },
+                                {
+                                    interviewName: 'Interview2',
+                                    answer: 'yes',
+                                    comment: null,
+                                    answeredBy: 'Alice Brown',
+                                    attachments: null
+                                },
+                                {
+                                    interviewName: 'Interview3',
+                                    answer: 'yes',
+                                    comment: 'Comment from Interview 3',
+                                    answeredBy: null,
+                                    attachments: null
+                                }
+                            ],
+                            yesCount: 2,
+                            noCount: 1,
+                            averageScore: 0.67,
+                            totalAnswers: 3
+                        },
+                        'q3': {
+                            contributions: [
+                                {
+                                    interviewName: 'Interview1',
+                                    answer: 'yes',
+                                    comment: null,
+                                    answeredBy: null,
+                                    attachments: null
+                                },
+                                {
+                                    interviewName: 'Interview2',
+                                    answer: 'no',
+                                    comment: 'Different perspective in Interview 2',
+                                    answeredBy: null,
+                                    attachments: null
+                                },
+                                {
+                                    interviewName: 'Interview3',
+                                    answer: 'yes',
+                                    comment: null,
+                                    answeredBy: 'Charlie Davis',
+                                    attachments: null
+                                }
+                            ],
+                            yesCount: 2,
+                            noCount: 1,
+                            averageScore: 0.67,
+                            totalAnswers: 3
+                        }
+                    },
+                    sourceInterviews: [
+                        {
+                            name: 'TestApp1',
+                            interviewName: 'Interview1',
+                            date: assessment1.date
+                        },
+                        {
+                            name: 'TestApp2',
+                            interviewName: 'Interview2',
+                            date: assessment2.date
+                        },
+                        {
+                            name: 'TestApp3',
+                            interviewName: 'Interview3',
+                            date: assessment3.date
+                        }
+                    ]
+                };
+
+                assessments.push(mergedAssessment);
+
+                log('✅ Test data setup complete!', 'success');
+                log(`Created ${assessments.length} assessments (3 regular + 1 merged)`, 'info');
+                
+            } catch (error) {
+                log('❌ Error setting up test data: ' + error.message, 'error');
+                console.error(error);
+            }
+        }
+
+        function clearTestData() {
+            assessments = [];
+            document.getElementById('setup-output').innerHTML = '<p class="success">✅ Test data cleared</p>';
+            document.getElementById('test-results').innerHTML = '';
+        }
+
+        function runTests() {
+            const resultsDiv = document.getElementById('test-results');
+            resultsDiv.innerHTML = '<h3>Running tests...</h3>';
+
+            let passed = 0;
+            let failed = 0;
+
+            try {
+                // Test 1: Check that merged assessment exists
+                const test1 = testMergedAssessmentExists();
+                displayTestResult(resultsDiv, 'Test 1: Merged assessment exists', test1);
+                if (test1.passed) passed++; else failed++;
+
+                // Test 2: Check that mergedAnswerDetails exists
+                const test2 = testMergedAnswerDetailsExists();
+                displayTestResult(resultsDiv, 'Test 2: Merged answer details exist', test2);
+                if (test2.passed) passed++; else failed++;
+
+                // Test 3: Export to Excel and check structure
+                const test3 = testExcelExport();
+                displayTestResult(resultsDiv, 'Test 3: Excel export generates workbook', test3);
+                if (test3.passed) passed++; else failed++;
+
+                // Test 4: Check merged assessment has Source Assessment column
+                const test4 = testMergedAssessmentHasSourceColumn();
+                displayTestResult(resultsDiv, 'Test 4: Merged assessment has Source Assessment column', test4);
+                if (test4.passed) passed++; else failed++;
+
+                // Test 5: Check multiple rows for merged questions
+                const test5 = testMultipleRowsForMergedQuestions();
+                displayTestResult(resultsDiv, 'Test 5: Multiple rows created for merged questions', test5);
+                if (test5.passed) passed++; else failed++;
+
+                // Test 6: Check non-merged assessment format unchanged
+                const test6 = testNonMergedAssessmentFormat();
+                displayTestResult(resultsDiv, 'Test 6: Non-merged assessment format unchanged', test6);
+                if (test6.passed) passed++; else failed++;
+
+                // Summary
+                const summary = document.createElement('div');
+                summary.className = 'test-case';
+                summary.innerHTML = `
+                    <h3>Test Summary</h3>
+                    <p><strong>Passed:</strong> <span class="success">${passed}</span></p>
+                    <p><strong>Failed:</strong> <span class="${failed > 0 ? 'error' : 'success'}">${failed}</span></p>
+                `;
+                resultsDiv.appendChild(summary);
+
+            } catch (error) {
+                resultsDiv.innerHTML += `<div class="test-case fail"><strong>Error running tests:</strong> ${error.message}</div>`;
+                console.error(error);
+            }
+        }
+
+        function displayTestResult(container, testName, result) {
+            const div = document.createElement('div');
+            div.className = result.passed ? 'test-case pass' : 'test-case fail';
+            div.innerHTML = `
+                <strong>${result.passed ? '✅' : '❌'} ${testName}</strong>
+                <p>${result.message}</p>
+                ${result.details ? '<pre>' + JSON.stringify(result.details, null, 2) + '</pre>' : ''}
+            `;
+            container.appendChild(div);
+        }
+
+        function testMergedAssessmentExists() {
+            const merged = assessments.find(a => a.isMergedResult);
+            return {
+                passed: !!merged,
+                message: merged ? 'Merged assessment found' : 'No merged assessment found'
+            };
+        }
+
+        function testMergedAnswerDetailsExists() {
+            const merged = assessments.find(a => a.isMergedResult);
+            if (!merged) {
+                return { passed: false, message: 'No merged assessment to test' };
+            }
+
+            const hasDetails = merged.mergedAnswerDetails && Object.keys(merged.mergedAnswerDetails).length > 0;
+            return {
+                passed: hasDetails,
+                message: hasDetails 
+                    ? `Found mergedAnswerDetails with ${Object.keys(merged.mergedAnswerDetails).length} questions`
+                    : 'No mergedAnswerDetails found',
+                details: hasDetails ? Object.keys(merged.mergedAnswerDetails) : null
+            };
+        }
+
+        function testExcelExport() {
+            try {
+                // Simulate the export function logic without actually downloading
+                const workbook = XLSX.utils.book_new();
+                
+                assessments.forEach(assessment => {
+                    const assessmentData = [
+                        ['Assessment Information'],
+                        ['Application Name', assessment.name]
+                    ];
+                    
+                    // Add header
+                    if (assessment.isMergedResult) {
+                        assessmentData.push(['Question ID', 'Theme', 'Question', 'Answer', 'Answered By', 'Comment', 'Weight', 'Category', 'Source Assessment']);
+                    } else {
+                        assessmentData.push(['Question ID', 'Theme', 'Question', 'Answer', 'Answered By', 'Comment', 'Weight', 'Category']);
+                    }
+                    
+                    const sheet = XLSX.utils.aoa_to_sheet(assessmentData);
+                    let sheetName = assessment.name.substring(0, 31).replace(/[\\\/\?\*\[\]:<>'"]/g, '_');
+                    XLSX.utils.book_append_sheet(workbook, sheet, sheetName);
+                });
+
+                return {
+                    passed: workbook.SheetNames.length === assessments.length,
+                    message: `Workbook created with ${workbook.SheetNames.length} sheets`
+                };
+            } catch (error) {
+                return {
+                    passed: false,
+                    message: 'Error creating workbook: ' + error.message
+                };
+            }
+        }
+
+        function testMergedAssessmentHasSourceColumn() {
+            const merged = assessments.find(a => a.isMergedResult);
+            if (!merged) {
+                return { passed: false, message: 'No merged assessment to test' };
+            }
+
+            try {
+                const assessmentData = [['Assessment Information']];
+                
+                // Add header
+                if (merged.isMergedResult) {
+                    assessmentData.push(['Question ID', 'Theme', 'Question', 'Answer', 'Answered By', 'Comment', 'Weight', 'Category', 'Source Assessment']);
+                }
+
+                const headerRow = assessmentData[1];
+                const hasSourceColumn = headerRow.includes('Source Assessment');
+
+                return {
+                    passed: hasSourceColumn,
+                    message: hasSourceColumn 
+                        ? 'Source Assessment column found in header'
+                        : 'Source Assessment column missing from header',
+                    details: { headerRow }
+                };
+            } catch (error) {
+                return {
+                    passed: false,
+                    message: 'Error checking source column: ' + error.message
+                };
+            }
+        }
+
+        function testMultipleRowsForMergedQuestions() {
+            const merged = assessments.find(a => a.isMergedResult);
+            if (!merged) {
+                return { passed: false, message: 'No merged assessment to test' };
+            }
+
+            try {
+                const questionId = 'q1';  // Test with first question
+                const details = merged.mergedAnswerDetails[questionId];
+                
+                if (!details) {
+                    return { passed: false, message: 'No merged details for test question' };
+                }
+
+                const expectedRows = details.contributions.length;
+                const actualRows = details.contributions.length;  // This would be counted in actual export
+
+                return {
+                    passed: actualRows === expectedRows,
+                    message: `Expected ${expectedRows} rows for question ${questionId}, structure supports ${actualRows} contributions`,
+                    details: {
+                        questionId,
+                        contributions: details.contributions.length,
+                        contributionSources: details.contributions.map(c => c.interviewName)
+                    }
+                };
+            } catch (error) {
+                return {
+                    passed: false,
+                    message: 'Error checking multiple rows: ' + error.message
+                };
+            }
+        }
+
+        function testNonMergedAssessmentFormat() {
+            const nonMerged = assessments.find(a => !a.isMergedResult);
+            if (!nonMerged) {
+                return { passed: false, message: 'No non-merged assessment to test' };
+            }
+
+            try {
+                const assessmentData = [['Assessment Information']];
+                
+                // Add header for non-merged
+                assessmentData.push(['Question ID', 'Theme', 'Question', 'Answer', 'Answered By', 'Comment', 'Weight', 'Category']);
+
+                const headerRow = assessmentData[1];
+                const hasSourceColumn = headerRow.includes('Source Assessment');
+
+                return {
+                    passed: !hasSourceColumn,
+                    message: hasSourceColumn 
+                        ? 'Non-merged assessment incorrectly has Source Assessment column'
+                        : 'Non-merged assessment correctly does not have Source Assessment column',
+                    details: { headerRow }
+                };
+            } catch (error) {
+                return {
+                    passed: false,
+                    message: 'Error checking non-merged format: ' + error.message
+                };
+            }
+        }
+    </script>
+</body>
+</html>

@@ -3155,9 +3155,15 @@ function exportAssessmentsToExcel() {
                 ['Profile', assessment.profile],
                 ['Interviewees', assessment.interviewees && assessment.interviewees.length > 0 ? assessment.interviewees.join(', ') : ''],
                 ['Selected Profiles', assessment.selectedProfiles && assessment.selectedProfiles.length > 0 ? assessment.selectedProfiles.join(', ') : ''],
-                [],
-                ['Question ID', 'Theme', 'Question', 'Answer', 'Answered By', 'Comment', 'Weight', 'Category']
+                []
             ];
+            
+            // Add header row - include Source Assessment column for merged results
+            if (assessment.isMergedResult) {
+                assessmentData.push(['Question ID', 'Theme', 'Question', 'Answer', 'Answered By', 'Comment', 'Weight', 'Category', 'Source Assessment']);
+            } else {
+                assessmentData.push(['Question ID', 'Theme', 'Question', 'Answer', 'Answered By', 'Comment', 'Weight', 'Category']);
+            }
             
             // Get all answered questions
             const answeredQuestions = getActiveQuestionsCatalog().filter(q => 
@@ -3169,16 +3175,37 @@ function exportAssessmentsToExcel() {
                 const answeredBy = assessment.answeredBy?.[question.id] || '';
                 const comment = assessment.comments?.[question.id] || '';
                 
-                assessmentData.push([
-                    question.id,
-                    question.theme,
-                    question.question,
-                    answer,
-                    answeredBy,
-                    comment,
-                    question.weight,
-                    question.category || ''
-                ]);
+                // For merged assessments, expand multiple answers into separate rows
+                if (assessment.isMergedResult && assessment.mergedAnswerDetails && assessment.mergedAnswerDetails[question.id]) {
+                    const mergedDetails = assessment.mergedAnswerDetails[question.id];
+                    
+                    // Add a row for each contribution
+                    mergedDetails.contributions.forEach(contribution => {
+                        assessmentData.push([
+                            question.id,
+                            question.theme,
+                            question.question,
+                            contribution.answer,
+                            contribution.answeredBy || '',
+                            contribution.comment || '',
+                            question.weight,
+                            question.category || '',
+                            contribution.interviewName
+                        ]);
+                    });
+                } else {
+                    // For non-merged assessments, use the standard single row
+                    assessmentData.push([
+                        question.id,
+                        question.theme,
+                        question.question,
+                        answer,
+                        answeredBy,
+                        comment,
+                        question.weight,
+                        question.category || ''
+                    ]);
+                }
             });
             
             // Add maturity scores
@@ -3197,16 +3224,31 @@ function exportAssessmentsToExcel() {
             
             // Auto-size columns
             const maxWidth = 100;
-            const colWidths = [
-                { wch: 15 },  // Question ID
-                { wch: 30 },  // Theme
-                { wch: 60 },  // Question
-                { wch: 10 },  // Answer
-                { wch: 15 },  // Answered By
-                { wch: 40 },  // Comment
-                { wch: 10 },  // Weight
-                { wch: 20 }   // Category
-            ];
+            let colWidths;
+            if (assessment.isMergedResult) {
+                colWidths = [
+                    { wch: 15 },  // Question ID
+                    { wch: 30 },  // Theme
+                    { wch: 60 },  // Question
+                    { wch: 10 },  // Answer
+                    { wch: 15 },  // Answered By
+                    { wch: 40 },  // Comment
+                    { wch: 10 },  // Weight
+                    { wch: 20 },  // Category
+                    { wch: 30 }   // Source Assessment
+                ];
+            } else {
+                colWidths = [
+                    { wch: 15 },  // Question ID
+                    { wch: 30 },  // Theme
+                    { wch: 60 },  // Question
+                    { wch: 10 },  // Answer
+                    { wch: 15 },  // Answered By
+                    { wch: 40 },  // Comment
+                    { wch: 10 },  // Weight
+                    { wch: 20 }   // Category
+                ];
+            }
             sheet['!cols'] = colWidths;
             
             // Sanitize sheet name (Excel has restrictions)
@@ -3426,7 +3468,13 @@ function exportResultToExcel() {
         
         detailsData.push([]);
         detailsData.push(['Detailed Answers']);
-        detailsData.push(['Question ID', 'Theme', 'Question', 'Answer', 'Answered By', 'Comment', 'Weight', 'Category']);
+        
+        // Add header row - include Source Assessment column for merged results
+        if (assessment.isMergedResult) {
+            detailsData.push(['Question ID', 'Theme', 'Question', 'Answer', 'Answered By', 'Comment', 'Weight', 'Category', 'Source Assessment']);
+        } else {
+            detailsData.push(['Question ID', 'Theme', 'Question', 'Answer', 'Answered By', 'Comment', 'Weight', 'Category']);
+        }
         
         // Get all answered questions
         const answeredQuestions = getActiveQuestionsCatalog().filter(q => 
@@ -3438,31 +3486,68 @@ function exportResultToExcel() {
             const answeredBy = assessment.answeredBy?.[question.id] || '';
             const comment = assessment.comments?.[question.id] || '';
             
-            detailsData.push([
-                question.id,
-                question.theme,
-                question.question,
-                String(answer || '').toUpperCase(),
-                answeredBy,
-                comment,
-                question.weight,
-                question.category || ''
-            ]);
+            // For merged assessments, expand multiple answers into separate rows
+            if (assessment.isMergedResult && assessment.mergedAnswerDetails && assessment.mergedAnswerDetails[question.id]) {
+                const mergedDetails = assessment.mergedAnswerDetails[question.id];
+                
+                // Add a row for each contribution
+                mergedDetails.contributions.forEach(contribution => {
+                    detailsData.push([
+                        question.id,
+                        question.theme,
+                        question.question,
+                        contribution.answer,
+                        contribution.answeredBy || '',
+                        contribution.comment || '',
+                        question.weight,
+                        question.category || '',
+                        contribution.interviewName
+                    ]);
+                });
+            } else {
+                // For non-merged assessments, use the standard single row
+                detailsData.push([
+                    question.id,
+                    question.theme,
+                    question.question,
+                    String(answer || '').toUpperCase(),
+                    answeredBy,
+                    comment,
+                    question.weight,
+                    question.category || ''
+                ]);
+            }
         });
         
         const sheet = XLSX.utils.aoa_to_sheet(detailsData);
         
         // Auto-size columns
-        sheet['!cols'] = [
-            { wch: 15 },  // Question ID
-            { wch: 30 },  // Theme
-            { wch: 60 },  // Question
-            { wch: 10 },  // Answer
-            { wch: 15 },  // Answered By
-            { wch: 40 },  // Comment
-            { wch: 10 },  // Weight
-            { wch: 20 }   // Category
-        ];
+        let colWidths;
+        if (assessment.isMergedResult) {
+            colWidths = [
+                { wch: 15 },  // Question ID
+                { wch: 30 },  // Theme
+                { wch: 60 },  // Question
+                { wch: 10 },  // Answer
+                { wch: 15 },  // Answered By
+                { wch: 40 },  // Comment
+                { wch: 10 },  // Weight
+                { wch: 20 },  // Category
+                { wch: 30 }   // Source Assessment
+            ];
+        } else {
+            colWidths = [
+                { wch: 15 },  // Question ID
+                { wch: 30 },  // Theme
+                { wch: 60 },  // Question
+                { wch: 10 },  // Answer
+                { wch: 15 },  // Answered By
+                { wch: 40 },  // Comment
+                { wch: 10 },  // Weight
+                { wch: 20 }   // Category
+            ];
+        }
+        sheet['!cols'] = colWidths;
         
         XLSX.utils.book_append_sheet(workbook, sheet, 'Results');
         
