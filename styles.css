@@ -796,7 +796,8 @@ header h1 {
     flex: 1;
 }
 
-.question-text .question-id {
+.question-text .question-id,
+.answer-question .question-id {
     display: inline-block;
     padding: 0.125rem 0.5rem;
     background-color: var(--secondary-dark);
