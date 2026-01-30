@@ -1223,6 +1223,9 @@ async function proceedRename() {
         };
         await deleteAssessmentFile(oldAssessment);
         
+        // Refresh cache from sync folder to ensure UI shows accurate state
+        await syncFromFolder();
+        
         // Update UI
         updateSavedAssessmentsList();
         updateResultsSelect();
