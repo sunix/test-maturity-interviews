@@ -12,3 +12,7 @@ Thumbs.db
 # Temporary SVG files (keep only PNG)
 *.svg
 !icons/icon.svg
+
+# Local test files
+chart.js
+test-merged-radar-charts.html

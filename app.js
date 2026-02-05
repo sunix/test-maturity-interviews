@@ -2249,11 +2249,15 @@ function displayResults() {
     
     const themeScoresDiv = document.getElementById('theme-scores');
     const chartContainer = document.querySelector('.chart-container');
+    const comparisonChartContainer = document.getElementById('comparison-chart-container');
     
     if (selectedIndex === '') {
         themeScoresDiv.innerHTML = '<p class="alert alert-info">Please select an assessment to view results.</p>';
         if (chartContainer) {
             chartContainer.style.display = 'none';
+        }
+        if (comparisonChartContainer) {
+            comparisonChartContainer.style.display = 'none';
         }
         return;
     }
@@ -2297,6 +2301,14 @@ function displayResults() {
     
     // Render radar chart
     renderRadarChart(scores);
+    
+    // For merged results, also show the comparison chart with all source assessments
+    if (assessment.isMergedResult && comparisonChartContainer) {
+        comparisonChartContainer.style.display = 'block';
+        renderComparisonRadarChart(assessment);
+    } else if (comparisonChartContainer) {
+        comparisonChartContainer.style.display = 'none';
+    }
 }
 
 // Helper function to escape HTML to prevent XSS
@@ -2672,6 +2684,186 @@ function renderRadarChart(scores) {
                 title: {
                     display: true,
                     text: 'Test Maturity Assessment Radar',
+                    font: {
+                        size: 16
+                    }
+                }
+            }
+        }
+    });
+}
+
+// Render Comparison Radar Chart for Merged Results
+let comparisonRadarChart = null;
+
+function renderComparisonRadarChart(mergedAssessment) {
+    // Check if Chart.js is available
+    if (typeof Chart === 'undefined') {
+        console.warn('Chart.js not available');
+        return;
+    }
+    
+    const canvas = document.getElementById('comparison-chart');
+    if (!canvas) {
+        console.warn('Comparison canvas element not found');
+        return;
+    }
+    
+    const ctx = canvas.getContext('2d');
+    
+    // Destroy existing chart if it exists
+    if (comparisonRadarChart) {
+        comparisonRadarChart.destroy();
+    }
+    
+    // Reconstruct assessment data for each source interview
+    const sourceAssessments = [];
+    if (mergedAssessment.sourceInterviews && mergedAssessment.mergedAnswerDetails) {
+        mergedAssessment.sourceInterviews.forEach(sourceInfo => {
+            const sourceAssessment = {
+                name: sourceInfo.name,
+                interviewName: sourceInfo.interviewName,
+                answers: {}
+            };
+            
+            // Extract answers for this source from mergedAnswerDetails
+            Object.keys(mergedAssessment.mergedAnswerDetails).forEach(questionId => {
+                const details = mergedAssessment.mergedAnswerDetails[questionId];
+                const contribution = details.contributions.find(c => c.interviewName === sourceInfo.interviewName);
+                if (contribution) {
+                    sourceAssessment.answers[questionId] = contribution.answer;
+                }
+            });
+            
+            sourceAssessments.push(sourceAssessment);
+        });
+    }
+    
+    // Calculate scores for each source assessment
+    const allScores = sourceAssessments.map(assessment => ({
+        label: assessment.interviewName || assessment.name,
+        scores: calculateMaturityScores(assessment)
+    }));
+    
+    // If no source assessments, don't show comparison chart (need at least one source to compare)
+    if (allScores.length === 0) {
+        console.warn('No source assessments found for comparison chart');
+        return;
+    }
+    
+    // Add merged result scores
+    allScores.push({
+        label: 'Merged Result',
+        scores: calculateMaturityScores(mergedAssessment)
+    });
+    
+    // Guard: verify first item has valid scores
+    if (!allScores[0]?.scores || Object.keys(allScores[0].scores).length === 0) {
+        console.warn('No theme scores available to render comparison chart');
+        return;
+    }
+    
+    // Get theme labels (same for all assessments)
+    const themeKeys = Object.keys(allScores[0].scores);
+    
+    // Build a theme lookup map for efficient translation
+    const themeLookup = new Map();
+    QUESTIONS_CATALOG.themes.forEach(t => {
+        themeLookup.set(getTranslation(t, 'fr'), t);
+    });
+    
+    const labels = themeKeys.map(theme => {
+        // Theme keys in scores are stored in French (canonical format) and mapped to theme objects
+        const themeObj = themeLookup.get(theme);
+        if (themeObj) {
+            return getTranslation(themeObj);
+        }
+        // Fallback: if no theme object found, return the theme string as-is
+        console.warn(`Theme object not found for: ${theme}, using string as-is`);
+        return theme;
+    });
+    
+    // Prepare datasets - one for each assessment
+    const colors = [
+        { bg: 'rgba(59, 130, 246, 0.2)', border: 'rgb(59, 130, 246)' },     // Blue
+        { bg: 'rgba(16, 185, 129, 0.2)', border: 'rgb(16, 185, 129)' },     // Green
+        { bg: 'rgba(245, 158, 11, 0.2)', border: 'rgb(245, 158, 11)' },     // Orange
+        { bg: 'rgba(239, 68, 68, 0.2)', border: 'rgb(239, 68, 68)' },       // Red
+        { bg: 'rgba(168, 85, 247, 0.2)', border: 'rgb(168, 85, 247)' },     // Purple
+        { bg: 'rgba(236, 72, 153, 0.2)', border: 'rgb(236, 72, 153)' },     // Pink
+        { bg: 'rgba(20, 184, 166, 0.2)', border: 'rgb(20, 184, 166)' },     // Teal
+        { bg: 'rgba(251, 146, 60, 0.2)', border: 'rgb(251, 146, 60)' }      // Light Orange
+    ];
+    
+    // Merged result uses a bolder color (dark blue)
+    const mergedColor = { bg: 'rgba(37, 99, 235, 0.3)', border: 'rgb(37, 99, 235)' };
+    
+    const datasets = allScores.map((item, index) => {
+        const isMergedResult = index === allScores.length - 1;
+        const color = isMergedResult ? mergedColor : colors[index % colors.length];
+        
+        return {
+            label: item.label,
+            data: themeKeys.map(theme => item.scores[theme]),
+            fill: true,
+            backgroundColor: color.bg,
+            borderColor: color.border,
+            pointBackgroundColor: color.border,
+            pointBorderColor: '#fff',
+            pointHoverBackgroundColor: '#fff',
+            pointHoverBorderColor: color.border,
+            pointRadius: isMergedResult ? 6 : 4,
+            pointHoverRadius: isMergedResult ? 8 : 6,
+            borderWidth: isMergedResult ? 3 : 2
+        };
+    });
+    
+    comparisonRadarChart = new Chart(ctx, {
+        type: 'radar',
+        data: {
+            labels: labels,
+            datasets: datasets
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: true,
+            layout: {
+                padding: {
+                    top: 30,
+                    bottom: 30,
+                    left: 40,
+                    right: 40
+                }
+            },
+            scales: {
+                r: {
+                    beginAtZero: true,
+                    min: 0,
+                    max: 5,
+                    ticks: {
+                        stepSize: 1
+                    },
+                    pointLabels: {
+                        font: {
+                            size: 12
+                        },
+                        padding: 10
+                    }
+                }
+            },
+            plugins: {
+                legend: {
+                    display: true,
+                    position: 'top',
+                    labels: {
+                        padding: 15,
+                        usePointStyle: true,
+                        pointStyle: 'circle'
+                    }
+                },
+                title: {
+                    display: true,
+                    text: 'Assessment Comparison - All Sources',
                     font: {
                         size: 16
                     }
