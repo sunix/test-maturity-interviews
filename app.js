@@ -1,5 +1,5 @@
 // Application version for compatibility tracking
-const APP_VERSION = '3.1.1'; // Minor version bump: cache refresh
+const APP_VERSION = '3.2.0'; // Minor version bump: cache refresh
 
 // Language state - default to French to maintain current user experience
 let currentLanguage = localStorage.getItem('appLanguage') || 'fr';
