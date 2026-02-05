@@ -86,17 +86,17 @@ jobs:
           echo "COMMIT_SHA=$(git rev-parse HEAD)" >> $GITHUB_ENV
           echo "✓ Committed version changes"
 
+      - name: Push changes to main
+        run: |
+          git push origin HEAD:main
+          echo "✓ Pushed version changes to main branch"
+
       - name: Create and push tag
         run: |
           VERSION="${{ env.VERSION }}"
           git tag -a "v$VERSION" -m "Release version $VERSION"
           git push origin "v$VERSION"
           echo "✓ Created and pushed tag v$VERSION"
-
-      - name: Push changes to main
-        run: |
-          git push origin HEAD:main
-          echo "✓ Pushed version changes to main branch"
 
       - name: Generate release notes
         id: release_notes

@@ -97,7 +97,7 @@ jobs:
               try {
                 console.log(`\nProcessing version ${version}...`);
                 
-                // Create tag
+                // Create annotated tag object
                 const { data: tagObject } = await github.rest.git.createTag({
                   owner: context.repo.owner,
                   repo: context.repo.repo,
@@ -107,12 +107,12 @@ jobs:
                   type: 'commit'
                 });
                 
-                // Create reference for the tag
+                // Create reference for the tag (pointing to the commit, not the tag object)
                 await github.rest.git.createRef({
                   owner: context.repo.owner,
                   repo: context.repo.repo,
                   ref: `refs/tags/${tagName}`,
-                  sha: tagObject.sha
+                  sha: sha
                 });
                 
                 console.log(`✓ Created tag ${tagName}`);
