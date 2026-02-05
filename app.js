@@ -2745,20 +2745,42 @@ function renderComparisonRadarChart(mergedAssessment) {
         scores: calculateMaturityScores(assessment)
     }));
     
+    // If no source assessments, don't show comparison chart (need at least one source to compare)
+    if (allScores.length === 0) {
+        console.warn('No source assessments found for comparison chart');
+        return;
+    }
+    
     // Add merged result scores
     allScores.push({
         label: 'Merged Result',
         scores: calculateMaturityScores(mergedAssessment)
     });
     
+    // Guard: verify first item has valid scores
+    if (!allScores[0]?.scores || Object.keys(allScores[0].scores).length === 0) {
+        console.warn('No theme scores available to render comparison chart');
+        return;
+    }
+    
     // Get theme labels (same for all assessments)
     const themeKeys = Object.keys(allScores[0].scores);
+    
+    // Build a theme lookup map for efficient translation
+    const themeLookup = new Map();
+    QUESTIONS_CATALOG.themes.forEach(t => {
+        themeLookup.set(getTranslation(t, 'fr'), t);
+    });
+    
     const labels = themeKeys.map(theme => {
-        let themeObj = QUESTIONS_CATALOG.themes.find(t => getTranslation(t, 'fr') === theme);
-        if (!themeObj) {
-            themeObj = theme;
+        // Theme keys in scores are stored in French (canonical format) and mapped to theme objects
+        const themeObj = themeLookup.get(theme);
+        if (themeObj) {
+            return getTranslation(themeObj);
         }
-        return getTranslation(themeObj);
+        // Fallback: if no theme object found, return the theme string as-is
+        console.warn(`Theme object not found for: ${theme}, using string as-is`);
+        return theme;
     });
     
     // Prepare datasets - one for each assessment
