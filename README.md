@@ -461,6 +461,10 @@ test-maturity-interviews/
 ├── app.js             # Application logic and state management
 ├── questions.js       # Default questions catalog
 ├── styles.css         # Styling and responsive design
+├── tests/             # BDD/Gherkin UI tests (Playwright + Cucumber)
+│   ├── features/      # Gherkin feature files
+│   ├── step-definitions/  # Test step implementations
+│   └── support/       # Test configuration and helpers
 └── README.md          # This documentation
 ```
 
@@ -490,6 +494,42 @@ test-maturity-interviews/
 - Professional color scheme
 - Print-optimized styles
 - Accessibility features
+
+**tests/**: UI test suite with:
+- BDD/Gherkin scenarios for all major features
+- Playwright-based browser automation
+- Detailed HTML test reports
+- CI/CD integration with PR comment triggers
+
+## 🧪 UI Testing
+
+### Automated Non-Regression Tests
+
+The application includes comprehensive UI tests using BDD (Behavior-Driven Development) approach:
+
+- **Framework**: Playwright + Cucumber (Gherkin)
+- **Coverage**: Interview management, results visualization, data management
+- **Reports**: Detailed HTML reports with scenario breakdowns
+- **CI/CD**: Automated testing on PRs and `/test` comment trigger
+
+### Running Tests
+
+```bash
+# Install dependencies
+npm install
+
+# Run tests locally
+npm run test:local
+
+# Run tests against any server
+BASE_URL=https://your-server.com npm run test:report
+```
+
+### Trigger Tests on Pull Requests
+
+Comment on any PR with `/test` to trigger automated UI tests. Results will be posted back to the PR with detailed reports.
+
+📖 **Full testing documentation**: See [tests/README.md](tests/README.md)
 
 ## 🧪 Demo & Test Pages
 

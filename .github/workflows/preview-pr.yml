@@ -19,7 +19,7 @@ jobs:
     if: >
       github.event_name == 'issue_comment' &&
       github.event.issue.pull_request &&
-      contains(github.event.comment.body, '/preview')
+      (contains(github.event.comment.body, '/preview') || contains(github.event.comment.body, '/preview-and-test'))
 
     steps:
       - name: Resolve PR number
@@ -96,17 +96,91 @@ jobs:
           surge . --domain "$DEPLOY_DOMAIN" --token "$SURGE_TOKEN"
           echo "DEPLOY_URL=https://$DEPLOY_DOMAIN" >> $GITHUB_ENV
 
+      - name: Check if tests should run
+        id: check_tests
+        run: |
+          if [[ "${{ github.event.comment.body }}" == *"/preview-and-test"* ]]; then
+            echo "run_tests=true" >> $GITHUB_OUTPUT
+          else
+            echo "run_tests=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Install test dependencies
+        if: steps.check_tests.outputs.run_tests == 'true'
+        run: |
+          npm ci || npm install
+
+      - name: Install Playwright browsers
+        if: steps.check_tests.outputs.run_tests == 'true'
+        run: npx playwright install chromium --with-deps
+
+      - name: Run tests against preview
+        if: steps.check_tests.outputs.run_tests == 'true'
+        id: run_tests
+        run: npm run test:report
+        env:
+          BASE_URL: ${{ env.DEPLOY_URL }}
+        continue-on-error: true
+
+      - name: Upload test reports
+        if: steps.check_tests.outputs.run_tests == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: preview-test-reports
+          path: reports/
+          retention-days: 30
+
+      - name: Read test results
+        if: steps.check_tests.outputs.run_tests == 'true'
+        id: test_results
+        run: |
+          if [ -f reports/cucumber-report.json ]; then
+            PASSED=$(jq '[.[] | select(.elements != null) | .elements[] | select(.steps != null) | .steps[] | select(.result.status == "passed")] | length' reports/cucumber-report.json)
+            FAILED=$(jq '[.[] | select(.elements != null) | .elements[] | select(.steps != null) | .steps[] | select(.result.status == "failed")] | length' reports/cucumber-report.json)
+            
+            echo "passed_steps=$PASSED" >> $GITHUB_OUTPUT
+            echo "failed_steps=$FAILED" >> $GITHUB_OUTPUT
+            
+            if [ "$FAILED" -gt 0 ]; then
+              echo "test_status=failed" >> $GITHUB_OUTPUT
+            else
+              echo "test_status=passed" >> $GITHUB_OUTPUT
+            fi
+          else
+            echo "test_status=error" >> $GITHUB_OUTPUT
+          fi
+
       - name: Update PR comment with preview link
         if: success()
         uses: actions/github-script@v7
         env:
           COMMENT_ID: ${{ steps.start_comment.outputs.comment_id }}
           PREVIEW_URL: ${{ env.DEPLOY_URL }}
+          RUN_TESTS: ${{ steps.check_tests.outputs.run_tests }}
+          TEST_STATUS: ${{ steps.test_results.outputs.test_status }}
+          PASSED_STEPS: ${{ steps.test_results.outputs.passed_steps }}
+          FAILED_STEPS: ${{ steps.test_results.outputs.failed_steps }}
         with:
           script: |
             const commentId = Number(process.env.COMMENT_ID);
             const previewUrl = process.env.PREVIEW_URL || 'unavailable';
-            const body = `🚀 **Preview deployed successfully!**\n\n🌐 Preview: [${previewUrl}](${previewUrl})`;
+            const runTests = process.env.RUN_TESTS === 'true';
+            const testStatus = process.env.TEST_STATUS;
+            const runUrl = `${process.env.GITHUB_SERVER_URL}/${process.env.GITHUB_REPOSITORY}/actions/runs/${process.env.GITHUB_RUN_ID}`;
+            
+            let body = `🚀 **Preview deployed successfully!**\n\n🌐 Preview: [${previewUrl}](${previewUrl})`;
+            
+            if (runTests) {
+              const passedSteps = process.env.PASSED_STEPS || '0';
+              const failedSteps = process.env.FAILED_STEPS || '0';
+              
+              let statusIcon = '✅';
+              if (testStatus === 'failed') statusIcon = '❌';
+              else if (testStatus === 'error') statusIcon = '⚠️';
+              
+              body += `\n\n${statusIcon} **Tests ${testStatus}**\n\n📊 Results:\n- ✅ Passed: ${passedSteps}\n- ❌ Failed: ${failedSteps}\n\n📄 [Download test report](${runUrl}#artifacts)`;
+            }
+            
             await github.rest.issues.updateComment({
               comment_id: commentId,
               owner: context.repo.owner,

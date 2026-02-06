@@ -1,0 +1,31 @@
+{
+  "name": "test-maturity-interviews",
+  "version": "2.2.2",
+  "description": "Test Maturity Assessment Tool with UI Tests",
+  "scripts": {
+    "test": "cucumber-js",
+    "test:report": "cucumber-js --format json:reports/cucumber-report.json && node tests/support/report-generator.js",
+    "test:local": "BASE_URL=http://localhost:8080 npm run test:report",
+    "test:preview": "npm run test:report",
+    "serve": "npx http-server . -p 8080 -c-1",
+    "postinstall": "if [ -z \"$CI\" ]; then npx playwright install chromium || echo 'Playwright install skipped'; fi"
+  },
+  "keywords": [
+    "testing",
+    "maturity",
+    "assessment",
+    "bdd",
+    "playwright"
+  ],
+  "devDependencies": {
+    "@cucumber/cucumber": "^10.3.1",
+    "@playwright/test": "^1.41.2",
+    "cucumber-html-reporter": "^7.1.1",
+    "http-server": "^14.1.1",
+    "playwright": "^1.41.2",
+    "wait-on": "^7.2.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
