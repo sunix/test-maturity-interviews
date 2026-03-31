@@ -2,6 +2,23 @@
 
 A modern, browser-based web application designed to assess and track testing maturity across teams and applications. No installation, no backend, no hassle—just open and start assessing!
 
+## 📸 Screenshots
+
+### Interview Setup
+Start a new interview by entering the application name, team name, and interviewees.
+
+![Interview Setup](screenshots/interview-setup.png)
+
+### Interview Questions
+Answer questions with Yes/No, filter by profile (Developer, QA, DevOps, Manager), and track progress in real time.
+
+![Interview Questions](screenshots/interview-questions.png)
+
+### Results – Spider Radar Chart
+Instantly visualize your testing maturity across all 6 themes with an interactive radar chart, alongside detailed per-theme scores and all answers.
+
+![Radar Chart Results](screenshots/radar-chart.png)
+
 ## ✨ Key Features
 
 ### 🎯 **Smart Interview Mode**
