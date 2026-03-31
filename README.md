@@ -508,6 +508,69 @@ test-maturity-interviews/
 - Print-optimized styles
 - Accessibility features
 
+## 🚀 Release Management
+
+This project uses automated GitHub Actions workflows to manage releases and ensure PWA cache invalidation on updates.
+
+### Creating a New Release
+
+To create a new release:
+
+1. **Navigate to Actions** in the GitHub repository
+2. **Select "Create Release"** workflow from the left sidebar
+3. **Click "Run workflow"**
+4. **Enter the version number** (e.g., `3.3.0`) in semantic versioning format (X.Y.Z)
+5. **Click "Run workflow"** to start the process
+
+The workflow will automatically:
+- ✅ Validate the version format
+- ✅ Update `APP_VERSION` in `app.js` and `service-worker.js`
+- ✅ Commit the version changes to the main branch
+- ✅ Create a git tag (e.g., `v3.3.0`)
+- ✅ Generate release notes with a changelog
+- ✅ Create a GitHub release
+
+**PWA Cache Refresh**: Updating the version in both files ensures that:
+- Service Worker detects the new version
+- Cached resources are invalidated
+- Users are prompted to update the app
+- The new version number appears in the app header
+
+### Refreshing Historical Releases
+
+If there are past version bumps that don't have tags or releases, use the **Refresh Releases** workflow:
+
+1. **Navigate to Actions** in the GitHub repository
+2. **Select "Refresh Releases"** workflow
+3. **Click "Run workflow"**
+
+This workflow will:
+- 🔍 Find all commit messages matching "Bump version to X.Y.Z"
+- 🏷️ Create missing git tags for those versions
+- 📝 Generate release notes for each version
+- 🎉 Create GitHub releases with changelogs
+
+**When to use this**:
+- After merging multiple version bumps without proper tagging
+- To backfill historical releases for version tracking
+- To ensure all versions have proper documentation
+
+### Version Management Best Practices
+
+- **Semantic Versioning**: Use X.Y.Z format (e.g., 3.2.0, 4.0.1)
+  - X (Major): Breaking changes or major new features
+  - Y (Minor): New features, backward-compatible
+  - Z (Patch): Bug fixes, minor improvements
+  
+- **PWA Updates**: Every version bump automatically triggers PWA cache refresh
+  
+- **Release Notes**: Automatically generated from commit history between versions
+  
+- **Manual Bumps**: If you need to manually bump the version:
+  1. Update `APP_VERSION` in both `app.js` and `service-worker.js`
+  2. Commit with message: "Bump version to X.Y.Z to refresh PWA cache"
+  3. Run the "Refresh Releases" workflow to create the tag and release
+
 ## 🧪 Demo & Test Pages
 
 The repository includes several demonstration and testing pages to showcase features:

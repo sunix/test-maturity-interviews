@@ -1,0 +1,193 @@
+name: Refresh Releases
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Configure Git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Find and process untagged version bumps
+        uses: actions/github-script@v7
+        with:
+          script: |
+            // Get all existing tags
+            const { data: existingTags } = await github.rest.repos.listTags({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              per_page: 100
+            });
+            
+            const existingTagNames = new Set(existingTags.map(tag => tag.name));
+            console.log(`Found ${existingTags.length} existing tags:`, Array.from(existingTagNames).join(', '));
+            
+            // Get all commits
+            const { data: commits } = await github.rest.repos.listCommits({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              per_page: 100
+            });
+            
+            console.log(`Found ${commits.length} total commits`);
+            
+            // Find commits that bumped versions
+            const versionBumpCommits = [];
+            const versionPattern = /Bump version to (\d+\.\d+\.\d+)/i;
+            
+            for (const commit of commits) {
+              const message = commit.commit.message;
+              const match = message.match(versionPattern);
+              
+              if (match) {
+                const version = match[1];
+                const tagName = `v${version}`;
+                
+                // Check if tag already exists
+                if (!existingTagNames.has(tagName)) {
+                  versionBumpCommits.push({
+                    sha: commit.sha,
+                    version: version,
+                    tagName: tagName,
+                    message: message,
+                    date: commit.commit.author.date,
+                    author: commit.author ? commit.author.login : commit.commit.author.name
+                  });
+                  console.log(`Found untagged version bump: ${version} (${commit.sha})`);
+                }
+              }
+            }
+            
+            if (versionBumpCommits.length === 0) {
+              console.log('✓ No untagged version bumps found. All releases are up to date!');
+              core.summary
+                .addHeading('✓ All Releases Up To Date')
+                .addRaw('\n\nNo untagged version bumps found. All version commits already have tags and releases.')
+                .write();
+              return;
+            }
+            
+            console.log(`Found ${versionBumpCommits.length} untagged version bump(s)`);
+            
+            // Sort by date (oldest first) to create tags in chronological order
+            versionBumpCommits.sort((a, b) => new Date(a.date) - new Date(b.date));
+            
+            let summaryText = `## Processed ${versionBumpCommits.length} Release(s)\n\n`;
+            let createdCount = 0;
+            let previousTag = null;
+            
+            // Process each version bump
+            for (const versionCommit of versionBumpCommits) {
+              const { sha, version, tagName, message, author } = versionCommit;
+              
+              try {
+                console.log(`\nProcessing version ${version}...`);
+                
+                // Create annotated tag object
+                const { data: tagObject } = await github.rest.git.createTag({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  tag: tagName,
+                  message: `Release version ${version}`,
+                  object: sha,
+                  type: 'commit'
+                });
+                
+                // Create reference for the tag (pointing to the commit, not the tag object)
+                await github.rest.git.createRef({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  ref: `refs/tags/${tagName}`,
+                  sha: sha
+                });
+                
+                console.log(`✓ Created tag ${tagName}`);
+                
+                // Generate release notes
+                let releaseNotes = `## What's Changed\n\n`;
+                
+                if (previousTag) {
+                  // Get commits between previous tag and current tag
+                  try {
+                    const comparison = await github.rest.repos.compareCommits({
+                      owner: context.repo.owner,
+                      repo: context.repo.repo,
+                      base: previousTag,
+                      head: tagName
+                    });
+                    
+                    const relevantCommits = comparison.data.commits.filter(c => 
+                      !c.commit.message.startsWith('Bump version to')
+                    );
+                    
+                    if (relevantCommits.length > 0) {
+                      relevantCommits.forEach(commit => {
+                        const msg = commit.commit.message.split('\n')[0];
+                        const auth = commit.author ? commit.author.login : commit.commit.author.name;
+                        releaseNotes += `* ${msg} by @${auth}\n`;
+                      });
+                    } else {
+                      releaseNotes += `* Version bump to ${version} to refresh PWA cache\n`;
+                    }
+                    
+                    releaseNotes += `\n**Full Changelog**: https://github.com/${context.repo.owner}/${context.repo.repo}/compare/${previousTag}...${tagName}`;
+                  } catch (error) {
+                    console.log(`Warning: Could not generate detailed changelog: ${error.message}`);
+                    releaseNotes += `* Version bump to ${version} to refresh PWA cache\n`;
+                    releaseNotes += `\n**Full Changelog**: https://github.com/${context.repo.owner}/${context.repo.repo}/commits/${tagName}`;
+                  }
+                } else {
+                  releaseNotes += `* Version bump to ${version} to refresh PWA cache\n`;
+                  releaseNotes += `\n**Full Changelog**: https://github.com/${context.repo.owner}/${context.repo.repo}/commits/${tagName}`;
+                }
+                
+                // Create release
+                const { data: release } = await github.rest.repos.createRelease({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  tag_name: tagName,
+                  name: `v${version}`,
+                  body: releaseNotes,
+                  draft: false,
+                  prerelease: false
+                });
+                
+                console.log(`✓ Created release: ${release.html_url}`);
+                summaryText += `### ✓ v${version}\n`;
+                summaryText += `- Tag: ${tagName}\n`;
+                summaryText += `- Release: [${release.html_url}](${release.html_url})\n`;
+                summaryText += `- Commit: ${sha.substring(0, 7)}\n\n`;
+                
+                createdCount++;
+                previousTag = tagName;
+                
+              } catch (error) {
+                console.error(`❌ Error processing version ${version}: ${error.message}`);
+                summaryText += `### ❌ v${version}\n`;
+                summaryText += `- Error: ${error.message}\n\n`;
+              }
+            }
+            
+            summaryText += `\n---\n\n**Summary**: Successfully created ${createdCount} out of ${versionBumpCommits.length} release(s).`;
+            
+            core.summary
+              .addHeading('🎉 Refresh Releases Complete')
+              .addRaw('\n\n')
+              .addRaw(summaryText)
+              .write();
+            
+            console.log(`\n✓ Refresh complete: ${createdCount}/${versionBumpCommits.length} releases created`);
