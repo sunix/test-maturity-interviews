@@ -35,6 +35,16 @@ jobs:
             
             const existingTagNames = new Set(existingTags.map(tag => tag.name));
             console.log(`Found ${existingTags.length} existing tags:`, Array.from(existingTagNames).join(', '));
+
+            // Get all existing releases
+            const { data: existingReleases } = await github.rest.repos.listReleases({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              per_page: 100
+            });
+
+            const existingReleaseTagNames = new Set(existingReleases.map(r => r.tag_name));
+            console.log(`Found ${existingReleases.length} existing releases:`, Array.from(existingReleaseTagNames).join(', '));
             
             // Get all commits
             const { data: commits } = await github.rest.repos.listCommits({
@@ -45,7 +55,7 @@ jobs:
             
             console.log(`Found ${commits.length} total commits`);
             
-            // Find commits that bumped versions
+            // Find commits that bumped versions but are missing a tag or a release
             const versionBumpCommits = [];
             const versionPattern = /Bump version to (\d+\.\d+\.\d+)/i;
             
@@ -57,17 +67,25 @@ jobs:
                 const version = match[1];
                 const tagName = `v${version}`;
                 
-                // Check if tag already exists
-                if (!existingTagNames.has(tagName)) {
+                const tagMissing = !existingTagNames.has(tagName);
+                const releaseMissing = !existingReleaseTagNames.has(tagName);
+
+                if (tagMissing || releaseMissing) {
                   versionBumpCommits.push({
                     sha: commit.sha,
                     version: version,
                     tagName: tagName,
                     message: message,
                     date: commit.commit.author.date,
-                    author: commit.author ? commit.author.login : commit.commit.author.name
+                    author: commit.author ? commit.author.login : commit.commit.author.name,
+                    tagMissing: tagMissing,
+                    releaseMissing: releaseMissing
                   });
-                  console.log(`Found untagged version bump: ${version} (${commit.sha})`);
+                  if (tagMissing) {
+                    console.log(`Found untagged version bump: ${version} (${commit.sha})`);
+                  } else {
+                    console.log(`Found tag without release: ${version} (${commit.sha})`);
+                  }
                 }
               }
             }
@@ -92,30 +110,34 @@ jobs:
             
             // Process each version bump
             for (const versionCommit of versionBumpCommits) {
-              const { sha, version, tagName, message, author } = versionCommit;
+              const { sha, version, tagName, message, author, tagMissing, releaseMissing } = versionCommit;
               
               try {
                 console.log(`\nProcessing version ${version}...`);
                 
-                // Create annotated tag object
-                const { data: tagObject } = await github.rest.git.createTag({
-                  owner: context.repo.owner,
-                  repo: context.repo.repo,
-                  tag: tagName,
-                  message: `Release version ${version}`,
-                  object: sha,
-                  type: 'commit'
-                });
-                
-                // Create reference for the tag (pointing to the commit, not the tag object)
-                await github.rest.git.createRef({
-                  owner: context.repo.owner,
-                  repo: context.repo.repo,
-                  ref: `refs/tags/${tagName}`,
-                  sha: sha
-                });
-                
-                console.log(`✓ Created tag ${tagName}`);
+                if (tagMissing) {
+                  // Create annotated tag object
+                  const { data: tagObject } = await github.rest.git.createTag({
+                    owner: context.repo.owner,
+                    repo: context.repo.repo,
+                    tag: tagName,
+                    message: `Release version ${version}`,
+                    object: sha,
+                    type: 'commit'
+                  });
+                  
+                  // Create reference for the tag (pointing to the commit, not the tag object)
+                  await github.rest.git.createRef({
+                    owner: context.repo.owner,
+                    repo: context.repo.repo,
+                    ref: `refs/tags/${tagName}`,
+                    sha: sha
+                  });
+                  
+                  console.log(`✓ Created tag ${tagName}`);
+                } else {
+                  console.log(`✓ Tag ${tagName} already exists, skipping tag creation`);
+                }
                 
                 // Generate release notes
                 let releaseNotes = `## What's Changed\n\n`;
