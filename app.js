@@ -3481,15 +3481,25 @@ function exportQuestionsToExcel() {
         
         // Create questions sheet
         const questionsData = [
-            ['Question ID', 'Theme', 'Profiles', 'Question', 'Category', 'Weight']
+            ['Question ID', 'Theme', 'Profiles', 'Question Fr', 'Question En', 'Category', 'Weight']
         ];
         
         questionsToExport.forEach(question => {
+            let questionTextFr = '';
+            let questionTextEn = '';
+            if (typeof question.question === 'string') {
+                questionTextFr = question.question;
+                questionTextEn = question.question;
+            } else if (typeof question.question === 'object' && question.question !== null) {
+                questionTextFr = question.question.fr || '';
+                questionTextEn = question.question.en || '';
+            }
             questionsData.push([
                 question.id,
                 question.theme,
                 question.profiles.join(', '),
-                question.question,
+                questionTextFr,
+                questionTextEn,
                 question.category || '',
                 question.weight
             ]);
@@ -3502,7 +3512,8 @@ function exportQuestionsToExcel() {
             { wch: 15 },  // Question ID
             { wch: 30 },  // Theme
             { wch: 30 },  // Profiles
-            { wch: 80 },  // Question
+            { wch: 80 },  // Question Fr
+            { wch: 80 },  // Question En
             { wch: 25 },  // Category
             { wch: 10 }   // Weight
         ];
@@ -3543,6 +3554,10 @@ function importQuestionsFromExcel(event) {
             
             const importedQuestions = [];
             
+            // Detect format: new bilingual format has 'Question Fr' and 'Question En' columns
+            const headerRow = jsonData[0] || [];
+            const isBilingualFormat = headerRow[3] === 'Question Fr' && headerRow[4] === 'Question En';
+            
             // Parse questions (skip header row)
             for (let i = 1; i < jsonData.length; i++) {
                 const row = jsonData[i];
@@ -3551,12 +3566,31 @@ function importQuestionsFromExcel(event) {
                 const questionId = (row[0] || '').toString().trim();
                 const theme = (row[1] || '').toString().trim();
                 const profilesStr = (row[2] || '').toString().trim();
-                const questionText = (row[3] || '').toString().trim();
-                const category = (row[4] || '').toString().trim();
-                const weight = Number(row[5]);
+                
+                let questionValue;
+                let category;
+                let weight;
+                
+                if (isBilingualFormat) {
+                    // New format: Question Fr (col 3), Question En (col 4), Category (col 5), Weight (col 6)
+                    const questionTextFr = (row[3] || '').toString().trim();
+                    const questionTextEn = (row[4] || '').toString().trim();
+                    category = (row[5] || '').toString().trim();
+                    weight = Number(row[6]);
+                    questionValue = { fr: questionTextFr, en: questionTextEn };
+                } else {
+                    // Old format: Question (col 3), Category (col 4), Weight (col 5)
+                    const questionText = (row[3] || '').toString().trim();
+                    category = (row[4] || '').toString().trim();
+                    weight = Number(row[5]);
+                    questionValue = questionText;
+                }
                 
                 // Validate required fields
-                if (!questionId || !theme || !profilesStr || !questionText) {
+                const questionMissing = isBilingualFormat
+                    ? (!questionValue.fr && !questionValue.en)
+                    : !questionValue;
+                if (!questionId || !theme || !profilesStr || questionMissing) {
                     console.warn(`Skipping row ${i + 1}: missing required fields`);
                     continue;
                 }
@@ -3584,7 +3618,7 @@ function importQuestionsFromExcel(event) {
                     id: questionId,
                     theme: theme,
                     profiles: profiles,
-                    question: questionText,
+                    question: questionValue,
                     category: category,
                     weight: weight
                 });
