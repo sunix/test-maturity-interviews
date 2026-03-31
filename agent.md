@@ -219,3 +219,20 @@ When adding or modifying questions/themes, always supply both `fr` and `en` prop
 **Trigger:** comment `/preview` on any open pull request.  
 **Requirement:** `SURGE_TOKEN` secret must be set in the repository's Actions secrets.  
 The preview URL is `https://pr-{PR_NUMBER}-test-maturity-preview.surge.sh`.
+
+---
+
+## 13. Keeping This File Up to Date
+
+**Update `agent.md` whenever you make a change that affects the information documented here.** In particular:
+
+- New or renamed source files → update §3 (Key Files)
+- New global variables or changes to `currentAssessment` shape → update §4
+- New questions, themes, or ID scheme changes → update §5
+- New or removed key functions → update §6
+- Changes to the scoring algorithm → update §7
+- Changes to storage (new DB, new key, file naming) → update §8
+- New localisation patterns → update §9
+- `APP_VERSION` bump or cache strategy change → update §10
+- New test pages or changed verification steps → update §11
+- CI workflow changes → update §12
