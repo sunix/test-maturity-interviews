@@ -15,4 +15,5 @@ Thumbs.db
 
 # Local test files
 chart.js
+chart.umd.min.js
 test-merged-radar-charts.html
